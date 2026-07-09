@@ -1,0 +1,263 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Selah API",
+    "description": "This API provides access to application resources and operations.",
+    "version": "1.0.0"
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "number"
+          },
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "operationId": "getHealth",
+        "tags": [
+          "Health"
+        ],
+        "summary": "Liveness check",
+        "description": "Confirms the API process is up and able to respond to requests. This does not verify downstream dependencies (database, SMTP, etc.) so a 200 here does not guarantee those are reachable.",
+        "responses": {
+          "200": {
+            "description": "Service is healthy and running.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "number",
+                      "description": "HTTP status code, duplicated from the response status.",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Human-readable summary of the health check result.",
+                      "example": "Service is healthy and running."
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Machine-readable status code.",
+                      "example": "OK"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "message",
+                    "code"
+                  ]
+                },
+                "example": {
+                  "status": 200,
+                  "message": "Service is healthy and running.",
+                  "code": "OK"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error. Something went wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 500,
+                  "message": "Internal server error. Something went wrong."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/invitations": {
+      "post": {
+        "operationId": "createInvitation",
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "Invite a new user",
+        "description": "Admin-only. Generates an invitation link (valid for 2 hours) and emails it to the given address.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invitation created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "email",
+                    "expiresAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict. Resource already exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 409,
+                  "message": "Conflict. Resource already exists."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/invitations/{token}": {
+      "get": {
+        "operationId": "getInvitation",
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "Look up an invitation by token",
+        "description": "Public. Used by the sign-up page to check whether a token is still valid before showing the form.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invitation is valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "email",
+                    "expiresAt"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
