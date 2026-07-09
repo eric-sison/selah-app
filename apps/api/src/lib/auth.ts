@@ -51,6 +51,9 @@ export const auth = betterAuth({
     facebook: {
       clientId: env.FACEBOOK_CLIENT_ID,
       clientSecret: env.FACEBOOK_CLIENT_SECRET,
+      // Facebook sign-in only works for users who already have an account;
+      // it never implicitly creates one.
+      disableSignUp: true,
     },
   },
   account: {

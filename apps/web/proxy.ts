@@ -4,10 +4,12 @@ import { isSafeRedirectTarget } from "@/utils/is-safe-redirect"
 
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? "_ssid"
 
-const PUBLIC_PATHS = ["/auth"]
+// Auth pages: public only while signed out - a signed-in visitor is bounced
+// away from them (see below).
+const AUTH_PATHS = ["/auth"]
 
-function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+function matchesPath(pathname: string, paths: string[]): boolean {
+  return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`))
 }
 
 // Bulk, path-based gate: unlisted paths are protected by default so new
@@ -18,7 +20,7 @@ export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl
   const hasSession = request.cookies.has(SESSION_COOKIE_NAME)
 
-  if (isPublicPath(pathname)) {
+  if (matchesPath(pathname, AUTH_PATHS)) {
     if (hasSession) {
       const redirectTo = request.nextUrl.searchParams.get("redirect")
       return NextResponse.redirect(new URL(isSafeRedirectTarget(redirectTo) ? redirectTo : "/", request.url))

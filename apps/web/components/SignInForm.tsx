@@ -3,6 +3,7 @@
 import { useForm } from "@tanstack/react-form"
 import { useMutation } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
+import { Alert, AlertDescription, AlertTitle } from "@workspace/ui/components/Alert"
 import { Button } from "@workspace/ui/components/Button"
 import {
   Card,
@@ -21,12 +22,16 @@ import {
   FieldSeparator,
 } from "@workspace/ui/components/Field"
 import { Input } from "@workspace/ui/components/Input"
+import { toast } from "@workspace/ui/components/Sonner"
 import { FunctionComponent } from "react"
 import z from "zod"
 import { authClient } from "@/lib/auth-client"
+import { InfoIcon } from "lucide-react"
+import { ErrorMessages } from "@/utils/error-messages"
 
 type SignInFormProps = {
   callbackURL?: string
+  error?: string
 }
 
 const SignInFormSchema = z.object({
@@ -34,20 +39,62 @@ const SignInFormSchema = z.object({
   password: z.string().min(8, { error: "Password must be at least 8 characters." }),
 })
 
-export const SignInForm: FunctionComponent<SignInFormProps> = ({ callbackURL = "/" }) => {
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  signup_disabled: "Contact your admin to get an invitation link.",
+}
+
+export const SignInForm: FunctionComponent<SignInFormProps> = ({ callbackURL = "/", error }) => {
   const router = useRouter()
+  const oauthErrorMessage = error
+    ? (OAUTH_ERROR_MESSAGES[error] ?? "Something went wrong signing you in.")
+    : undefined
 
   const emailSignIn = useMutation({
     mutationFn: async (values: z.infer<typeof SignInFormSchema>) => {
-      const { data, error } = await authClient.signIn.email({
+      await authClient.signIn.email({
         email: values.email,
         password: values.password,
+        fetchOptions: {
+          onError(ctx) {
+            let errorMessage = ""
+
+            switch (ctx.error.status) {
+              case 401: {
+                errorMessage = ErrorMessages[401].INVALID_CREDENTIALS.short
+                break
+              }
+              case 403: {
+                errorMessage = ErrorMessages[403].EMAIL_NOT_VERIFIED.short
+                break
+              }
+              case 404: {
+                errorMessage = ErrorMessages[404].RESOURCE_NOT_FOUND.short
+                break
+              }
+              case 429: {
+                errorMessage = ErrorMessages[429].TOO_MANY_REQUESTS.short
+                break
+              }
+              case 500: {
+                errorMessage = ErrorMessages[500].SERVER_ERROR.short
+                break
+              }
+              default: {
+                errorMessage = "Something went wrong. Please try again."
+                console.error("User SignIn", ctx.error)
+                break
+              }
+            }
+
+            toast.error(errorMessage, {
+              position: "top-center",
+            })
+          },
+          onSuccess: () => {
+            router.push(callbackURL)
+          },
+        },
       })
-      if (error) throw new Error(error.message ?? "Failed to sign in.")
-      return data
-    },
-    onSuccess: () => {
-      router.push(callbackURL)
     },
   })
 
@@ -59,6 +106,10 @@ export const SignInForm: FunctionComponent<SignInFormProps> = ({ callbackURL = "
       const { data, error } = await authClient.signIn.social({
         provider: "facebook",
         callbackURL: new URL(callbackURL, window.location.origin).toString(),
+        // Same reasoning as callbackURL - must be absolute. better-auth
+        // appends "?error=<code>" itself, which this form reads back via
+        // the `error` prop to show a message (e.g. disableSignUp rejections).
+        errorCallbackURL: new URL("/auth/sign-in", window.location.origin).toString(),
       })
       if (error) throw new Error(error.message ?? "Failed to sign in with Facebook.")
       return data
@@ -85,6 +136,13 @@ export const SignInForm: FunctionComponent<SignInFormProps> = ({ callbackURL = "
         <CardDescription>Sign in with your Facebook account</CardDescription>
       </CardHeader>
       <CardContent>
+        {oauthErrorMessage && (
+          <Alert variant="destructive" className="mb-6">
+            <InfoIcon />
+            <AlertTitle>No account found</AlertTitle>
+            <AlertDescription>{oauthErrorMessage}</AlertDescription>
+          </Alert>
+        )}
         <form
           id="credentials-signin-form"
           className="space-y-7"
@@ -107,9 +165,7 @@ export const SignInForm: FunctionComponent<SignInFormProps> = ({ callbackURL = "
               </svg>
               Continue with Facebook
             </Button>
-            {facebookSignIn.isError && (
-              <FieldError>{facebookSignIn.error.message}</FieldError>
-            )}
+            {facebookSignIn.isError && <FieldError>{facebookSignIn.error.message}</FieldError>}
           </FieldGroup>
 
           <FieldSeparator className="mb-7 *:data-[slot=field-separator-content]:bg-card">
@@ -165,9 +221,7 @@ export const SignInForm: FunctionComponent<SignInFormProps> = ({ callbackURL = "
               }}
             </SignInForm.Field>
 
-            {emailSignIn.isError && (
-              <FieldError>{emailSignIn.error.message}</FieldError>
-            )}
+            {emailSignIn.isError && <FieldError>{emailSignIn.error.message}</FieldError>}
           </FieldGroup>
         </form>
       </CardContent>

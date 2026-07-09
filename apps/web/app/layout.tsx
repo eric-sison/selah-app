@@ -5,6 +5,7 @@ import { QueryProvider } from "@/components/QueryProvider"
 import { ThemeProvider } from "@/components/ThemeProvider"
 import { cn } from "@workspace/ui/lib/utils"
 import "@workspace/ui/globals.css"
+import { Toaster } from "@workspace/ui/components/Sonner"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: Readonly<PropsWithChildren>) {
       className={cn("font-sans antialiased", fontMono.variable, inter.variable)}
     >
       <body className="h-dvh w-screen">
+        <Toaster />
         <QueryProvider>
           <ThemeProvider>
             <FacebookOAuthFragmentCleanup />
