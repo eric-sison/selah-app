@@ -53,9 +53,12 @@ export const SignInForm: FunctionComponent<SignInFormProps> = ({ callbackURL = "
 
   const facebookSignIn = useMutation({
     mutationFn: async () => {
+      // Unlike email sign-in, this redirect is issued by the API server
+      // itself after Facebook's callback - callbackURL must be absolute to
+      // the web app's origin, or the API redirects to its own origin instead.
       const { data, error } = await authClient.signIn.social({
         provider: "facebook",
-        callbackURL,
+        callbackURL: new URL(callbackURL, window.location.origin).toString(),
       })
       if (error) throw new Error(error.message ?? "Failed to sign in with Facebook.")
       return data
