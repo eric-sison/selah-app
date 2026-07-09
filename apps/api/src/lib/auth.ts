@@ -1,8 +1,13 @@
-import { betterAuth } from "better-auth"
+import { APIError, betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
+import { createAuthMiddleware } from "better-auth/api"
 import { admin } from "better-auth/plugins"
 import { db } from "../db/index.js"
 import { env } from "../utils/env.js"
+import {
+  getValidInvitationByToken,
+  markInvitationAccepted,
+} from "../services/invitations.js"
 import { sendMail } from "./mailer.js"
 import * as schema from "../db/schema.js"
 
@@ -62,6 +67,10 @@ export const auth = betterAuth({
       // Only link via an explicit authClient.linkSocial() call from an
       // already-authenticated session, never implicitly during sign-in.
       disableImplicitLinking: true,
+      // Facebook doesn't reliably return emailVerified:true on its OAuth
+      // profile. Without trusting it here, every link-social call fails
+      // with "unable_to_link_account" regardless of the account linked.
+      trustedProviders: ["facebook"],
     },
   },
   advanced: {
@@ -73,5 +82,30 @@ export const auth = betterAuth({
         name: "_st",
       },
     },
+  },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/sign-up/email") return
+
+      const token = ctx.query?.token
+      if (typeof token !== "string") {
+        throw new APIError("BAD_REQUEST", {
+          message: "An invitation link is required to sign up.",
+        })
+      }
+
+      const invitation = await getValidInvitationByToken(token)
+      if (!invitation || invitation.email !== ctx.body?.email) {
+        throw new APIError("FORBIDDEN", {
+          message: "This invitation is invalid or has expired.",
+        })
+      }
+
+      // Marked accepted here rather than after sign-up succeeds, since
+      // there's no reliable per-request "after" hook available for this -
+      // a failed sign-up past this point (e.g. duplicate email) means the
+      // invite must be re-issued.
+      await markInvitationAccepted(invitation.id)
+    }),
   },
 })

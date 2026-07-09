@@ -10,6 +10,7 @@ import { auth } from "./lib/auth.js"
 import { env } from "./utils/env.js"
 import { authSession } from "./middleware/auth-session.js"
 import { healthcheckHandler } from "./routes/health.js"
+import { invitationsHandler } from "./routes/invitations.js"
 
 const app = new OpenAPIHono<RequestContext>().basePath("/api")
 
@@ -21,7 +22,7 @@ app.use(authSession)
 
 app.on(["POST", "GET"], "/auth/*", (c) => auth.handler(c.req.raw))
 
-const routes = [healthcheckHandler] as const
+const routes = [healthcheckHandler, invitationsHandler] as const
 routes.forEach((route) => app.route("/", route))
 
 app.doc("/docs/spec", {
