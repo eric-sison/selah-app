@@ -1,21 +1,13 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { isSafeRedirectTarget } from "@/utils/is-safe-redirect"
 
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? "_ssid"
 
 const PUBLIC_PATHS = ["/auth"]
 
 function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`)
-  )
-}
-
-function isSafeRedirectTarget(target: string | null): target is string {
-  // Must be a same-origin relative path. Rejects absolute/protocol-relative
-  // URLs (e.g. "//evil.com") so the redirect param can't be used to send
-  // signed-in users off-site.
-  return !!target && target.startsWith("/") && !target.startsWith("//")
+  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
 }
 
 // Bulk, path-based gate: unlisted paths are protected by default so new
@@ -29,12 +21,7 @@ export function proxy(request: NextRequest) {
   if (isPublicPath(pathname)) {
     if (hasSession) {
       const redirectTo = request.nextUrl.searchParams.get("redirect")
-      return NextResponse.redirect(
-        new URL(
-          isSafeRedirectTarget(redirectTo) ? redirectTo : "/",
-          request.url
-        )
-      )
+      return NextResponse.redirect(new URL(isSafeRedirectTarget(redirectTo) ? redirectTo : "/", request.url))
     }
     return NextResponse.next()
   }
