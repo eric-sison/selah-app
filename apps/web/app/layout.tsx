@@ -1,6 +1,5 @@
 import { type PropsWithChildren } from "react"
 import { Geist_Mono, Inter } from "next/font/google"
-import { FacebookOAuthFragmentCleanup } from "@/components/FacebookOAuthFragmentCleanup"
 import { QueryProvider } from "@/components/QueryProvider"
 import { ThemeProvider } from "@/components/ThemeProvider"
 import { cn } from "@workspace/ui/lib/utils"
@@ -24,10 +23,7 @@ export default function RootLayout({ children }: Readonly<PropsWithChildren>) {
       <body className="h-dvh w-screen">
         <Toaster />
         <QueryProvider>
-          <ThemeProvider>
-            <FacebookOAuthFragmentCleanup />
-            {children}
-          </ThemeProvider>
+          <ThemeProvider>{children}</ThemeProvider>
         </QueryProvider>
       </body>
     </html>
