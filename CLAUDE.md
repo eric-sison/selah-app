@@ -70,6 +70,13 @@ export const UserCard: FunctionComponent<UserCardProps> = () => {
 }
 ```
 
+Use Pascal case for naming component files
+
+```tsx
+ThemeProvider.tsx
+SessionProvider.tsx
+```
+
 Do not use:
 
 ```tsx
