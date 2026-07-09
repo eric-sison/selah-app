@@ -1,7 +1,7 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import type { RequestContext } from "../types/request-context.js"
 import { requireAdmin } from "../middleware/require-admin.js"
-import { commonErrors, jsonBody, jsonResponse } from "../utils/error-reponses.js"
+import { commonErrors, defaultHook, jsonBody, jsonResponse } from "../utils/error-reponses.js"
 import {
   createInvitation,
   getValidInvitationByToken,
@@ -55,7 +55,7 @@ const getInvitationRoute = createRoute({
   },
 })
 
-export const invitationsHandler = new OpenAPIHono<RequestContext>()
+export const invitationsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
   .openapi(createInvitationRoute, async (c) => {
     // requireAdmin guarantees this is non-null.
     const user = c.get("user")!

@@ -1,4 +1,15 @@
+import type { Hook } from "@hono/zod-openapi"
 import { z } from "@hono/zod-openapi"
+import type { RequestContext } from "../types/request-context.js"
+
+// Throws so validation failures reach app.onError(errorHandler) and get the
+// standard {status, message, details} shape instead of zValidator's default
+// {success, error, data} response.
+export const defaultHook: Hook<unknown, RequestContext, string, void> = (result) => {
+  if (!result.success) {
+    throw result.error
+  }
+}
 
 export const jsonBody = <T extends z.ZodType>(schema: T) => ({
   body: {

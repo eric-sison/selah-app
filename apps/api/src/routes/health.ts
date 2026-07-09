@@ -1,6 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import type { RequestContext } from "../types/request-context.js"
-import { commonErrors, jsonResponse } from "../utils/error-reponses.js"
+import { commonErrors, defaultHook, jsonResponse } from "../utils/error-reponses.js"
 
 export const HealthCheckResponseSchema = z.object({
   status: z.number().openapi({
@@ -42,7 +42,7 @@ const healthCheckRoute = createRoute({
   },
 })
 
-export const healthcheckHandler = new OpenAPIHono<RequestContext>().openapi(
+export const healthcheckHandler = new OpenAPIHono<RequestContext>({ defaultHook }).openapi(
   healthCheckRoute,
   (c) => {
     return c.json({

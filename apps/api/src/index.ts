@@ -11,8 +11,10 @@ import { env } from "./utils/env.js"
 import { authSession } from "./middleware/auth-session.js"
 import { healthcheckHandler } from "./routes/health.js"
 import { invitationsHandler } from "./routes/invitations.js"
+import { errorHandler } from "./middleware/error-handler.js"
+import { defaultHook, ErrorMessages } from "./utils/error-reponses.js"
 
-const app = new OpenAPIHono<RequestContext>().basePath("/api")
+const app = new OpenAPIHono<RequestContext>({ defaultHook }).basePath("/api")
 
 app.use(secureHeaders())
 app.use(cors())
@@ -22,6 +24,10 @@ app.use(authSession)
 
 app.on(["POST", "GET"], "/auth/*", (c) => auth.handler(c.req.raw))
 
+// Handle errors thrown globally
+app.onError(errorHandler)
+app.notFound((c) => c.json({ status: 404, message: ErrorMessages[404] }, 404))
+
 const routes = [healthcheckHandler, invitationsHandler] as const
 routes.forEach((route) => app.route("/", route))
 
@@ -29,8 +35,7 @@ app.doc("/docs/spec", {
   openapi: "3.0.0",
   info: {
     title: "Selah API",
-    description:
-      "This API provides access to application resources and operations.",
+    description: "This API provides access to application resources and operations.",
     version: "1.0.0",
   },
 })
