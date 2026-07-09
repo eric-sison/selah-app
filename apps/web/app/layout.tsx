@@ -1,8 +1,9 @@
-import { Geist, Geist_Mono, Inter } from "next/font/google"
-
-import "@workspace/ui/globals.css"
+import { type PropsWithChildren } from "react"
+import { Geist_Mono, Inter } from "next/font/google"
+import { QueryProvider } from "@/components/QueryProvider"
 import { ThemeProvider } from "@/components/ThemeProvider"
 import { cn } from "@workspace/ui/lib/utils"
+import "@workspace/ui/globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -11,24 +12,17 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }: Readonly<PropsWithChildren>) {
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn(
-        "antialiased",
-        fontMono.variable,
-        "font-sans",
-        inter.variable
-      )}
+      className={cn("font-sans antialiased", fontMono.variable, inter.variable)}
     >
-      <body>
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className="h-dvh w-screen">
+        <QueryProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   )
