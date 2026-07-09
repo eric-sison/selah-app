@@ -2,12 +2,17 @@
 
 ## Project Structure
 
-This repository is a monorepo.
+This repository is a pnpm + Turborepo monorepo.
 
 ```
 apps/
-├── web    # Next.js frontend
-└── api    # Backend API
+├── web       # Next.js frontend (App Router)
+└── api       # Hono backend
+packages/
+├── ui                 # @workspace/ui — shared shadcn-based components (Tailwind v4)
+├── eslint-config       # @workspace/eslint-config
+└── typescript-config   # @workspace/typescript-config
+docker-compose.yml       # local Postgres for apps/api
 ```
 
 Always determine which application you are working in before making changes.
@@ -19,10 +24,34 @@ Always determine which application you are working in before making changes.
 - Follow the existing code style of the surrounding files.
 - Prefer modifying existing code over introducing new abstractions.
 - Keep implementations simple and readable.
-- Avoid unnecessary comments. Write self-documenting code instead.
+- Avoid comments that restate what the code already says. Short "why, not what"
+  comments explaining a non-obvious decision, constraint, or workaround are
+  expected and used throughout the codebase (e.g.
+  [require-admin.ts](apps/api/src/middleware/require-admin.ts),
+  [proxy.ts](apps/web/proxy.ts)) — keep that pattern, don't strip it out.
 - Do not introduce `any` unless explicitly requested.
 - Preserve strict TypeScript typings.
-- Use named exports unless a framework convention requires otherwise.
+- Use named exports unless a framework convention requires otherwise (Next.js
+  page components are the main exception — see below).
+- There is no test framework configured anywhere in this repo (no vitest/jest,
+  no `*.test.ts`). Don't invent test conventions or add test files unless
+  explicitly asked to set testing up.
+
+---
+
+## Git Commits
+
+Conventional commits with scope, lowercase after the colon:
+
+```
+feat(api): added global error handling
+feat(auth): completed the auth flow
+chore(web): re-arrange imports
+chore: changed children type to PropsWithChildren
+```
+
+Use `feat`/`fix`/`chore` (and others as needed) with an `(api)`/`(web)`/`(auth)`
+scope when the change is localized; omit the scope for cross-cutting changes.
 
 ---
 
@@ -111,12 +140,196 @@ export const Button: FunctionComponent<ButtonProps> = ({ children }) => {
 
 ---
 
+## UI Components (`@workspace/ui`)
+
+Shared, design-system-level components live in `packages/ui/src/components`
+(e.g. `Button`, `Card`, `Field`, `Input`, `Sonner`) and are consumed via
+subpath imports, not a barrel file:
+
+```tsx
+import { Button } from "@workspace/ui/components/Button"
+```
+
+- Add genuinely reusable, presentation-only components to `packages/ui`.
+  Feature-specific components (forms, page sections) stay in
+  `apps/web/components`.
+- The package is Tailwind v4 + `class-variance-authority` + `@base-ui/react`
+  (shadcn-style). Match that pattern for new shared components rather than
+  introducing a different styling approach.
+- `apps/web` marks it `transpilePackages: ["@workspace/ui"]` in
+  `next.config.ts` — new components don't need extra wiring beyond that.
+
+---
+
+## Auth & Sessions
+
+Two-layer defense, both required for a new protected route group — don't rely
+on just one:
+
+1. **Edge (cheap, optimistic):** [proxy.ts](apps/web/proxy.ts) is Next
+   middleware that only checks for the presence of the session cookie
+   (`_ssid`, matching the API's custom cookie name in
+   [auth.ts](apps/api/src/lib/auth.ts)). It redirects unauthenticated users to
+   `/auth/sign-in?redirect=...` and bounces authenticated users away from
+   `/auth/*`. It cannot validate the session — it only knows the cookie
+   exists.
+2. **Server (real validation):** [lib/session.ts](apps/web/lib/session.ts)'s
+   `getServerSession()` (wrapped in React `cache()` for per-request dedup)
+   calls the API's `/api/auth/get-session` with forwarded cookies;
+   `verifySession()` redirects if null. Protected layouts (e.g.
+   `app/(protected)/layout.tsx`) call this and wrap children in
+   `SessionProvider` (`components/SessionProvider.tsx`) so client components
+   can read the session via `useSession()` without refetching.
+
+Client-side auth actions (sign in/up, social, link account) go through
+[lib/auth-client.ts](apps/web/lib/auth-client.ts) (`better-auth/react`), not
+manual API calls.
+
+---
+
+## Data Fetching & Forms
+
+- Use TanStack Query (`useMutation`/`useQuery`) for all API interaction from
+  client components — never fetch-on-render via `useEffect`. `QueryProvider`
+  creates one `QueryClient` per component instance (`useState(() => new
+QueryClient())`) to avoid cross-request state leakage; follow that when
+  adding providers.
+- Forms use TanStack Form (`@tanstack/react-form`), consistent across
+  `SignInForm.tsx`, `SignUpForm.tsx`, `InviteForm.tsx`: a Zod schema passed as
+  `validators: { onSubmit: schema }`, `defaultValues`, and `onSubmit`
+  delegating to a `useMutation`'s `mutateAsync`. Field rendering uses
+  `@workspace/ui`'s `Field`/`FieldLabel`/`FieldError`/`FieldGroup` with:
+
+  ```ts
+  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+  ```
+
+  Match this shape for new forms rather than introducing a different form
+  library or validation pattern.
+
+---
+
+## Calling the API
+
+`web` calls typed JSON endpoints through the generated client, not raw
+`fetch` (server-only concerns like reading the session cookie in
+[lib/session.ts](apps/web/lib/session.ts) are the deliberate exception —
+that endpoint isn't part of the OpenAPI-described contract surface):
+
+```ts
+import { apiClient } from "@/lib/api-client"
+
+const { data, error } = await apiClient.GET("/api/invitations/{token}", {
+  params: { path: { token } },
+})
+```
+
+- `apps/web/lib/api-client.ts` — the `openapi-fetch` client (`apiClient`),
+  typed against the API's OpenAPI spec.
+- `apps/web/types/api.ts` — generated `paths`/`operations` types. **Do not
+  hand-edit this file.**
+- After adding or changing a route in `apps/api`, regenerate both from the
+  repo root: `pnpm openapi:generate`. Commit the regenerated files — they're
+  checked in, not gitignored, so `web` can build without needing the API's
+  env vars available.
+- Known exception not yet cleaned up: `components/InviteForm.tsx` currently
+  calls `fetch("/api/invitations", ...)` directly instead of `apiClient`. Follow
+  the `apiClient` pattern for new code regardless.
+
+---
+
 # apps/api
 
 - Prefer named exports.
 - Keep business logic out of route handlers whenever practical.
 - Validate external input before processing.
 - Maintain strong TypeScript types throughout the request lifecycle.
+
+## Layering
+
+`route → service → db`. Routes ([routes/invitations.ts](apps/api/src/routes/invitations.ts))
+define the Zod-OpenAPI contract and a thin handler; business logic lives in
+`services/*.ts` (e.g. `services/invitations.ts`); services call `db`
+(Drizzle) directly. Don't put query logic or business rules in route
+handlers — add or extend a service function instead.
+
+## Request Context & Middleware
+
+Every route/middleware shares one Hono generic,
+[types/request-context.ts](apps/api/src/types/request-context.ts)'s
+`RequestContext` (`Variables: { logger, user, session }`). Use
+`Context<RequestContext>` / `createMiddleware<RequestContext>` for any new
+middleware or handler rather than an ad hoc context type.
+
+- `middleware/auth-session.ts` runs globally, resolves the session, and sets
+  `user`/`session` to `null` on failure rather than rejecting — it does not
+  enforce auth.
+- `middleware/require-auth.ts` throws `HTTPException(401)` if there's no user;
+  `middleware/require-admin.ts` is self-contained (not composed from
+  `requireAuth`) so it 401s before it 403s. Attach these via
+  `createRoute({ middleware: [...] })` on individual routes, not `app.use`.
+
+## Error Handling
+
+Errors are centralized in
+[middleware/error-handler.ts](apps/api/src/middleware/error-handler.ts),
+branching in this order: `ZodError` → 422 (`z.treeifyError`) → `better-auth`'s
+`APIError` → its status → `HTTPException` → its status → fallback 500 (stack
+trace only outside production). Every response uses the shared
+`{status, message, code?}` shape (`ErrorResponseSchema` in
+[error-reponses.ts](apps/api/src/utils/error-reponses.ts)). When adding a
+route, reuse `jsonBody`/`jsonResponse`/`commonErrors` from that file for
+request/response schemas instead of writing shapes inline, and let unexpected
+errors bubble up to `onError` rather than catching and reformatting them
+locally.
+
+## Environment Variables
+
+Validate env with a single Zod schema, `safeParse`d once at module load,
+throwing on failure — see [utils/env.ts](apps/api/src/utils/env.ts) (and
+`AdminSeedEnvSchema` in `scripts/seed-admin.ts` for a script-scoped example).
+New env vars go through this schema, not `process.env` accessed directly at
+the call site.
+
+## Routes & OpenAPI
+
+- Routes are defined with `createRoute` + `OpenAPIHono` from
+  `@hono/zod-openapi` (see
+  [invitations.ts](apps/api/src/routes/invitations.ts)), not plain Hono
+  handlers — this is what generates the OpenAPI spec `web` relies on for
+  typed API calls.
+- `src/app.ts` builds and exports the `OpenAPIHono` app (routes, middleware,
+  the `/api/docs` Scalar UI); `src/index.ts` only imports it and calls
+  `serve`. Keep it this way — `src/scripts/generate-openapi-spec.ts` imports
+  `app.ts` directly so it can produce `openapi.json` without booting a
+  server.
+- Every new/changed route needs `pnpm openapi:generate` (from repo root)
+  rerun and its output committed, or `web`'s generated types go stale.
+
+## Database
+
+Drizzle ORM over `pg` (`drizzle-orm/node-postgres`), config in
+[drizzle.config.ts](apps/api/drizzle.config.ts). Schema is split across
+[db/schema.ts](apps/api/src/db/schema.ts) (better-auth-owned tables: `user`,
+`session`, `account`, `verification`) and
+[db/app-schema.ts](apps/api/src/db/app-schema.ts) (app-owned tables, e.g.
+`invitation`, importing `user` from `schema.ts` for FKs);
+[db/index.ts](apps/api/src/db/index.ts) merges both into one `db` client.
+
+Conventions to follow for new tables:
+
+- SQL columns are `snake_case`, mapped from `camelCase` JS fields.
+- `id: text().primaryKey()`, app-generated via `randomUUID()` — not a serial
+  column.
+- `createdAt`/`updatedAt` use `.defaultNow()` and `.$onUpdate(() => new Date())`.
+- Declare `relations(...)` separately per table.
+- Index FK columns (see `session_userId_idx`, `account_userId_idx`).
+
+Workflow: `pnpm db:generate` (drizzle-kit generate) → `pnpm db:migrate`.
+Migrations are committed under `src/db/migrations` — never hand-edit a
+generated migration file. `pnpm db:studio` for local inspection;
+`pnpm db:seed:admin` seeds an admin user from `ADMIN_EMAIL`/`PASSWORD`/`NAME`
+env vars (requires local Postgres via `docker-compose.yml`).
 
 ---
 
@@ -126,6 +339,11 @@ export const Button: FunctionComponent<ButtonProps> = ({ children }) => {
 - Prefer `type` for unions, mapped types, and utility types.
 - Avoid `as` casts unless unavoidable.
 - Prefer explicit return types for exported functions.
+- Both `apps/api` and `apps/web` extend `@workspace/typescript-config` with
+  `strict: true` and `noUncheckedIndexedAccess: true` — don't work around
+  either with non-null assertions unless a comment explains why it's safe
+  (see the `requireAdmin`-guarantees-non-null pattern in
+  [invitations.ts](apps/api/src/routes/invitations.ts)).
 
 ---
 
@@ -148,6 +366,11 @@ export const Button: FunctionComponent<ButtonProps> = ({ children }) => {
 - Prefer early returns over nested conditionals.
 - Avoid deeply nested logic.
 - Extract repeated logic into reusable utilities.
+- No semicolons, double quotes, 110-char print width (Prettier, `.prettierrc`
+  — run `pnpm format` rather than hand-formatting).
+- `apps/api` and `apps/web` internal files use kebab-case (`error-handler.ts`,
+  `auth-session.ts`, `api-client.ts`); component files are PascalCase (see
+  React Components above).
 
 ---
 
