@@ -46,14 +46,14 @@ export const SIDEBAR_CONTENT_ITEMS = (_userId?: string): SidebarItem[] => [
       {
         id: "general-song-bank",
         title: "Song Bank",
-        path: "/apps",
+        path: "/song-bank",
         icon: Music,
         subItems: [],
       },
       {
         id: "general-musicians",
         title: "Musicians",
-        path: "/users",
+        path: "/musicians",
         icon: Users,
         subItems: [],
       },

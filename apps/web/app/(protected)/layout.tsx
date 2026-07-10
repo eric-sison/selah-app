@@ -1,21 +1,18 @@
+import type { CSSProperties, PropsWithChildren } from "react"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { getServerSession } from "@/lib/session"
 import { SessionProvider } from "@/components/SessionProvider"
 import { AppSidebar } from "@/components/AppSidebar"
-import { routeMap } from "@/utils/route-metadata"
+import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
 import { SidebarInset, SidebarProvider } from "@workspace/ui/components/Sidebar"
-import { Page, PageBreadcrumb, PageContent } from "@workspace/ui/components/Page"
-import { type CSSProperties, type PropsWithChildren } from "react"
+import { Page, PageContent } from "@workspace/ui/components/Page"
 
 export default async function ProtectedLayout({ children }: Readonly<PropsWithChildren>) {
   const session = await getServerSession()
-  const pathname = (await headers()).get("x-pathname") ?? "/"
-  // x-pathname carries the query string too (needed so the sign-in redirect
-  // round-trips it) - PageBreadcrumb only wants the path segments.
-  const pathnameOnly = pathname.split("?").at(0) ?? pathname
 
   if (!session) {
+    const pathname = (await headers()).get("x-pathname") ?? "/"
     redirect(`/session-expired?redirect=${encodeURIComponent(pathname)}`)
   }
 
@@ -25,7 +22,7 @@ export default async function ProtectedLayout({ children }: Readonly<PropsWithCh
         <AppSidebar variant="sidebar" />
         <SidebarInset>
           <Page>
-            <PageBreadcrumb pathname={pathnameOnly} routes={routeMap} />
+            <PageBreadcrumbNav />
             <PageContent>{children}</PageContent>
           </Page>
         </SidebarInset>
