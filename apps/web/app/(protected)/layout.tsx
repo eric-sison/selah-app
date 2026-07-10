@@ -11,6 +11,9 @@ import { type CSSProperties, type PropsWithChildren } from "react"
 export default async function ProtectedLayout({ children }: Readonly<PropsWithChildren>) {
   const session = await getServerSession()
   const pathname = (await headers()).get("x-pathname") ?? "/"
+  // x-pathname carries the query string too (needed so the sign-in redirect
+  // round-trips it) - PageBreadcrumb only wants the path segments.
+  const pathnameOnly = pathname.split("?").at(0) ?? pathname
 
   if (!session) {
     redirect(`/session-expired?redirect=${encodeURIComponent(pathname)}`)
@@ -22,7 +25,7 @@ export default async function ProtectedLayout({ children }: Readonly<PropsWithCh
         <AppSidebar variant="sidebar" />
         <SidebarInset>
           <Page>
-            <PageBreadcrumb pathname={pathname} routes={routeMap} />
+            <PageBreadcrumb pathname={pathnameOnly} routes={routeMap} />
             <PageContent>{children}</PageContent>
           </Page>
         </SidebarInset>
