@@ -32,7 +32,7 @@ export const getServerSession = cache(async (): Promise<Session | null> => {
 export async function verifySession(): Promise<Session> {
   const session = await getServerSession()
 
-  if (!session) redirect("/auth/sign-in")
+  if (!session) redirect("/session-expired")
 
   return session
 }

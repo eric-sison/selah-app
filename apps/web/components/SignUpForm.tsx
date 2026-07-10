@@ -12,13 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/Card"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@workspace/ui/components/Field"
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@workspace/ui/components/Field"
 import { Input } from "@workspace/ui/components/Input"
 import { toast } from "@workspace/ui/components/Sonner"
 import { FunctionComponent } from "react"
@@ -117,8 +111,7 @@ export const SignUpForm: FunctionComponent<SignUpFormProps> = ({ email, token })
           <CheckCircle2Icon className="mx-auto mb-2 size-8 text-primary" />
           <CardTitle>Check your email</CardTitle>
           <CardDescription>
-            We sent a verification link to {email}. Verify your address to finish setting up your
-            account.
+            We sent a verification link to {email}. Verify your address to finish setting up your account.
           </CardDescription>
         </CardHeader>
       </Card>

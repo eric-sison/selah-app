@@ -2,13 +2,7 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { Button } from "@workspace/ui/components/Button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/Card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/Card"
 import { toast } from "@workspace/ui/components/Sonner"
 import { FunctionComponent } from "react"
 import { authClient } from "@/lib/auth-client"
@@ -46,22 +40,15 @@ export const LinkedAccounts: FunctionComponent = () => {
     <Card className="w-sm">
       <CardHeader>
         <CardTitle>Connected accounts</CardTitle>
-        <CardDescription>
-          Link your Facebook account so you can sign in with it next time.
-        </CardDescription>
+        <CardDescription>Link your Facebook account so you can sign in with it next time.</CardDescription>
       </CardHeader>
       <CardContent>
         {accounts.isLoading ? (
-          <p className="text-muted-foreground text-sm">Loading...</p>
+          <p className="text-sm text-muted-foreground">Loading...</p>
         ) : isFacebookLinked ? (
-          <p className="text-muted-foreground text-sm">Your Facebook account is linked.</p>
+          <p className="text-sm text-muted-foreground">Your Facebook account is linked.</p>
         ) : (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => linkFacebook.mutate()}
-            disabled={linkFacebook.isPending}
-          >
+          <Button type="button" onClick={() => linkFacebook.mutate()} disabled={linkFacebook.isPending}>
             {linkFacebook.isPending ? "Redirecting..." : "Link Facebook account"}
           </Button>
         )}

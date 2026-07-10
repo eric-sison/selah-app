@@ -2,15 +2,31 @@ import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { getServerSession } from "@/lib/session"
 import { SessionProvider } from "@/components/SessionProvider"
-import { type PropsWithChildren } from "react"
+import { AppSidebar } from "@/components/AppSidebar"
+import { routeMap } from "@/utils/route-metadata"
+import { SidebarInset, SidebarProvider } from "@workspace/ui/components/Sidebar"
+import { Page, PageBreadcrumb, PageContent } from "@workspace/ui/components/Page"
+import { type CSSProperties, type PropsWithChildren } from "react"
 
 export default async function ProtectedLayout({ children }: Readonly<PropsWithChildren>) {
   const session = await getServerSession()
+  const pathname = (await headers()).get("x-pathname") ?? "/"
 
   if (!session) {
-    const pathname = (await headers()).get("x-pathname") ?? "/"
-    redirect(`/auth/sign-in?redirect=${encodeURIComponent(pathname)}`)
+    redirect(`/session-expired?redirect=${encodeURIComponent(pathname)}`)
   }
 
-  return <SessionProvider value={session}>{children}</SessionProvider>
+  return (
+    <SessionProvider value={session}>
+      <SidebarProvider style={{ "--sidebar-width": "15rem" } as CSSProperties}>
+        <AppSidebar variant="sidebar" />
+        <SidebarInset>
+          <Page>
+            <PageBreadcrumb pathname={pathname} routes={routeMap} />
+            <PageContent>{children}</PageContent>
+          </Page>
+        </SidebarInset>
+      </SidebarProvider>
+    </SessionProvider>
+  )
 }

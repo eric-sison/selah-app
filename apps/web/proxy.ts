@@ -2,8 +2,6 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { isSafeRedirectTarget } from "@/utils/is-safe-redirect"
 
-const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? "_ssid"
-
 // Auth pages: public only while signed out - a signed-in visitor is bounced
 // away from them (see below).
 const AUTH_PATHS = ["/auth"]
@@ -18,7 +16,7 @@ function matchesPath(pathname: string, paths: string[]): boolean {
 // happens in the layouts/DAL closer to the actual data.
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl
-  const hasSession = request.cookies.has(SESSION_COOKIE_NAME)
+  const hasSession = request.cookies.has("_ssid")
 
   if (matchesPath(pathname, AUTH_PATHS)) {
     if (hasSession) {

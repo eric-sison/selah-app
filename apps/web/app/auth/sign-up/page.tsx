@@ -30,9 +30,7 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-semibold">Invalid or expired invitation</h1>
-          <p className="text-muted-foreground mt-2">
-            Contact your admin to request a new invitation link.
-          </p>
+          <p className="mt-2 text-muted-foreground">Contact your admin to request a new invitation link.</p>
         </div>
       </div>
     )

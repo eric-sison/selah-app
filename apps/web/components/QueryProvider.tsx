@@ -9,9 +9,7 @@ interface QueryProviderProps {
   children: ReactNode
 }
 
-export const QueryProvider: FunctionComponent<QueryProviderProps> = ({
-  children,
-}) => {
+export const QueryProvider: FunctionComponent<QueryProviderProps> = ({ children }) => {
   // One client per component instance so server-rendered query state stays
   // scoped to a single request instead of leaking across users on a shared
   // module-level instance.
@@ -20,9 +18,7 @@ export const QueryProvider: FunctionComponent<QueryProviderProps> = ({
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {process.env.NODE_ENV === "development" && (
-        <ReactQueryDevtools initialIsOpen={false} />
-      )}
+      {process.env.NODE_ENV === "development" && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   )
 }

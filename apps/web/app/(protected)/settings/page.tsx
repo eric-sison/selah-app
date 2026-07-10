@@ -1,9 +1,16 @@
+import { PageDescription, PageHeader, PageTitle } from "@workspace/ui/components/Page"
 import { LinkedAccounts } from "@/components/LinkedAccounts"
+import { Fragment } from "react"
 
 export default function SettingsPage() {
   return (
-    <div className="flex h-full items-center justify-center">
+    <Fragment>
+      <PageHeader>
+        <PageTitle>Settings</PageTitle>
+        <PageDescription>Manage connected applications and their access permissions.</PageDescription>
+      </PageHeader>
+
       <LinkedAccounts />
-    </div>
+    </Fragment>
   )
 }

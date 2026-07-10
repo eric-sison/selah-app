@@ -11,13 +11,8 @@ interface SessionProviderProps {
   children: ReactNode
 }
 
-export const SessionProvider: FunctionComponent<SessionProviderProps> = ({
-  value,
-  children,
-}) => {
-  return (
-    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
-  )
+export const SessionProvider: FunctionComponent<SessionProviderProps> = ({ value, children }) => {
+  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }
 
 export function useSession() {

@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider"
 import { cn } from "@workspace/ui/lib/utils"
 import { Toaster } from "@workspace/ui/components/Sonner"
 import "@workspace/ui/globals.css"
+import { TooltipProvider } from "@workspace/ui/components/Tooltip"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -23,7 +24,9 @@ export default function RootLayout({ children }: Readonly<PropsWithChildren>) {
       <body className="h-dvh w-screen">
         <Toaster />
         <QueryProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </ThemeProvider>
         </QueryProvider>
       </body>
     </html>
