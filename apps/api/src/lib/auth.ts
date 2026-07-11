@@ -4,10 +4,7 @@ import { createAuthMiddleware } from "better-auth/api"
 import { admin } from "better-auth/plugins"
 import { db } from "../db/index.js"
 import { env } from "../utils/env.js"
-import {
-  getValidInvitationByToken,
-  markInvitationAccepted,
-} from "../services/invitations.js"
+import { getValidInvitationByToken, markInvitationAccepted } from "../services/invitations.js"
 import { sendMail } from "./mailer.js"
 import * as schema from "../db/schema.js"
 
@@ -24,6 +21,7 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
     schema,
+    usePlural: true,
   }),
   baseURL: {
     allowedHosts: env.ALLOWED_ORIGINS.map(toApiHost),

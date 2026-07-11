@@ -258,6 +258,291 @@
           }
         }
       }
+    },
+    "/api/songs": {
+      "post": {
+        "operationId": "createSong",
+        "tags": [
+          "Songs"
+        ],
+        "summary": "Upload a song",
+        "description": "Any authenticated user can upload a song's audio file and basic metadata.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "artist": {
+                    "type": "string"
+                  },
+                  "musicalKey": {
+                    "type": "string"
+                  },
+                  "tempo": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "album": {
+                    "type": "string"
+                  },
+                  "releaseDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "albumArt": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "title",
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Song uploaded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "artist": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "musicalKey": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "tempo": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "album": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "releaseDate": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "originalFileName": {
+                      "type": "string"
+                    },
+                    "mimeType": {
+                      "type": "string"
+                    },
+                    "fileSizeBytes": {
+                      "type": "number"
+                    },
+                    "uploader": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "artist",
+                    "musicalKey",
+                    "tempo",
+                    "album",
+                    "releaseDate",
+                    "originalFileName",
+                    "mimeType",
+                    "fileSizeBytes",
+                    "uploader",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload too large. Request body exceeds the maximum allowed size.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 413,
+                  "message": "Payload too large. Request body exceeds the maximum allowed size."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listSongs",
+        "tags": [
+          "Songs"
+        ],
+        "summary": "List uploaded songs",
+        "description": "Any authenticated user can list all uploaded songs.",
+        "responses": {
+          "200": {
+            "description": "List of songs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "artist": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "musicalKey": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "tempo": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "album": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "releaseDate": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "originalFileName": {
+                        "type": "string"
+                      },
+                      "mimeType": {
+                        "type": "string"
+                      },
+                      "fileSizeBytes": {
+                        "type": "number"
+                      },
+                      "uploader": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "title",
+                      "artist",
+                      "musicalKey",
+                      "tempo",
+                      "album",
+                      "releaseDate",
+                      "originalFileName",
+                      "mimeType",
+                      "fileSizeBytes",
+                      "uploader",
+                      "createdAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

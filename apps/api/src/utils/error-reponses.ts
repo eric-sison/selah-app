@@ -47,6 +47,7 @@ export const ErrorMessages = {
   404: "Not found. Resource does not exist.",
   409: "Conflict. Resource already exists.",
   410: "Gone. This resource is no longer available.",
+  413: "Payload too large. Request body exceeds the maximum allowed size.",
   422: "Unprocessable. Request body failed validation.",
   429: "Rate limited. Too many requests, try again later.",
   500: "Internal server error. Something went wrong.",
@@ -79,6 +80,10 @@ export const commonErrors = {
   410: jsonResponse(ErrorResponseSchema, ErrorMessages[410], {
     status: 410,
     message: ErrorMessages[410],
+  }),
+  413: jsonResponse(ErrorResponseSchema, ErrorMessages[413], {
+    status: 413,
+    message: ErrorMessages[413],
   }),
   422: jsonResponse(ErrorResponseSchema, ErrorMessages[422], {
     status: 422,

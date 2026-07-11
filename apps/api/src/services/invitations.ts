@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from "node:crypto"
+import { randomBytes } from "node:crypto"
 import { eq } from "drizzle-orm"
 import { db } from "../db/index.js"
 import { invitation } from "../db/app-schema.js"
@@ -40,7 +40,6 @@ export async function createInvitation({ email, invitedBy }: CreateInvitationInp
   const [created] = await db
     .insert(invitation)
     .values({
-      id: randomUUID(),
       email,
       token,
       invitedBy,

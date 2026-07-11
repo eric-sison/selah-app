@@ -25,6 +25,11 @@ const EnvSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().default("Selah <no-reply@selah.local>"),
+  S3_ENDPOINT: z.url(),
+  S3_REGION: z.string().default("garage"),
+  S3_ACCESS_KEY_ID: z.string().min(1),
+  S3_SECRET_ACCESS_KEY: z.string().min(1),
+  S3_BUCKET: z.string().default("selah-songs"),
 })
 
 export type Env = z.infer<typeof EnvSchema>
