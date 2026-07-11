@@ -6,7 +6,9 @@ export default function Schedules() {
     <Fragment>
       <PageHeader>
         <PageTitle>Schedules</PageTitle>
-        <PageDescription>Plan services, rehearsals, and set lists, and see what is coming up next.</PageDescription>
+        <PageDescription>
+          Plan services, rehearsals, and set lists, and see what is coming up next.
+        </PageDescription>
       </PageHeader>
     </Fragment>
   )

@@ -6,7 +6,9 @@ export default function Dashboard() {
     <Fragment>
       <PageHeader>
         <PageTitle>Dashboard</PageTitle>
-        <PageDescription>An overview of upcoming services, set lists, and musician availability.</PageDescription>
+        <PageDescription>
+          An overview of upcoming services, set lists, and musician availability.
+        </PageDescription>
       </PageHeader>
     </Fragment>
   )

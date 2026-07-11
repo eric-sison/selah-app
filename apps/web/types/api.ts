@@ -64,6 +64,30 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/api/songs": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List uploaded songs
+     * @description Any authenticated user can list all uploaded songs.
+     */
+    get: operations["listSongs"]
+    put?: never
+    /**
+     * Upload a song
+     * @description Any authenticated user can upload a song's audio file and basic metadata.
+     */
+    post: operations["createSong"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -263,6 +287,154 @@ export interface operations {
            * @example {
            *       "status": 404,
            *       "message": "Not found. Resource does not exist."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+    }
+  }
+  listSongs: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description List of songs. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": {
+            id: string
+            title: string
+            artist: string | null
+            musicalKey: string | null
+            tempo: number | null
+            album: string | null
+            releaseDate: string | null
+            originalFileName: string
+            mimeType: string
+            fileSizeBytes: number
+            uploader: {
+              id: string
+              name: string
+            }
+            createdAt: string
+          }[]
+        }
+      }
+      /** @description Unauthorized. Missing or invalid authentication. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 401,
+           *       "message": "Unauthorized. Missing or invalid authentication."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+    }
+  }
+  createSong: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "multipart/form-data": {
+          title: string
+          artist?: string
+          musicalKey?: string
+          tempo?: number
+          album?: string
+          /** Format: date */
+          releaseDate?: string
+          /** Format: binary */
+          file: string
+          /** Format: binary */
+          albumArt?: string
+        }
+      }
+    }
+    responses: {
+      /** @description Song uploaded. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": {
+            id: string
+            title: string
+            artist: string | null
+            musicalKey: string | null
+            tempo: number | null
+            album: string | null
+            releaseDate: string | null
+            originalFileName: string
+            mimeType: string
+            fileSizeBytes: number
+            uploader: {
+              id: string
+              name: string
+            }
+            createdAt: string
+          }
+        }
+      }
+      /** @description Unauthorized. Missing or invalid authentication. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 401,
+           *       "message": "Unauthorized. Missing or invalid authentication."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+      /** @description Payload too large. Request body exceeds the maximum allowed size. */
+      413: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 413,
+           *       "message": "Payload too large. Request body exceeds the maximum allowed size."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+      /** @description Unprocessable. Request body failed validation. */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 422,
+           *       "message": "Unprocessable. Request body failed validation."
            *     }
            */
           "application/json": components["schemas"]["ErrorResponse"]
