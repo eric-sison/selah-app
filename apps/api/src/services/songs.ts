@@ -104,6 +104,13 @@ export async function getSongDownloadUrl(id: string): Promise<string | null> {
   return getDownloadUrl(found.storageKey, found.originalFileName)
 }
 
+export async function getSongAlbumUrl(id: string): Promise<string | null> {
+  const found = await db.query.song.findFirst({ where: eq(song.id, id) })
+  if (!found || !found.albumArtStorageKey) return null
+
+  return getStreamUrl(found.albumArtStorageKey)
+}
+
 export async function deleteSong(id: string): Promise<boolean> {
   const found = await db.query.song.findFirst({ where: eq(song.id, id) })
   if (!found) return false

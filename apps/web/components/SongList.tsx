@@ -24,6 +24,7 @@ import { toast } from "@workspace/ui/components/Sonner"
 import { Spinner } from "@workspace/ui/components/Spinner"
 import { cn } from "@workspace/ui/lib/utils"
 import { CloudDownload, EllipsisVertical, Loader2, Music, Pause, Play, RedoDot, Trash } from "lucide-react"
+import Image from "next/image"
 import { FunctionComponent, MouseEvent, useState } from "react"
 import { apiClient } from "@/lib/api-client"
 import { useSession } from "@/components/SessionProvider"
@@ -32,6 +33,7 @@ import type { Song } from "@/components/MiniMusicPlayer"
 
 interface SongRowProps {
   song: Song
+  isActive: boolean
   isPlaying: boolean
   isLoadingAudio: boolean
   isDownloading: boolean
@@ -45,6 +47,7 @@ interface SongRowProps {
 
 const SongRow: FunctionComponent<SongRowProps> = ({
   song,
+  isActive,
   isPlaying,
   isLoadingAudio,
   isDownloading,
@@ -56,6 +59,18 @@ const SongRow: FunctionComponent<SongRowProps> = ({
   onDelete,
 }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+
+  const albumArt = useQuery({
+    queryKey: ["song-album-url", song.id],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/api/songs/{id}/album-url", {
+        params: { path: { id: song.id } },
+      })
+      if (error) throw new Error("Failed to load album art.")
+      return data.url
+    },
+    enabled: song.hasAlbumArt,
+  })
 
   const stop = (e: MouseEvent) => e.stopPropagation()
 
@@ -70,10 +85,23 @@ const SongRow: FunctionComponent<SongRowProps> = ({
           onSelect()
         }
       }}
-      className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted/50"
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted/50",
+        isActive && "bg-muted/30"
+      )}
     >
-      <div className="group relative flex size-11 shrink-0 items-center justify-center rounded-md bg-card opacity-70 ring-1 ring-foreground/10">
-        <Music className="size-5 text-muted-foreground" />
+      <div className="group relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-card opacity-70 ring-1 ring-foreground/10">
+        {albumArt.data ? (
+          <Image
+            src={albumArt.data}
+            alt={`${song.title} album art`}
+            fill
+            unoptimized
+            className="object-cover"
+          />
+        ) : (
+          <Music className="size-5 text-muted-foreground" />
+        )}
         <button
           type="button"
           aria-label={isPlaying ? "Pause" : "Play"}
@@ -255,6 +283,7 @@ export const SongList: FunctionComponent = () => {
         <SongRow
           key={song.id}
           song={song}
+          isActive={activeSongId === song.id}
           isPlaying={activeSongId === song.id && isPlaying}
           isLoadingAudio={isLoadingSongId === song.id}
           isDownloading={downloadingId === song.id}

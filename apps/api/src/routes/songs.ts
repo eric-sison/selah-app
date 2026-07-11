@@ -4,7 +4,14 @@ import type { RequestContext } from "../types/request-context.js"
 import { requireAdmin } from "../middleware/require-admin.js"
 import { requireAuth } from "../middleware/require-auth.js"
 import { commonErrors, defaultHook, jsonResponse } from "../utils/error-reponses.js"
-import { createSong, deleteSong, getSongDownloadUrl, getSongStreamUrl, listSongs } from "../services/songs.js"
+import {
+  createSong,
+  deleteSong,
+  getSongAlbumUrl,
+  getSongDownloadUrl,
+  getSongStreamUrl,
+  listSongs,
+} from "../services/songs.js"
 
 const MAX_FILE_SIZE_BYTES = 30 * 1024 * 1024
 const ALLOWED_MIME_TYPES = ["audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp4", "audio/ogg", "audio/flac"]
@@ -43,6 +50,7 @@ const SongResponseSchema = z.object({
   originalFileName: z.string(),
   mimeType: z.string(),
   fileSizeBytes: z.number(),
+  hasAlbumArt: z.boolean(),
   uploader: z.object({ id: z.string(), name: z.string() }),
   createdAt: z.string(),
 })
@@ -128,6 +136,25 @@ const getSongDownloadUrlRoute = createRoute({
   },
 })
 
+const getSongAlbumUrlRoute = createRoute({
+  method: "get",
+  path: "/songs/{id}/album-url",
+  operationId: "getSongAlbumUrl",
+  tags: ["Songs"],
+  summary: "Get a temporary URL for a song's album art",
+  description:
+    "Any authenticated user can request a short-lived, signed URL for a song's album art image, if one was uploaded.",
+  middleware: [requireAuth] as const,
+  request: {
+    params: z.object({ id: z.uuid() }),
+  },
+  responses: {
+    200: jsonResponse(SignedUrlResponseSchema, "Signed album art URL."),
+    401: commonErrors[401],
+    404: commonErrors[404],
+  },
+})
+
 const deleteSongRoute = createRoute({
   method: "delete",
   path: "/songs/{id}",
@@ -186,6 +213,7 @@ export const songsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
         originalFileName: created.originalFileName,
         mimeType: created.mimeType,
         fileSizeBytes: created.fileSizeBytes,
+        hasAlbumArt: created.albumArtStorageKey !== null,
         uploader: { id: user.id, name: user.name },
         createdAt: created.createdAt.toISOString(),
       },
@@ -207,6 +235,7 @@ export const songsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
         originalFileName: s.originalFileName,
         mimeType: s.mimeType,
         fileSizeBytes: s.fileSizeBytes,
+        hasAlbumArt: s.albumArtStorageKey !== null,
         uploader: { id: s.uploader.id, name: s.uploader.name },
         createdAt: s.createdAt.toISOString(),
       })),
@@ -229,6 +258,16 @@ export const songsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
 
     if (!url) {
       return c.json({ status: 404, message: "Song not found." }, 404)
+    }
+
+    return c.json({ url }, 200)
+  })
+  .openapi(getSongAlbumUrlRoute, async (c) => {
+    const { id } = c.req.valid("param")
+    const url = await getSongAlbumUrl(id)
+
+    if (!url) {
+      return c.json({ status: 404, message: "Song or album art not found." }, 404)
     }
 
     return c.json({ url }, 200)

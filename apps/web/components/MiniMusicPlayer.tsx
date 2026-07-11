@@ -7,6 +7,7 @@ import { LiveWaveform } from "@workspace/ui/components/LiveWaveform"
 import { Skeleton } from "@workspace/ui/components/Skeleton"
 import { Slider } from "@workspace/ui/components/Slider"
 import { Loader2, Music, Pause, Play, Redo2, Undo2 } from "lucide-react"
+import Image from "next/image"
 import { FunctionComponent } from "react"
 import { apiClient } from "@/lib/api-client"
 import { usePlayer } from "@/components/SongPlayerProvider"
@@ -40,6 +41,19 @@ export const MiniMusicPlayer: FunctionComponent = () => {
 
   const song = songs.data?.find((s) => s.id === activeSongId) ?? songs.data?.[0]
 
+  const albumArt = useQuery({
+    queryKey: ["song-album-url", song?.id],
+    // `enabled` guarantees `song` is defined whenever this runs.
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/api/songs/{id}/album-url", {
+        params: { path: { id: song!.id } },
+      })
+      if (error) throw new Error("Failed to load album art.")
+      return data.url
+    },
+    enabled: !!song?.hasAlbumArt,
+  })
+
   if (songs.isLoading) {
     return (
       <div className="flex w-full max-w-xs flex-col items-center gap-4">
@@ -66,14 +80,22 @@ export const MiniMusicPlayer: FunctionComponent = () => {
 
   return (
     <div className="flex w-full max-w-xs flex-col items-center gap-4">
-      <Card className="w-full gap-0 rounded-xl opacity-95">
-        <CardContent className="flex aspect-square items-center justify-center">
-          {isCurrentlyPlaying ? (
+      <Card className="w-full gap-0 rounded-xl pt-0 opacity-95">
+        <CardContent className="relative flex aspect-square items-center justify-center">
+          {isCurrentlyPlaying && !albumArt.data ? (
             <LiveWaveform
               active={isCurrentlyPlaying}
               analyserNode={analyserNode}
               mode="static"
               className="h-20 w-full text-primary"
+            />
+          ) : albumArt.data ? (
+            <Image
+              src={albumArt.data}
+              alt={`${song.title} album art`}
+              fill
+              unoptimized
+              className="object-cover"
             />
           ) : (
             <Music className="size-32 text-muted-foreground" />

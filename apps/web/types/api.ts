@@ -128,6 +128,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/api/songs/{id}/album-url": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a temporary URL for a song's album art
+     * @description Any authenticated user can request a short-lived, signed URL for a song's album art image, if one was uploaded.
+     */
+    get: operations["getSongAlbumUrl"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/api/songs/{id}": {
     parameters: {
       query?: never
@@ -380,6 +400,7 @@ export interface operations {
             originalFileName: string
             mimeType: string
             fileSizeBytes: number
+            hasAlbumArt: boolean
             uploader: {
               id: string
               name: string
@@ -447,6 +468,7 @@ export interface operations {
             originalFileName: string
             mimeType: string
             fileSizeBytes: number
+            hasAlbumArt: boolean
             uploader: {
               id: string
               name: string
@@ -568,6 +590,60 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Signed download URL. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": {
+            url: string
+          }
+        }
+      }
+      /** @description Unauthorized. Missing or invalid authentication. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 401,
+           *       "message": "Unauthorized. Missing or invalid authentication."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+      /** @description Not found. Resource does not exist. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 404,
+           *       "message": "Not found. Resource does not exist."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+    }
+  }
+  getSongAlbumUrl: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Signed album art URL. */
       200: {
         headers: {
           [name: string]: unknown

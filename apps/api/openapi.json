@@ -356,6 +356,9 @@
                     "fileSizeBytes": {
                       "type": "number"
                     },
+                    "hasAlbumArt": {
+                      "type": "boolean"
+                    },
                     "uploader": {
                       "type": "object",
                       "properties": {
@@ -386,6 +389,7 @@
                     "originalFileName",
                     "mimeType",
                     "fileSizeBytes",
+                    "hasAlbumArt",
                     "uploader",
                     "createdAt"
                   ]
@@ -489,6 +493,9 @@
                       "fileSizeBytes": {
                         "type": "number"
                       },
+                      "hasAlbumArt": {
+                        "type": "boolean"
+                      },
                       "uploader": {
                         "type": "object",
                         "properties": {
@@ -519,6 +526,7 @@
                       "originalFileName",
                       "mimeType",
                       "fileSizeBytes",
+                      "hasAlbumArt",
                       "uploader",
                       "createdAt"
                     ]
@@ -635,6 +643,75 @@
         "responses": {
           "200": {
             "description": "Signed download URL.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "url"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/songs/{id}/album-url": {
+      "get": {
+        "operationId": "getSongAlbumUrl",
+        "tags": [
+          "Songs"
+        ],
+        "summary": "Get a temporary URL for a song's album art",
+        "description": "Any authenticated user can request a short-lived, signed URL for a song's album art image, if one was uploaded.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed album art URL.",
             "content": {
               "application/json": {
                 "schema": {
