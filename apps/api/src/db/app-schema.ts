@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm"
 import { date, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
-import { user } from "./schema.js"
+import { users } from "./auth-schema.js"
 
 export const invitation = pgTable("invitations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -9,16 +9,16 @@ export const invitation = pgTable("invitations", {
   role: text("role").notNull().default("user"),
   invitedBy: text("invited_by")
     .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+    .references(() => users.id, { onDelete: "cascade" }),
   expiresAt: timestamp("expires_at").notNull(),
   acceptedAt: timestamp("accepted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
 export const invitationRelations = relations(invitation, ({ one }) => ({
-  invitedByUser: one(user, {
+  invitedByUser: one(users, {
     fields: [invitation.invitedBy],
-    references: [user.id],
+    references: [users.id],
   }),
 }))
 
@@ -39,7 +39,7 @@ export const song = pgTable(
     fileSizeBytes: integer("file_size_bytes").notNull(),
     uploadedBy: text("uploaded_by")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => users.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -50,8 +50,8 @@ export const song = pgTable(
 )
 
 export const songRelations = relations(song, ({ one }) => ({
-  uploader: one(user, {
+  uploader: one(users, {
     fields: [song.uploadedBy],
-    references: [user.id],
+    references: [users.id],
   }),
 }))

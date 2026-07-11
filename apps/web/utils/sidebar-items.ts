@@ -44,9 +44,9 @@ export const SIDEBAR_CONTENT_ITEMS = (_userId?: string): SidebarItem[] => [
         subItems: [],
       },
       {
-        id: "general-music-player",
-        title: "Music Player",
-        path: "/music-player",
+        id: "general-songs",
+        title: "Songs",
+        path: "/songs",
         icon: Music,
         subItems: [],
       },

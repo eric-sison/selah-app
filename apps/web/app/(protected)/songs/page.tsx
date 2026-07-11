@@ -7,17 +7,11 @@ export default function SongBank() {
   return (
     <Fragment>
       <PageHeader>
-        <PageTitle>Music Player</PageTitle>
+        <PageTitle>Songs</PageTitle>
         <PageDescription>
-          Browse and manage the songs available for worship services, including key, tempo, and play history.
+          Every track uploaded for worship services — key, tempo, and album art at a glance.
         </PageDescription>
       </PageHeader>
-      <div className="flex flex-wrap items-start gap-6">
-        <SongUploadForm />
-        <div className="min-w-sm flex-1">
-          <SongList />
-        </div>
-      </div>
     </Fragment>
   )
 }

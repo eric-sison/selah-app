@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "../db/index.js"
-import { user } from "../db/schema.js"
+import { users } from "../db/auth-schema.js"
 import { auth } from "../lib/auth.js"
 
 const AdminSeedEnvSchema = z.object({
@@ -59,18 +59,15 @@ async function seedAdmin() {
 
   const env = AdminSeedEnvSchema.parse(process.env)
 
-  const existing = await db.query.user.findFirst({
-    where: eq(user.email, env.ADMIN_EMAIL),
+  const existing = await db.query.users.findFirst({
+    where: eq(users.email, env.ADMIN_EMAIL),
   })
 
   if (existing) {
     if (existing.role !== "admin") {
       // auth.api.setRole requires an authenticated admin session, which a
       // standalone script doesn't have - update the role directly instead.
-      await db
-        .update(user)
-        .set({ role: "admin" })
-        .where(eq(user.id, existing.id))
+      await db.update(users).set({ role: "admin" }).where(eq(users.id, existing.id))
       console.log(`Promoted existing user ${env.ADMIN_EMAIL} to "admin".`)
     } else {
       console.log(`Admin account ${env.ADMIN_EMAIL} already exists, skipping.`)

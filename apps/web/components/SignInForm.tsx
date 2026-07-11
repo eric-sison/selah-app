@@ -111,7 +111,7 @@ export const SignInForm: FunctionComponent<SignInFormProps> = ({ callbackURL = "
         // the `error` prop to show a message (e.g. disableSignUp rejections).
         errorCallbackURL: new URL("/auth/sign-in", window.location.origin).toString(),
       })
-      if (error) throw new Error(error.message ?? "Failed to sign in with Facebook.")
+      if (error) toast.error("Failed to sign in with Facebook.")
       return data
     },
   })

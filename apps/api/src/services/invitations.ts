@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto"
 import { eq } from "drizzle-orm"
 import { db } from "../db/index.js"
 import { invitation } from "../db/app-schema.js"
-import { user } from "../db/schema.js"
+import { users } from "../db/auth-schema.js"
 import { env } from "../utils/env.js"
 import { sendMail } from "../lib/mailer.js"
 
@@ -23,15 +23,12 @@ export interface CreateInvitationInput {
 }
 
 export async function createInvitation({ email, invitedBy }: CreateInvitationInput) {
-  const existingUser = await db.query.user.findFirst({
-    where: eq(user.email, email),
+  const existingUser = await db.query.users.findFirst({
+    where: eq(users.email, email),
   })
 
   if (existingUser) {
-    throw new InvitationError(
-      "USER_ALREADY_EXISTS",
-      "A user with this email already exists."
-    )
+    throw new InvitationError("USER_ALREADY_EXISTS", "A user with this email already exists.")
   }
 
   const token = randomBytes(32).toString("hex")

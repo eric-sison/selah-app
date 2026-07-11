@@ -24,7 +24,7 @@ export default function RootLayout({ children }: Readonly<PropsWithChildren>) {
       <body className="h-dvh w-screen">
         <Toaster />
         <QueryProvider>
-          <ThemeProvider>
+          <ThemeProvider defaultTheme="dark">
             <TooltipProvider>{children}</TooltipProvider>
           </ThemeProvider>
         </QueryProvider>

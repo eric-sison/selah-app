@@ -6,7 +6,7 @@ import { db } from "../db/index.js"
 import { env } from "../utils/env.js"
 import { getValidInvitationByToken, markInvitationAccepted } from "../services/invitations.js"
 import { sendMail } from "./mailer.js"
-import * as schema from "../db/schema.js"
+import * as schema from "../db/auth-schema.js"
 
 // Local/LAN origins reach the API directly on its own port; the public
 // domain is assumed to reverse-proxy /api on the same host, so it keeps

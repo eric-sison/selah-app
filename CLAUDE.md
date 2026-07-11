@@ -445,7 +445,9 @@ browsing bucket contents.
   — run `pnpm format` rather than hand-formatting).
 - `apps/api` and `apps/web` internal files use kebab-case (`error-handler.ts`,
   `auth-session.ts`, `api-client.ts`); component files are PascalCase (see
-  React Components above).
+  React Components above). Exception: TanStack Table column definitions
+  (`apps/web/components/features/`) are named `columns-<name>.tsx` — e.g.
+  `columns-songs.tsx` exporting `songsColumns`.
 
 ---
 
