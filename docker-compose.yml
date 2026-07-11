@@ -23,5 +23,33 @@ services:
       - "1025:1025" # SMTP
       - "8025:8025" # web UI
 
+  garage:
+    image: dxflrs/garage:v2.3.0
+    restart: unless-stopped
+    environment:
+      GARAGE_CONFIG_FILE: /etc/garage.toml
+    volumes:
+      - ./garage/garage.toml:/etc/garage.toml:ro
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+    ports:
+      - "3900:3900" # S3 API
+      - "3903:3903" # admin API (used by scripts/garage-init.sh)
+
+  garage-webui:
+    image: khairul169/garage-webui:latest
+    restart: unless-stopped
+    depends_on:
+      - garage
+    volumes:
+      - ./garage/garage.toml:/etc/garage.toml:ro
+    environment:
+      API_BASE_URL: http://garage:3903
+      S3_ENDPOINT_URL: http://garage:3900
+    ports:
+      - "3909:3909" # unauthenticated - local dev only, same as the other services here
+
 volumes:
   postgres_data:
+  garage_meta:
+  garage_data:

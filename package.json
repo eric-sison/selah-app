@@ -8,7 +8,8 @@
     "lint": "turbo lint",
     "format": "turbo format",
     "typecheck": "turbo typecheck",
-    "openapi:generate": "pnpm --filter api openapi:generate && pnpm --filter web openapi:generate"
+    "openapi:generate": "pnpm --filter api openapi:generate && pnpm --filter web openapi:generate",
+    "garage:init": "bash scripts/garage-init.sh"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",

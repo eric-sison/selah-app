@@ -12,7 +12,7 @@ packages/
 ├── ui                 # @workspace/ui — shared shadcn-based components (Tailwind v4)
 ├── eslint-config       # @workspace/eslint-config
 └── typescript-config   # @workspace/typescript-config
-docker-compose.yml       # local Postgres for apps/api
+docker-compose.yml       # local Postgres, Mailpit, and Garage (S3-compatible storage) for apps/api
 ```
 
 Always determine which application you are working in before making changes.
@@ -206,6 +206,20 @@ QueryClient())`) to avoid cross-request state leakage; follow that when
 
   Match this shape for new forms rather than introducing a different form
   library or validation pattern.
+- `mutateAsync` rethrows on failure (so `onError` fires and a caller can also
+  react), and TanStack Form's `handleSubmit` rethrows again on top of that.
+  Forms here submit via `void form.handleSubmit()` (fire-and-forget) — if
+  that rethrown error isn't caught, it becomes an unhandled promise
+  rejection, which surfaces as a crashed-looking page instead of the toast
+  you already show. Since the mutation's `onError` is the actual user-facing
+  error handling, swallow the rethrow at the call site rather than letting
+  it propagate:
+
+  ```ts
+  onSubmit: async ({ value }) => {
+    await mutation.mutateAsync(value).catch(() => {})
+  },
+  ```
 
 ---
 
@@ -310,17 +324,30 @@ the call site.
 
 Drizzle ORM over `pg` (`drizzle-orm/node-postgres`), config in
 [drizzle.config.ts](apps/api/drizzle.config.ts). Schema is split across
-[db/schema.ts](apps/api/src/db/schema.ts) (better-auth-owned tables: `user`,
-`session`, `account`, `verification`) and
-[db/app-schema.ts](apps/api/src/db/app-schema.ts) (app-owned tables, e.g.
-`invitation`, importing `user` from `schema.ts` for FKs);
-[db/index.ts](apps/api/src/db/index.ts) merges both into one `db` client.
+[db/schema.ts](apps/api/src/db/schema.ts) (better-auth-owned tables, JS
+exports `user`/`session`/`account`/`verification` backed by SQL tables
+`users`/`sessions`/`accounts`/`verifications`) and
+[db/app-schema.ts](apps/api/src/db/app-schema.ts) (app-owned tables, e.g. JS
+export `invitation` backed by SQL table `invitations`, importing `user` from
+`schema.ts` for FKs); [db/index.ts](apps/api/src/db/index.ts) merges both
+into one `db` client.
 
 Conventions to follow for new tables:
 
+- SQL table names are plural (`songs`, not `song`); the JS export/variable
+  name stays singular (`export const song = pgTable("songs", ...)`) since
+  it's referred to elsewhere as a single-row concept. better-auth's adapter
+  is configured with `usePlural: true` in
+  [lib/auth.ts](apps/api/src/lib/auth.ts) to match this for its own tables.
 - SQL columns are `snake_case`, mapped from `camelCase` JS fields.
-- `id: text().primaryKey()`, app-generated via `randomUUID()` — not a serial
-  column.
+- `id: uuid().primaryKey().defaultRandom()` — DB-generated via Postgres's
+  `gen_random_uuid()`, not a serial column and not app-generated in JS. This
+  applies to app-owned tables only (`invitation`, `song`); better-auth's own
+  tables (`user`/`session`/`account`/`verification` in `schema.ts`) keep
+  `text` ids because better-auth generates and sets those itself. If a
+  table's row needs its own id before insert (e.g. to build a derived value
+  like an object storage key), insert first, read the generated id back off
+  `.returning()`, then `update` — see `services/songs.ts`'s `createSong`.
 - `createdAt`/`updatedAt` use `.defaultNow()` and `.$onUpdate(() => new Date())`.
 - Declare `relations(...)` separately per table.
 - Index FK columns (see `session_userId_idx`, `account_userId_idx`).
@@ -330,6 +357,54 @@ Migrations are committed under `src/db/migrations` — never hand-edit a
 generated migration file. `pnpm db:studio` for local inspection;
 `pnpm db:seed:admin` seeds an admin user from `ADMIN_EMAIL`/`PASSWORD`/`NAME`
 env vars (requires local Postgres via `docker-compose.yml`).
+
+Renaming a table or column: plain `drizzle-kit generate` can't detect a
+rename non-interactively (it needs a TTY prompt to disambiguate "renamed"
+from "dropped + created", and errors out otherwise rather than guessing —
+never work around this by letting it fall back to drop + create, since that
+cascades and deletes real data). Instead run
+`drizzle-kit generate --custom --name <name>` to get a blank migration, write
+the real `ALTER TABLE ... RENAME ...` SQL into it by hand, and manually
+update the table's `"name"` field (and any `foreignKeys[].tableFrom` /
+`tableTo` referencing it) in the newly generated snapshot under
+`src/db/migrations/meta/` so future `db:generate` diffs against the correct
+state instead of re-proposing the same rename.
+
+## Object Storage (Garage)
+
+File uploads (currently: song audio + album art) go to
+[Garage](https://garagehq.deuxfleurs.fr/), a self-hosted, FOSS,
+S3-API-compatible object store — chosen deliberately over MinIO. It runs as
+the `garage` service in [docker-compose.yml](docker-compose.yml) (config at
+`garage/garage.toml`), alongside `garage-webui` (an unofficial third-party
+browser dashboard, http://localhost:3909, no auth — local dev only) for
+browsing bucket contents.
+
+- A fresh Garage node has no cluster layout, bucket, or key until
+  `pnpm garage:init` ([scripts/garage-init.sh](scripts/garage-init.sh)) runs
+  once — unlike Postgres/Mailpit, this isn't zero-config. The script is
+  idempotent and re-prints the existing key's secret on repeat runs instead
+  of failing.
+- [lib/storage.ts](apps/api/src/lib/storage.ts) wraps `@aws-sdk/client-s3`
+  with `forcePathStyle: true` (required for Garage) and exports a single
+  `uploadObject(key, body, contentType)` helper — reuse it for any new
+  object type rather than writing another S3 client.
+- Config comes through the same `env.ts` Zod schema as everything else:
+  `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`,
+  `S3_SECRET_ACCESS_KEY`.
+- Object keys embed the owning row's DB-generated id (e.g.
+  `songs/${id}/...`) — since the id isn't known until insert, services
+  insert first, read the id back off `.returning()`, upload, then `update`
+  the row with the storage key(s). See `services/songs.ts`'s `createSong`.
+- No route serves stored files back to the browser yet (no playback, no
+  album-art thumbnails) — this was deliberately deferred, not an oversight.
+  Adding it means either presigned GET URLs (`@aws-sdk/s3-request-presigner`,
+  not yet a dependency) or a proxy route; pick one deliberately rather than
+  bolting on an ad hoc `fetch` from a component.
+- Garage major-version upgrades (e.g. v1→v2) are in-place image-tag swaps
+  with no data migration needed, but do rework the CLI's output formats —
+  re-verify `garage-init.sh`'s `grep` checks against the new version's output
+  before assuming it still works.
 
 ---
 
