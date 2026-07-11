@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm"
 import { db } from "../db/index.js"
 import { song } from "../db/app-schema.js"
-import { uploadObject } from "../lib/storage.js"
+import { deleteObject, getDownloadUrl, getStreamUrl, uploadObject } from "../lib/storage.js"
 
 function slugifyFileName(fileName: string): string {
   return fileName
@@ -88,4 +88,35 @@ export async function listSongs() {
       },
     },
   })
+}
+
+export async function getSongStreamUrl(id: string): Promise<string | null> {
+  const found = await db.query.song.findFirst({ where: eq(song.id, id) })
+  if (!found) return null
+
+  return getStreamUrl(found.storageKey)
+}
+
+export async function getSongDownloadUrl(id: string): Promise<string | null> {
+  const found = await db.query.song.findFirst({ where: eq(song.id, id) })
+  if (!found) return null
+
+  return getDownloadUrl(found.storageKey, found.originalFileName)
+}
+
+export async function deleteSong(id: string): Promise<boolean> {
+  const found = await db.query.song.findFirst({ where: eq(song.id, id) })
+  if (!found) return false
+
+  // Delete the DB row first - an orphaned storage object left behind by a
+  // failed cleanup is harmless, but a DB row surviving with no backing file
+  // would 404 the next time someone tries to stream or download it.
+  await db.delete(song).where(eq(song.id, id))
+
+  await deleteObject(found.storageKey)
+  if (found.albumArtStorageKey) {
+    await deleteObject(found.albumArtStorageKey)
+  }
+
+  return true
 }

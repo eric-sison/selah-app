@@ -1,9 +1,10 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
 import { bodyLimit } from "hono/body-limit"
 import type { RequestContext } from "../types/request-context.js"
+import { requireAdmin } from "../middleware/require-admin.js"
 import { requireAuth } from "../middleware/require-auth.js"
 import { commonErrors, defaultHook, jsonResponse } from "../utils/error-reponses.js"
-import { createSong, listSongs } from "../services/songs.js"
+import { createSong, deleteSong, getSongDownloadUrl, getSongStreamUrl, listSongs } from "../services/songs.js"
 
 const MAX_FILE_SIZE_BYTES = 30 * 1024 * 1024
 const ALLOWED_MIME_TYPES = ["audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp4", "audio/ogg", "audio/flac"]
@@ -85,6 +86,68 @@ const listSongsRoute = createRoute({
   },
 })
 
+const SignedUrlResponseSchema = z.object({
+  url: z.string(),
+})
+
+const getSongStreamUrlRoute = createRoute({
+  method: "get",
+  path: "/songs/{id}/stream-url",
+  operationId: "getSongStreamUrl",
+  tags: ["Songs"],
+  summary: "Get a temporary playback URL for a song",
+  description:
+    "Any authenticated user can request a short-lived, signed URL for streaming a song's audio file directly from storage.",
+  middleware: [requireAuth] as const,
+  request: {
+    params: z.object({ id: z.uuid() }),
+  },
+  responses: {
+    200: jsonResponse(SignedUrlResponseSchema, "Signed playback URL."),
+    401: commonErrors[401],
+    404: commonErrors[404],
+  },
+})
+
+const getSongDownloadUrlRoute = createRoute({
+  method: "get",
+  path: "/songs/{id}/download-url",
+  operationId: "getSongDownloadUrl",
+  tags: ["Songs"],
+  summary: "Get a temporary download URL for a song",
+  description:
+    "Any authenticated user can request a short-lived, signed URL for downloading a song's original audio file.",
+  middleware: [requireAuth] as const,
+  request: {
+    params: z.object({ id: z.uuid() }),
+  },
+  responses: {
+    200: jsonResponse(SignedUrlResponseSchema, "Signed download URL."),
+    401: commonErrors[401],
+    404: commonErrors[404],
+  },
+})
+
+const deleteSongRoute = createRoute({
+  method: "delete",
+  path: "/songs/{id}",
+  operationId: "deleteSong",
+  tags: ["Songs"],
+  summary: "Delete a song",
+  description:
+    "Admin-only. Deletes the song's database record and its audio file and album art (if any) from storage.",
+  middleware: [requireAdmin] as const,
+  request: {
+    params: z.object({ id: z.uuid() }),
+  },
+  responses: {
+    204: { description: "Song deleted." },
+    401: commonErrors[401],
+    403: commonErrors[403],
+    404: commonErrors[404],
+  },
+})
+
 export const songsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
   .openapi(createSongRoute, async (c) => {
     // requireAuth guarantees this is non-null.
@@ -149,4 +212,34 @@ export const songsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
       })),
       200
     )
+  })
+  .openapi(getSongStreamUrlRoute, async (c) => {
+    const { id } = c.req.valid("param")
+    const url = await getSongStreamUrl(id)
+
+    if (!url) {
+      return c.json({ status: 404, message: "Song not found." }, 404)
+    }
+
+    return c.json({ url }, 200)
+  })
+  .openapi(getSongDownloadUrlRoute, async (c) => {
+    const { id } = c.req.valid("param")
+    const url = await getSongDownloadUrl(id)
+
+    if (!url) {
+      return c.json({ status: 404, message: "Song not found." }, 404)
+    }
+
+    return c.json({ url }, 200)
+  })
+  .openapi(deleteSongRoute, async (c) => {
+    const { id } = c.req.valid("param")
+    const deleted = await deleteSong(id)
+
+    if (!deleted) {
+      return c.json({ status: 404, message: "Song not found." }, 404)
+    }
+
+    return c.body(null, 204)
   })

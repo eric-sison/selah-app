@@ -386,9 +386,14 @@ browsing bucket contents.
   idempotent and re-prints the existing key's secret on repeat runs instead
   of failing.
 - [lib/storage.ts](apps/api/src/lib/storage.ts) wraps `@aws-sdk/client-s3`
-  with `forcePathStyle: true` (required for Garage) and exports a single
-  `uploadObject(key, body, contentType)` helper — reuse it for any new
-  object type rather than writing another S3 client.
+  with `forcePathStyle: true` (required for Garage) and exports
+  `uploadObject(key, body, contentType)`, `getStreamUrl(key)` (plain
+  presigned GET, for `<audio>`/`<img>` playback), and
+  `getDownloadUrl(key, filename)` (presigned GET with
+  `ResponseContentDisposition: attachment`, so navigating to it forces a
+  save-as download even though the URL is cross-origin — the `<a download>`
+  attribute alone is ignored by browsers for cross-origin URLs, but this
+  response header isn't). Reuse these rather than writing another S3 client.
 - Config comes through the same `env.ts` Zod schema as everything else:
   `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`,
   `S3_SECRET_ACCESS_KEY`.
@@ -396,11 +401,24 @@ browsing bucket contents.
   `songs/${id}/...`) — since the id isn't known until insert, services
   insert first, read the id back off `.returning()`, upload, then `update`
   the row with the storage key(s). See `services/songs.ts`'s `createSong`.
-- No route serves stored files back to the browser yet (no playback, no
-  album-art thumbnails) — this was deliberately deferred, not an oversight.
-  Adding it means either presigned GET URLs (`@aws-sdk/s3-request-presigner`,
-  not yet a dependency) or a proxy route; pick one deliberately rather than
-  bolting on an ad hoc `fetch` from a component.
+- Streaming/download URLs are fetched on-demand per action (`GET
+  /api/songs/{id}/stream-url`, `.../download-url`) rather than embedded in
+  the list response — presigned URLs expire (1hr TTL here, see
+  `STREAM_URL_TTL_SECONDS` in `storage.ts`), so baking one into a
+  long-open list would eventually go stale.
+- The Web Audio API (used for the song-list waveform, `LiveWaveform` in
+  `@workspace/ui`) requires CORS-cleared audio to read sample data — plain
+  `<audio>` playback doesn't care about cross-origin, but
+  `AudioContext.createMediaElementSource` + `AnalyserNode` silently reads
+  zeros without it. Run `pnpm --filter api storage:configure-cors`
+  ([scripts/configure-storage-cors.ts](apps/api/src/scripts/configure-storage-cors.ts))
+  once per bucket to set a CORS policy via the standard S3 `PutBucketCors`
+  API (Garage implements it), reusing `env.ALLOWED_ORIGINS`. This needs the
+  key's `--owner` permission (see below), not just read/write.
+- Garage's `bucket allow` has three independent permissions:
+  `--read`/`--write` (object-level) and `--owner` (bucket-level admin
+  operations like CORS or website config) — `garage-init.sh` grants all
+  three to the app's key up front so this doesn't bite later.
 - Garage major-version upgrades (e.g. v1→v2) are in-place image-tag swaps
   with no data migration needed, but do rework the CLI's output formats —
   re-verify `garage-init.sh`'s `grep` checks against the new version's output

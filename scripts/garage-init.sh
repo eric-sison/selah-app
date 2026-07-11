@@ -38,7 +38,11 @@ else
   $GARAGE key create "$KEY_NAME"
 fi
 
-$GARAGE bucket allow --read --write "$BUCKET" --key "$KEY_NAME"
+# --owner is required for bucket-level admin operations (e.g. the CORS policy
+# `pnpm storage:configure-cors` sets - needed for the Web Audio API waveform
+# to read cross-origin audio, unlike plain <audio> playback which doesn't
+# care), not just object read/write.
+$GARAGE bucket allow --read --write --owner "$BUCKET" --key "$KEY_NAME"
 
 cat <<EOF
 
@@ -49,4 +53,6 @@ S3_REGION=garage
 S3_BUCKET=$BUCKET
 S3_ACCESS_KEY_ID=<Key ID from above>
 S3_SECRET_ACCESS_KEY=<Secret key from above>
+
+Then, from apps/api, run: pnpm storage:configure-cors
 EOF

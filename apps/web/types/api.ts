@@ -88,6 +88,66 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/api/songs/{id}/stream-url": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a temporary playback URL for a song
+     * @description Any authenticated user can request a short-lived, signed URL for streaming a song's audio file directly from storage.
+     */
+    get: operations["getSongStreamUrl"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/songs/{id}/download-url": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get a temporary download URL for a song
+     * @description Any authenticated user can request a short-lived, signed URL for downloading a song's original audio file.
+     */
+    get: operations["getSongDownloadUrl"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/songs/{id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Delete a song
+     * @description Admin-only. Deletes the song's database record and its audio file and album art (if any) from storage.
+     */
+    delete: operations["deleteSong"]
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -435,6 +495,179 @@ export interface operations {
            * @example {
            *       "status": 422,
            *       "message": "Unprocessable. Request body failed validation."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+    }
+  }
+  getSongStreamUrl: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Signed playback URL. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": {
+            url: string
+          }
+        }
+      }
+      /** @description Unauthorized. Missing or invalid authentication. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 401,
+           *       "message": "Unauthorized. Missing or invalid authentication."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+      /** @description Not found. Resource does not exist. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 404,
+           *       "message": "Not found. Resource does not exist."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+    }
+  }
+  getSongDownloadUrl: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Signed download URL. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": {
+            url: string
+          }
+        }
+      }
+      /** @description Unauthorized. Missing or invalid authentication. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 401,
+           *       "message": "Unauthorized. Missing or invalid authentication."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+      /** @description Not found. Resource does not exist. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 404,
+           *       "message": "Not found. Resource does not exist."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+    }
+  }
+  deleteSong: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Song deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unauthorized. Missing or invalid authentication. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 401,
+           *       "message": "Unauthorized. Missing or invalid authentication."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+      /** @description Forbidden. Insufficient permissions. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 403,
+           *       "message": "Forbidden. Insufficient permissions."
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorResponse"]
+        }
+      }
+      /** @description Not found. Resource does not exist. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          /**
+           * @example {
+           *       "status": 404,
+           *       "message": "Not found. Resource does not exist."
            *     }
            */
           "application/json": components["schemas"]["ErrorResponse"]

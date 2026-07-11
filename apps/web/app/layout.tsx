@@ -22,7 +22,7 @@ export default function RootLayout({ children }: Readonly<PropsWithChildren>) {
       className={cn("font-sans antialiased", fontMono.variable, inter.variable)}
     >
       <body className="h-dvh w-screen">
-        <Toaster />
+        <Toaster position="top-center" />
         <QueryProvider>
           <ThemeProvider defaultTheme="dark">
             <TooltipProvider>{children}</TooltipProvider>
