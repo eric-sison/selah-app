@@ -25,7 +25,7 @@ export default function RootLayout({ children }: Readonly<PropsWithChildren>) {
         <Toaster position="top-center" />
         <QueryProvider>
           <ThemeProvider defaultTheme="dark">
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider delay={500}>{children}</TooltipProvider>
           </ThemeProvider>
         </QueryProvider>
       </body>
