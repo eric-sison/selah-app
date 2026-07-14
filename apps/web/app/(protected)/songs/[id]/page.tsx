@@ -12,7 +12,7 @@ export default async function SongDetailPage({ params }: SongDetailPageProps) {
   return (
     <Page>
       <PageBreadcrumbNav />
-      <PageContent>
+      <PageContent className="overflow-hidden">
         <SongDetailsView songId={id} />
       </PageContent>
       <PageFooter className="mt-0! border-t-0">

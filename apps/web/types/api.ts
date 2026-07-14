@@ -73,7 +73,7 @@ export interface paths {
         };
         /**
          * List uploaded songs
-         * @description Any authenticated user can list all uploaded songs.
+         * @description Any authenticated user can list uploaded songs, paginated via `cursor`/`limit` and optionally filtered with a spelling-tolerant search over title and artist via the `q` query param.
          */
         get: operations["listSongs"];
         put?: never;
@@ -384,38 +384,48 @@ export interface operations {
     };
     listSongs: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Spelling-tolerant search over song title and artist. */
+                q?: string;
+                /** @description Offset-based pagination cursor - pass back the previous response's `nextCursor`. */
+                cursor?: number | null;
+                /** @description Max songs to return per page. */
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description List of songs. */
+            /** @description Paginated list of songs. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        id: string;
-                        title: string;
-                        artist: string | null;
-                        musicalKey: string | null;
-                        tempo: number | null;
-                        album: string | null;
-                        releaseDate: string | null;
-                        chordpro: string | null;
-                        originalFileName: string;
-                        mimeType: string;
-                        fileSizeBytes: number;
-                        hasAlbumArt: boolean;
-                        uploader: {
+                        items: {
                             id: string;
-                            name: string;
-                        };
-                        createdAt: string;
-                    }[];
+                            title: string;
+                            artist: string | null;
+                            musicalKey: string | null;
+                            tempo: number | null;
+                            album: string | null;
+                            releaseDate: string | null;
+                            chordpro: string | null;
+                            originalFileName: string;
+                            mimeType: string;
+                            fileSizeBytes: number;
+                            hasAlbumArt: boolean;
+                            uploader: {
+                                id: string;
+                                name: string;
+                            };
+                            createdAt: string;
+                        }[];
+                        nextCursor: number | null;
+                    };
                 };
             };
             /** @description Unauthorized. Missing or invalid authentication. */
@@ -428,6 +438,21 @@ export interface operations {
                      * @example {
                      *       "status": 401,
                      *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];

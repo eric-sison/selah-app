@@ -18,7 +18,12 @@ export default async function ProtectedLayout({ children }: Readonly<PropsWithCh
     <SessionProvider value={session}>
       <SidebarProvider
         style={{ "--sidebar-width": "15rem" } as CSSProperties}
-        className="bg-linear-to-b from-primary/8 to-transparent"
+        // `min-h-svh` (the shared primitive's default) is only a height floor,
+        // so tall page content grows the whole shell - sidebar included - past
+        // the viewport and the browser scrolls the document instead of the
+        // per-page `overflow-y-auto` regions every page here is built around.
+        // `h-dvh overflow-hidden` caps it so those inner regions do the work.
+        className="h-dvh overflow-hidden bg-linear-to-b from-primary/8 to-transparent"
       >
         {/* Both the sidebar's own inner panel and SidebarInset paint an
           opaque background by default, which would otherwise fully hide

@@ -11,7 +11,7 @@ import { apiClient } from "@/lib/api-client"
 import { usePlayer } from "@/components/SongPlayerProvider"
 import type { operations } from "@/types/api"
 
-export type Song = operations["listSongs"]["responses"][200]["content"]["application/json"][number]
+export type Song = operations["listSongs"]["responses"][200]["content"]["application/json"]["items"][number]
 
 // Prefers whichever song is actually loaded/playing; falls back to the most
 // recently uploaded song as a static preview when nothing has been played yet.
@@ -19,16 +19,32 @@ export type Song = operations["listSongs"]["responses"][200]["content"]["applica
 export const NowPlayingCard: FunctionComponent = () => {
   const { activeSongId, isPlaying, analyserNode } = usePlayer()
 
-  const songs = useQuery({
-    queryKey: ["songs"],
+  const activeSongQuery = useQuery({
+    queryKey: ["song", activeSongId],
     queryFn: async () => {
-      const { data, error } = await apiClient.GET("/api/songs")
+      const { data, error } = await apiClient.GET("/api/songs/{id}", {
+        params: { path: { id: activeSongId! } },
+      })
+      if (error) throw new Error("Failed to load song.")
+      return data
+    },
+    enabled: !!activeSongId,
+  })
+
+  // Only the single most recent upload is ever needed here, so the list
+  // endpoint is asked for just that instead of a full page.
+  const recentSongQuery = useQuery({
+    queryKey: ["songs", "recent"],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/api/songs", { params: { query: { limit: 1 } } })
       if (error) throw new Error("Failed to load songs.")
       return data
     },
+    enabled: !activeSongId,
   })
 
-  const song = songs.data?.find((s) => s.id === activeSongId) ?? songs.data?.[0]
+  const song = activeSongQuery.data ?? recentSongQuery.data?.items[0]
+  const isLoading = activeSongId ? activeSongQuery.isLoading : recentSongQuery.isLoading
 
   const albumArt = useQuery({
     queryKey: ["song-album-url", song?.id],
@@ -43,7 +59,7 @@ export const NowPlayingCard: FunctionComponent = () => {
     enabled: !!song?.hasAlbumArt,
   })
 
-  if (songs.isLoading) {
+  if (isLoading) {
     return (
       <div className="flex w-full max-w-xs flex-col items-center gap-4">
         <Skeleton className="aspect-square w-full rounded-xl" />

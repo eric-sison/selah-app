@@ -45,6 +45,12 @@ const THUMB_SIZE_PX = 12
 // slider's displayed position still updates immediately via `scrubValue`.
 const SEEK_DEBOUNCE_MS = 150
 
+// Caps the "fall back to library order" fetch below (see `order`) - the
+// list endpoint is paginated, so this is a bounded approximation of "the
+// whole library" rather than a true unbounded fetch, matching the API's
+// GET /songs `limit` max.
+const FALLBACK_QUEUE_LIMIT = 100
+
 // A persistent, app-bar-style player meant to live in `PageFooter` - unlike
 // NowPlayingCard (which falls back to the most recent upload as a browsing
 // preview), this only ever reflects whatever is actually loaded, and
@@ -120,21 +126,23 @@ export const MusicPlayerBar: FunctionComponent = () => {
     setHoverRatio(Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1))
   }
 
-  // Only used to resolve the active id to a full Song for `playOrToggle` -
-  // `queue`/`playbackOrder` cover this whenever they're populated, but a
-  // song can be loaded from the detail page's own play button without ever
-  // going through the list first, leaving the queue empty.
-  const songs = useQuery({
-    queryKey: ["songs"],
+  // Resolves the active id to a full Song for display/`playOrToggle` - the
+  // list endpoint is paginated now, so this can't just look the id up in a
+  // fetched page; fetching it directly also keeps this correct for a song
+  // played from its detail page without ever going through the list first.
+  const activeSongQuery = useQuery({
+    queryKey: ["song", activeSongId],
     queryFn: async () => {
-      const { data, error } = await apiClient.GET("/api/songs")
-      if (error) throw new Error("Failed to load songs.")
+      const { data, error } = await apiClient.GET("/api/songs/{id}", {
+        params: { path: { id: activeSongId! } },
+      })
+      if (error) throw new Error("Failed to load song.")
       return data
     },
     enabled: !!activeSongId,
   })
 
-  const song = songs.data?.find((s) => s.id === activeSongId)
+  const song = activeSongQuery.data
 
   const albumArt = useQuery({
     queryKey: ["song-album-url", song?.id],
@@ -149,6 +157,21 @@ export const MusicPlayerBar: FunctionComponent = () => {
     enabled: !!song?.hasAlbumArt,
   })
 
+  // Falls back to a bounded "whole library" page when nothing's actually
+  // been queued yet, so previous/next still work for a song played directly
+  // from its detail page rather than from the list.
+  const libraryOrderQuery = useQuery({
+    queryKey: ["songs", "library-order"],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/api/songs", {
+        params: { query: { limit: FALLBACK_QUEUE_LIMIT } },
+      })
+      if (error) throw new Error("Failed to load songs.")
+      return data
+    },
+    enabled: playbackOrder.length === 0 && !!activeSongId,
+  })
+
   if (!song) {
     return (
       <div className="flex h-20 items-center justify-center px-4">
@@ -160,10 +183,7 @@ export const MusicPlayerBar: FunctionComponent = () => {
   const isLoading = isLoadingSongId === song.id
   const canControlPlayback = duration > 0
 
-  // Falls back to the full song list when nothing's actually been queued
-  // yet, so previous/next still work for a song played directly from its
-  // detail page.
-  const order = playbackOrder.length > 0 ? playbackOrder : (songs.data ?? [])
+  const order = playbackOrder.length > 0 ? playbackOrder : (libraryOrderQuery.data?.items ?? [])
   const currentIndex = order.findIndex((s) => s.id === song.id)
   const canGoPrevious = currentIndex > 0
   const canGoNext = currentIndex >= 0 && currentIndex < order.length - 1

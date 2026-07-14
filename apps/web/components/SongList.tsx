@@ -1,6 +1,6 @@
 "use client"
 
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +27,7 @@ import { cn } from "@workspace/ui/lib/utils"
 import { CloudDownload, EllipsisVertical, LibraryBig, Music, Pause, Play, RedoDot, Trash } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { FunctionComponent, MouseEvent, useEffect, useRef, useState } from "react"
+import { FunctionComponent, MouseEvent, useEffect, useMemo, useRef, useState } from "react"
 import { apiClient } from "@/lib/api-client"
 import { useSession } from "@/components/SessionProvider"
 import { SongDetailsSheet } from "@/components/SongDetailsSheet"
@@ -238,25 +238,48 @@ export const SongList: FunctionComponent = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const canDelete = session?.user.role === "admin"
+  const loadMoreRef = useRef<HTMLDivElement>(null)
 
-  const songs = useQuery({
+  const songs = useInfiniteQuery({
     queryKey: ["songs"],
-    queryFn: async () => {
-      const { data, error } = await apiClient.GET("/api/songs")
+    queryFn: async ({ pageParam }) => {
+      const { data, error } = await apiClient.GET("/api/songs", { params: { query: { cursor: pageParam } } })
       if (error) throw new Error("Failed to load songs.")
       return data
     },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   })
+
+  const songList = useMemo(() => songs.data?.pages.flatMap((page) => page.items) ?? [], [songs.data])
 
   // Loads (but doesn't play) the first song so the mini player/footer bar
   // reflect the same default focus the list itself highlights below - only
   // once, so it doesn't hijack whatever the user has actually picked since.
   const hasAutoSelectedRef = useRef(false)
   useEffect(() => {
-    if (hasAutoSelectedRef.current || activeSongId || !songs.data?.length) return
+    if (hasAutoSelectedRef.current || activeSongId || !songList.length) return
     hasAutoSelectedRef.current = true
-    selectSong(songs.data[0]!, songs.data)
-  }, [songs.data, activeSongId, selectSong])
+    selectSong(songList[0]!, songList)
+  }, [songList, activeSongId, selectSong])
+
+  // Fetches the next page once the sentinel below the list scrolls into view.
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = songs
+  useEffect(() => {
+    const sentinel = loadMoreRef.current
+    if (!sentinel || !hasNextPage) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { rootMargin: "200px" }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const handleDownload = async (song: Song) => {
     setDownloadingId(song.id)
@@ -302,11 +325,10 @@ export const SongList: FunctionComponent = () => {
     return <p className="text-sm text-muted-foreground">Loading songs...</p>
   }
 
-  if (!songs.data?.length) {
+  if (!songList.length) {
     return <p className="text-sm text-muted-foreground">No songs uploaded yet.</p>
   }
 
-  const songList = songs.data
   // Nothing is loaded yet on a fresh visit/refresh - highlight the first
   // song as a default focus rather than leaving the whole list unhighlighted.
   const displayActiveId = activeSongId ?? songList[0]?.id ?? null
@@ -329,6 +351,12 @@ export const SongList: FunctionComponent = () => {
           onDelete={() => handleDelete(song)}
         />
       ))}
+      <div ref={loadMoreRef} />
+      {songs.isFetchingNextPage && (
+        <div className="flex justify-center py-4">
+          <Spinner />
+        </div>
+      )}
     </div>
   )
 }
