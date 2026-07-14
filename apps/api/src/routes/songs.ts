@@ -6,12 +6,14 @@ import { requireAuth } from "../middleware/require-auth.js"
 import { commonErrors, defaultHook, jsonBody, jsonResponse } from "../utils/error-reponses.js"
 import {
   createSong,
+  DEFAULT_SONGS_LIMIT,
   deleteSong,
   getSong,
   getSongAlbumUrl,
   getSongDownloadUrl,
   getSongStreamUrl,
   listSongs,
+  MAX_SONGS_LIMIT,
   updateSong,
 } from "../services/songs.js"
 
@@ -83,17 +85,39 @@ const createSongRoute = createRoute({
   },
 })
 
+const ListSongsQuerySchema = z.object({
+  q: z.string().trim().min(1).optional().openapi({
+    description: "Spelling-tolerant search over song title and artist.",
+  }),
+  cursor: z.coerce.number().int().nonnegative().default(0).openapi({
+    description: "Offset-based pagination cursor - pass back the previous response's `nextCursor`.",
+  }),
+  limit: z.coerce.number().int().positive().max(MAX_SONGS_LIMIT).default(DEFAULT_SONGS_LIMIT).openapi({
+    description: "Max songs to return per page.",
+  }),
+})
+
+const ListSongsResponseSchema = z.object({
+  items: z.array(SongResponseSchema),
+  nextCursor: z.number().nullable(),
+})
+
 const listSongsRoute = createRoute({
   method: "get",
   path: "/songs",
   operationId: "listSongs",
   tags: ["Songs"],
   summary: "List uploaded songs",
-  description: "Any authenticated user can list all uploaded songs.",
+  description:
+    "Any authenticated user can list uploaded songs, paginated via `cursor`/`limit` and optionally filtered with a spelling-tolerant search over title and artist via the `q` query param.",
   middleware: [requireAuth] as const,
+  request: {
+    query: ListSongsQuerySchema,
+  },
   responses: {
-    200: jsonResponse(z.array(SongResponseSchema), "List of songs."),
+    200: jsonResponse(ListSongsResponseSchema, "Paginated list of songs."),
     401: commonErrors[401],
+    422: commonErrors[422],
   },
 })
 
@@ -267,25 +291,29 @@ export const songsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
     )
   })
   .openapi(listSongsRoute, async (c) => {
-    const songs = await listSongs()
+    const { q, cursor, limit } = c.req.valid("query")
+    const { items, nextCursor } = await listSongs({ query: q, cursor, limit })
 
     return c.json(
-      songs.map((s) => ({
-        id: s.id,
-        title: s.title,
-        artist: s.artist,
-        musicalKey: s.musicalKey,
-        tempo: s.tempo,
-        album: s.album,
-        releaseDate: s.releaseDate,
-        chordpro: s.chordpro,
-        originalFileName: s.originalFileName,
-        mimeType: s.mimeType,
-        fileSizeBytes: s.fileSizeBytes,
-        hasAlbumArt: s.albumArtStorageKey !== null,
-        uploader: { id: s.uploader.id, name: s.uploader.name },
-        createdAt: s.createdAt.toISOString(),
-      })),
+      {
+        items: items.map((s) => ({
+          id: s.id,
+          title: s.title,
+          artist: s.artist,
+          musicalKey: s.musicalKey,
+          tempo: s.tempo,
+          album: s.album,
+          releaseDate: s.releaseDate,
+          chordpro: s.chordpro,
+          originalFileName: s.originalFileName,
+          mimeType: s.mimeType,
+          fileSizeBytes: s.fileSizeBytes,
+          hasAlbumArt: s.albumArtStorageKey !== null,
+          uploader: { id: s.uploader.id, name: s.uploader.name },
+          createdAt: s.createdAt.toISOString(),
+        })),
+        nextCursor,
+      },
       200
     )
   })

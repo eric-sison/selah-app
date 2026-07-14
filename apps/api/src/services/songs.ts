@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm"
+import { desc, eq, sql } from "drizzle-orm"
 import { db } from "../db/index.js"
 import { song } from "../db/app-schema.js"
 import { deleteObject, getDownloadUrl, getStreamUrl, uploadObject } from "../lib/storage.js"
@@ -79,15 +79,51 @@ export async function createSong({
   return updated
 }
 
-export async function listSongs() {
-  return db.query.song.findMany({
-    orderBy: desc(song.createdAt),
-    with: {
-      uploader: {
-        columns: { id: true, name: true },
-      },
-    },
-  })
+const SEARCH_SIMILARITY_THRESHOLD = 0.2
+
+export const DEFAULT_SONGS_LIMIT = 10
+export const MAX_SONGS_LIMIT = 100
+
+export interface ListSongsOptions {
+  query?: string
+  cursor?: number
+  limit?: number
+}
+
+export async function listSongs({ query, cursor = 0, limit = DEFAULT_SONGS_LIMIT }: ListSongsOptions = {}) {
+  const withUploader = { uploader: { columns: { id: true, name: true } as const } }
+
+  // Fetches one extra row so `hasMore`/`nextCursor` can be derived without a
+  // separate COUNT query.
+  const rows = query
+    ? await (() => {
+        // Trigram similarity (via the pg_trgm indexes on title/artist)
+        // tolerates misspellings; ILIKE is kept alongside it so a
+        // correctly-spelled partial match (e.g. a short prefix) is never
+        // excluded by the similarity floor.
+        const bestSimilarity = sql<number>`greatest(similarity(${song.title}, ${query}), similarity(coalesce(${song.artist}, ''), ${query}))`
+        const likeQuery = `%${query}%`
+
+        return db.query.song.findMany({
+          where: sql`${bestSimilarity} > ${SEARCH_SIMILARITY_THRESHOLD} OR ${song.title} ILIKE ${likeQuery} OR ${song.artist} ILIKE ${likeQuery}`,
+          orderBy: [desc(bestSimilarity), desc(song.createdAt)],
+          limit: limit + 1,
+          offset: cursor,
+          with: withUploader,
+        })
+      })()
+    : await db.query.song.findMany({
+        orderBy: desc(song.createdAt),
+        limit: limit + 1,
+        offset: cursor,
+        with: withUploader,
+      })
+
+  const hasMore = rows.length > limit
+  return {
+    items: hasMore ? rows.slice(0, limit) : rows,
+    nextCursor: hasMore ? cursor + limit : null,
+  }
 }
 
 export async function getSong(id: string) {

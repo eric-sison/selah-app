@@ -452,95 +452,148 @@
           "Songs"
         ],
         "summary": "List uploaded songs",
-        "description": "Any authenticated user can list all uploaded songs.",
+        "description": "Any authenticated user can list uploaded songs, paginated via `cursor`/`limit` and optionally filtered with a spelling-tolerant search over title and artist via the `q` query param.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Spelling-tolerant search over song title and artist."
+            },
+            "required": false,
+            "description": "Spelling-tolerant search over song title and artist.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "nullable": true,
+              "minimum": 0,
+              "default": 0,
+              "description": "Offset-based pagination cursor - pass back the previous response's `nextCursor`."
+            },
+            "required": false,
+            "description": "Offset-based pagination cursor - pass back the previous response's `nextCursor`.",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "exclusiveMinimum": true,
+              "maximum": 100,
+              "default": 10,
+              "description": "Max songs to return per page."
+            },
+            "required": false,
+            "description": "Max songs to return per page.",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "List of songs.",
+            "description": "Paginated list of songs.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "title": {
-                        "type": "string"
-                      },
-                      "artist": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "musicalKey": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "tempo": {
-                        "type": "number",
-                        "nullable": true
-                      },
-                      "album": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "releaseDate": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "chordpro": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "originalFileName": {
-                        "type": "string"
-                      },
-                      "mimeType": {
-                        "type": "string"
-                      },
-                      "fileSizeBytes": {
-                        "type": "number"
-                      },
-                      "hasAlbumArt": {
-                        "type": "boolean"
-                      },
-                      "uploader": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
                         "type": "object",
                         "properties": {
                           "id": {
                             "type": "string"
                           },
-                          "name": {
+                          "title": {
+                            "type": "string"
+                          },
+                          "artist": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "musicalKey": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "tempo": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "album": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "releaseDate": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "chordpro": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "originalFileName": {
+                            "type": "string"
+                          },
+                          "mimeType": {
+                            "type": "string"
+                          },
+                          "fileSizeBytes": {
+                            "type": "number"
+                          },
+                          "hasAlbumArt": {
+                            "type": "boolean"
+                          },
+                          "uploader": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "createdAt": {
                             "type": "string"
                           }
                         },
                         "required": [
                           "id",
-                          "name"
+                          "title",
+                          "artist",
+                          "musicalKey",
+                          "tempo",
+                          "album",
+                          "releaseDate",
+                          "chordpro",
+                          "originalFileName",
+                          "mimeType",
+                          "fileSizeBytes",
+                          "hasAlbumArt",
+                          "uploader",
+                          "createdAt"
                         ]
-                      },
-                      "createdAt": {
-                        "type": "string"
                       }
                     },
-                    "required": [
-                      "id",
-                      "title",
-                      "artist",
-                      "musicalKey",
-                      "tempo",
-                      "album",
-                      "releaseDate",
-                      "chordpro",
-                      "originalFileName",
-                      "mimeType",
-                      "fileSizeBytes",
-                      "hasAlbumArt",
-                      "uploader",
-                      "createdAt"
-                    ]
-                  }
+                    "nextCursor": {
+                      "type": "number",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ]
                 }
               }
             }
@@ -555,6 +608,20 @@
                 "example": {
                   "status": 401,
                   "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
                 }
               }
             }
