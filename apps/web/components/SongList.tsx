@@ -30,6 +30,7 @@ import Link from "next/link"
 import { FunctionComponent, MouseEvent, useEffect, useRef, useState } from "react"
 import { apiClient } from "@/lib/api-client"
 import { useSession } from "@/components/SessionProvider"
+import { SongDetailsSheet } from "@/components/SongDetailsSheet"
 import { usePlayer } from "@/components/SongPlayerProvider"
 import type { Song } from "@/components/NowPlayingCard"
 
@@ -61,6 +62,7 @@ const SongRow: FunctionComponent<SongRowProps> = ({
   onDelete,
 }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   const albumArt = useQuery({
     queryKey: ["song-album-url", song.id],
@@ -160,14 +162,10 @@ const SongRow: FunctionComponent<SongRowProps> = ({
           <EllipsisVertical />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={stop}>
-          <DropdownMenuItem
-            render={
-              <Link href={`/songs/${song.id}`}>
-                <RedoDot />
-                View Details
-              </Link>
-            }
-          />
+          <DropdownMenuItem onClick={() => setDetailsOpen(true)}>
+            <RedoDot />
+            View Details
+          </DropdownMenuItem>
           <DropdownMenuItem disabled={isDownloading} onClick={onDownload}>
             {isDownloading ? <Spinner /> : <CloudDownload />}
             Download
@@ -217,6 +215,13 @@ const SongRow: FunctionComponent<SongRowProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SongDetailsSheet
+        song={song}
+        albumArtUrl={albumArt.data}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+      />
     </div>
   )
 }

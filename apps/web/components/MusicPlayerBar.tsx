@@ -3,7 +3,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@workspace/ui/components/Button"
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/Popover"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@workspace/ui/components/Sheet"
 import { Slider } from "@workspace/ui/components/Slider"
 import { Spinner } from "@workspace/ui/components/Spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/Tooltip"
@@ -32,7 +31,7 @@ import { formatFileSize } from "@/utils/format-file-size"
 import { formatTime } from "@/utils/format-time"
 import { usePlayer } from "@/components/SongPlayerProvider"
 import { EditChordProDialog } from "@/components/EditChordProDialog"
-import { SongDetailInfo } from "@/components/SongDetailInfo"
+import { SongDetailsSheet } from "@/components/SongDetailsSheet"
 import { SongLyricsChords } from "@/components/SongLyricsChords"
 
 // See NowPlayingCard.tsx - the shared Slider uses `thumbAlignment="edge"`
@@ -72,6 +71,7 @@ export const MusicPlayerBar: FunctionComponent = () => {
     seek,
   } = usePlayer()
 
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [isLyricsOpen, setIsLyricsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isScrubbing, setIsScrubbing] = useState(false)
@@ -372,58 +372,31 @@ export const MusicPlayerBar: FunctionComponent = () => {
             <TooltipContent>Lyrics & chords</TooltipContent>
           </Tooltip>
 
-          <Sheet>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <SheetTrigger
-                    render={
-                      <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Song details">
-                        <ListMusic className="size-4" />
-                      </Button>
-                    }
-                  />
-                }
-              />
-              <TooltipContent>Song details</TooltipContent>
-            </Tooltip>
-
-            <SheetContent side="right" className="flex flex-col gap-6 sm:max-w-sm">
-              <SheetHeader>
-                <SheetTitle>Song details</SheetTitle>
-              </SheetHeader>
-
-              <div className="flex flex-col items-center gap-3 px-4 text-center">
-                <div className="relative size-32 shrink-0 overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
-                  {albumArt.data ? (
-                    <Image
-                      src={albumArt.data}
-                      alt={`${song.title} album art`}
-                      fill
-                      unoptimized
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex size-full items-center justify-center">
-                      <Music className="size-10 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-base font-semibold">{song.title}</p>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {song.artist ?? "Unknown artist"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto px-4">
-                <SongDetailInfo song={song} />
-              </div>
-            </SheetContent>
-          </Sheet>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-lg"
+                  className="rounded-full"
+                  aria-label="Song details"
+                  onClick={() => setIsDetailsOpen(true)}
+                >
+                  <ListMusic className="size-4" />
+                </Button>
+              }
+            />
+            <TooltipContent>Song details</TooltipContent>
+          </Tooltip>
         </div>
       </div>
+
+      <SongDetailsSheet
+        song={song}
+        albumArtUrl={albumArt.data}
+        open={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+      />
 
       {/* Anchored to the bar's own box (not a portal/fixed overlay), so it
         always sits flush above it regardless of the bar's actual height -
