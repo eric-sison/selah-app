@@ -1,4 +1,4 @@
-import { Page, PageContent, PageDescription, PageHeader, PageTitle } from "@workspace/ui/components/Page"
+import { Page, PageContent } from "@workspace/ui/components/Page"
 import { addDays, startOfMonth } from "date-fns"
 import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
 import { ScheduleCalendar, type ScheduleCalendarEvent } from "@/components/ScheduleCalendar"

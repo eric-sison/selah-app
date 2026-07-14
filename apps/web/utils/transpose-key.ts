@@ -21,6 +21,11 @@ export function transposeKey(key: string | null, semitones: number): string | nu
   if (index === -1) return null
 
   const transposedIndex = (((index + semitones) % 12) + 12) % 12
+  // transposedIndex is always in [0, 11] by construction, and
+  // CHROMATIC_SCALE has exactly 12 entries - this index access always
+  // succeeds; the `?? null` fallback only exists to satisfy
+  // noUncheckedIndexedAccess and is unreachable.
+  /* v8 ignore next */
   return CHROMATIC_SCALE[transposedIndex] ?? null
 }
 

@@ -331,6 +331,10 @@ export const SongList: FunctionComponent = () => {
 
   // Nothing is loaded yet on a fresh visit/refresh - highlight the first
   // song as a default focus rather than leaving the whole list unhighlighted.
+  // The `?? null` fallback is unreachable: this line only runs after the
+  // `!songList.length` early return above, so songList[0] (and its id) is
+  // always defined - kept for the `noUncheckedIndexedAccess` index access.
+  /* v8 ignore next */
   const displayActiveId = activeSongId ?? songList[0]?.id ?? null
 
   return (

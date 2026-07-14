@@ -25,6 +25,10 @@ function parseLyricLine(line: string): ChordProSegment[] {
     if (textBefore || currentChord !== null) {
       segments.push({ chord: currentChord, text: textBefore })
     }
+    // match[1] is typed string | undefined (noUncheckedIndexedAccess), but
+    // the regex's `+` quantifier guarantees a non-empty capture whenever the
+    // pattern matches at all - the `?? null` fallback is unreachable.
+    /* v8 ignore next */
     currentChord = match[1] ?? null
     lastIndex = CHORD_TOKEN_REGEX.lastIndex
   }

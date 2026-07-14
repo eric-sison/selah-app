@@ -198,6 +198,10 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
 
   const loadSong = async (song: Song, { autoplay }: { autoplay: boolean }) => {
     const audio = audioRef.current
+    // The <audio> ref is attached synchronously on mount and every caller
+    // of this function only runs after that, so this is unreachable in
+    // practice - kept as a defensive guard, not exercised by tests.
+    /* v8 ignore next */
     if (!audio) return
 
     setLoadingSongId(song.id)
@@ -243,6 +247,8 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
 
   useEffect(() => {
     const audio = audioRef.current
+    // See loadSong's identical guard above - unreachable once mounted.
+    /* v8 ignore next */
     if (!audio) return
 
     const handlePlay = () => setIsPlaying(true)
@@ -304,6 +310,8 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
 
   const playOrToggle = async (song: Song, songQueue?: Song[]) => {
     const audio = audioRef.current
+    // See loadSong's identical guard above - unreachable once mounted.
+    /* v8 ignore next */
     if (!audio) return
 
     await ensureAudioGraph()
@@ -337,6 +345,8 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
 
   const playNext = async () => {
     const audio = audioRef.current
+    // See loadSong's identical guard above - unreachable once mounted.
+    /* v8 ignore next */
     if (!audio) return
 
     await ensureAudioGraph()
@@ -351,6 +361,8 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
 
   const playPrevious = async () => {
     const audio = audioRef.current
+    // See loadSong's identical guard above - unreachable once mounted.
+    /* v8 ignore next */
     if (!audio) return
 
     await ensureAudioGraph()
@@ -375,6 +387,8 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
 
   const seek = (time: number) => {
     const audio = audioRef.current
+    // See loadSong's identical guard above - unreachable once mounted.
+    /* v8 ignore next */
     if (!audio) return
     audio.currentTime = time
   }
@@ -382,6 +396,10 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
   const setVolume = (value: number) => {
     const clamped = Math.min(Math.max(value, 0), 1)
     const audio = audioRef.current
+    // audio is always populated once mounted (see loadSong above) - the
+    // `if` here (rather than an early return) is just to keep state/audio
+    // writes together, not a real conditional in practice.
+    /* v8 ignore next */
     if (audio) audio.volume = clamped
     setVolumeState(clamped)
   }

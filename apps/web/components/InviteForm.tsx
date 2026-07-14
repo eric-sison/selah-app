@@ -54,7 +54,11 @@ export const InviteForm: FunctionComponent = () => {
       email: "",
     },
     onSubmit: async ({ value }) => {
-      await invite.mutateAsync(value)
+      // mutateAsync rethrows on failure (its onError below already shows a
+      // toast) and TanStack Form's handleSubmit rethrows again on top of
+      // that - left uncaught, that becomes an unhandled rejection since the
+      // form is submitted via `void handleSubmit()`.
+      await invite.mutateAsync(value).catch(() => {})
     },
   })
 

@@ -90,6 +90,11 @@ export const AppSidebar: FunctionComponent<ComponentPropsWithoutRef<typeof Sideb
   const router = useRouter()
 
   const isActive = (path: string | undefined) => {
+    // Every call site below only invokes isActive after already narrowing
+    // path to a truthy string (`item.path && ...`, `subItem.path && ...`),
+    // so the undefined branch is unreachable through the component's UI -
+    // kept for the helper's generic `string | undefined` signature.
+    /* v8 ignore next */
     if (!path) return false
     return pathname === path || pathname.startsWith(`${path}/`)
   }

@@ -170,6 +170,13 @@ export const EditChordProDialog: FunctionComponent<EditChordProDialogProps> = ({
                 min={0}
                 max={canControlPlayback ? duration : 100}
                 disabled={!canControlPlayback}
+                // Base UI's Slider.Root treats a controlled `value` as
+                // "range" mode whenever it's an array (see its `range =
+                // Array.isArray(valueUnwrapped)` check) - since `value` is
+                // always `[displayTime]` here, onValueChange always calls
+                // back with a same-shape single-element array, never a bare
+                // number, and that array always has index 0 populated.
+                /* v8 ignore next */
                 onValueChange={(value) => seek(Array.isArray(value) ? (value[0] ?? 0) : value)}
                 className="flex-1 cursor-pointer data-disabled:cursor-not-allowed"
               />

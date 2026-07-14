@@ -125,7 +125,11 @@ export const SignInForm: FunctionComponent<SignInFormProps> = ({ callbackURL = "
       password: "",
     },
     onSubmit: async ({ value }) => {
-      await emailSignIn.mutateAsync(value)
+      // mutateAsync rethrows on failure (its onError below already shows a
+      // toast) and TanStack Form's handleSubmit rethrows again on top of
+      // that - left uncaught, that becomes an unhandled rejection since the
+      // form is submitted via `void handleSubmit()`.
+      await emailSignIn.mutateAsync(value).catch(() => {})
     },
   })
 
