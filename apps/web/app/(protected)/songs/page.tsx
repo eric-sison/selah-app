@@ -20,7 +20,7 @@ export default function SongBank() {
       <PageContent>
         <div className="flex h-full flex-col">
           <PageHeader>
-            <PageTitle>Songs</PageTitle>
+            <PageTitle>Song Library</PageTitle>
             <PageDescription>
               Every track uploaded for worship services — key, tempo, and album art at a glance.
             </PageDescription>

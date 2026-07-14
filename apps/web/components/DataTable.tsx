@@ -27,6 +27,11 @@ interface DataTableProps<TData, TValue> {
 export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
 
+  // TanStack Table's useReactTable() returns functions that can't be
+  // memoized safely - the React Compiler already detects this and skips
+  // optimizing this component on its own, so this just silences the
+  // resulting advisory warning.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,

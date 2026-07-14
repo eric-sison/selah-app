@@ -24,7 +24,7 @@ import {
 import { toast } from "@workspace/ui/components/Sonner"
 import { Spinner } from "@workspace/ui/components/Spinner"
 import { cn } from "@workspace/ui/lib/utils"
-import { CloudDownload, EllipsisVertical, Loader2, Music, Pause, Play, RedoDot, Trash } from "lucide-react"
+import { CloudDownload, EllipsisVertical, Music, Pause, Play, RedoDot, Trash } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { FunctionComponent, MouseEvent, useEffect, useRef, useState } from "react"
@@ -117,7 +117,7 @@ const SongRow: FunctionComponent<SongRowProps> = ({
           )}
         >
           {isLoadingAudio ? (
-            <Loader2 className="size-4 animate-spin" />
+            <Spinner />
           ) : isPlaying ? (
             <Pause className="size-4 fill-current" />
           ) : (
@@ -169,7 +169,7 @@ const SongRow: FunctionComponent<SongRowProps> = ({
             }
           />
           <DropdownMenuItem disabled={isDownloading} onClick={onDownload}>
-            {isDownloading ? <Loader2 className="animate-spin" /> : <CloudDownload />}
+            {isDownloading ? <Spinner /> : <CloudDownload />}
             Download
           </DropdownMenuItem>
           {canDelete && (

@@ -14,8 +14,9 @@ import {
 } from "@workspace/ui/components/Dialog"
 import { Slider } from "@workspace/ui/components/Slider"
 import { toast } from "@workspace/ui/components/Sonner"
+import { Spinner } from "@workspace/ui/components/Spinner"
 import { Textarea } from "@workspace/ui/components/Textarea"
-import { Loader2, Pause, Play, Redo2, Undo2 } from "lucide-react"
+import { Pause, Play, Redo2, Undo2 } from "lucide-react"
 import { FunctionComponent } from "react"
 import { apiClient } from "@/lib/api-client"
 import { ChordProView } from "@/components/ChordProView"
@@ -143,7 +144,7 @@ export const EditChordProDialog: FunctionComponent<EditChordProDialogProps> = ({
               onClick={() => playOrToggle(song)}
             >
               {isLoading ? (
-                <Loader2 className="size-4 animate-spin" />
+                <Spinner />
               ) : isCurrentlyPlaying ? (
                 <Pause className="size-4 fill-current" />
               ) : (

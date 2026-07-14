@@ -1,15 +1,4 @@
-import {
-  Calendar,
-  Home,
-  KeyRound,
-  LayoutGrid,
-  type LucideIcon,
-  Music,
-  Settings,
-  ShieldCheck,
-  UserCog,
-  Users,
-} from "lucide-react"
+import { Calendar, LayoutGrid, type LucideIcon, Music, Settings, Users } from "lucide-react"
 
 type AppPath = string
 
@@ -31,7 +20,7 @@ export type SidebarItem = {
   >
 }
 
-export const SIDEBAR_CONTENT_ITEMS = (_userId?: string): SidebarItem[] => [
+export const SIDEBAR_CONTENT_ITEMS = (): SidebarItem[] => [
   {
     group: "General",
     groupId: "general",
@@ -45,7 +34,7 @@ export const SIDEBAR_CONTENT_ITEMS = (_userId?: string): SidebarItem[] => [
       },
       {
         id: "general-songs",
-        title: "Songs",
+        title: "Song Library",
         path: "/songs",
         icon: Music,
         subItems: [],

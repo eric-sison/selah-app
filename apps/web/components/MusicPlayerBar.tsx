@@ -3,12 +3,14 @@
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@workspace/ui/components/Button"
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/Popover"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@workspace/ui/components/Sheet"
 import { Slider } from "@workspace/ui/components/Slider"
+import { Spinner } from "@workspace/ui/components/Spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/Tooltip"
 import { cn } from "@workspace/ui/lib/utils"
 import {
   FileMusic,
-  Loader2,
+  ListMusic,
   Music,
   Pause,
   Pencil,
@@ -30,6 +32,7 @@ import { formatFileSize } from "@/utils/format-file-size"
 import { formatTime } from "@/utils/format-time"
 import { usePlayer } from "@/components/SongPlayerProvider"
 import { EditChordProDialog } from "@/components/EditChordProDialog"
+import { SongDetailInfo } from "@/components/SongDetailInfo"
 import { SongLyricsChords } from "@/components/SongLyricsChords"
 
 // See NowPlayingCard.tsx - the shared Slider uses `thumbAlignment="edge"`
@@ -38,10 +41,9 @@ import { SongLyricsChords } from "@/components/SongLyricsChords"
 // tooltip's anchor only lines up with the thumb at the midpoint.
 const THUMB_SIZE_PX = 12
 
-// See SongDetailPlayer.tsx - delays the actual `seek()` until the pointer
-// pauses so the <audio> element's currentTime write doesn't stutter on every
-// drag tick; the slider's displayed position still updates immediately via
-// `scrubValue`.
+// Delays the actual `seek()` (an <audio> element currentTime write, which
+// can stutter if fired on every drag tick) until the pointer pauses - the
+// slider's displayed position still updates immediately via `scrubValue`.
 const SEEK_DEBOUNCE_MS = 150
 
 // A persistent, app-bar-style player meant to live in `PageFooter` - unlike
@@ -278,7 +280,7 @@ export const MusicPlayerBar: FunctionComponent = () => {
             onClick={() => playOrToggle(song)}
           >
             {isLoading ? (
-              <Loader2 className="size-4 animate-spin" />
+              <Spinner />
             ) : isPlaying ? (
               <Pause className="size-8 fill-current" />
             ) : (
@@ -369,6 +371,57 @@ export const MusicPlayerBar: FunctionComponent = () => {
             />
             <TooltipContent>Lyrics & chords</TooltipContent>
           </Tooltip>
+
+          <Sheet>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <SheetTrigger
+                    render={
+                      <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Song details">
+                        <ListMusic className="size-4" />
+                      </Button>
+                    }
+                  />
+                }
+              />
+              <TooltipContent>Song details</TooltipContent>
+            </Tooltip>
+
+            <SheetContent side="right" className="flex flex-col gap-6 sm:max-w-sm">
+              <SheetHeader>
+                <SheetTitle>Song details</SheetTitle>
+              </SheetHeader>
+
+              <div className="flex flex-col items-center gap-3 px-4 text-center">
+                <div className="relative size-32 shrink-0 overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
+                  {albumArt.data ? (
+                    <Image
+                      src={albumArt.data}
+                      alt={`${song.title} album art`}
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex size-full items-center justify-center">
+                      <Music className="size-10 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-base font-semibold">{song.title}</p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {song.artist ?? "Unknown artist"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-4">
+                <SongDetailInfo song={song} />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 

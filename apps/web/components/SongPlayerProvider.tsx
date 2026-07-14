@@ -233,6 +233,14 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     }
   }
 
+  // Mirrored into a ref for the same reason as `queueRef` etc. above - the
+  // "ended" listener below is registered once on mount, so calling `loadSong`
+  // directly would close over the function from that first render.
+  const loadSongRef = useRef(loadSong)
+  useEffect(() => {
+    loadSongRef.current = loadSong
+  })
+
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
@@ -253,7 +261,7 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
       const next = currentIndex >= 0 ? order[currentIndex + 1] : undefined
 
       if (next) {
-        void loadSong(next, { autoplay: true })
+        void loadSongRef.current(next, { autoplay: true })
       } else {
         setActiveSongId(null)
       }

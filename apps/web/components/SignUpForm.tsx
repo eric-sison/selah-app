@@ -122,7 +122,7 @@ export const SignUpForm: FunctionComponent<SignUpFormProps> = ({ email, token })
     <Card className="w-sm">
       <CardHeader className="text-center">
         <CardTitle>Create your account</CardTitle>
-        <CardDescription>You've been invited to sign up as {email}</CardDescription>
+        <CardDescription>You&apos;ve been invited to sign up as {email}</CardDescription>
       </CardHeader>
       <CardContent>
         <form
