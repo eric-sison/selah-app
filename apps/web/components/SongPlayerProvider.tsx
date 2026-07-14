@@ -1,5 +1,6 @@
 "use client"
 
+import type { SoundTouchNode } from "@soundtouchjs/audio-worklet"
 import { toast } from "@workspace/ui/components/Sonner"
 import {
   createContext,
@@ -7,11 +8,23 @@ import {
   PropsWithChildren,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react"
 import { apiClient } from "@/lib/api-client"
-import type { Song } from "@/components/MiniMusicPlayer"
+import type { Song } from "@/components/NowPlayingCard"
+import { shuffleArray } from "@/utils/shuffle"
+
+export interface LoopSection {
+  start: number
+  end: number
+}
+
+const MIN_SPEED = 0.5
+const MAX_SPEED = 1.5
+const MIN_TRANSPOSE_SEMITONES = -12
+const MAX_TRANSPOSE_SEMITONES = 12
 
 interface PlayerContextValue {
   activeSongId: string | null
@@ -20,6 +33,25 @@ interface PlayerContextValue {
   currentTime: number
   duration: number
   analyserNode: AnalyserNode | null
+  volume: number
+  setVolume: (value: number) => void
+  speed: number
+  setSpeed: (value: number) => void
+  transposeSemitones: number
+  setTransposeSemitones: (value: number) => void
+  loopSection: LoopSection | null
+  setLoopSection: (section: LoopSection | null) => void
+  // The songs that auto-play in order after the active one ends - see
+  // `selectSong`/`playOrToggle` below for how it's populated.
+  queue: Song[]
+  isShuffling: boolean
+  toggleShuffle: () => void
+  // `queue` in shuffled order when `isShuffling` is on, otherwise `queue`
+  // itself - what `playNext`/`playPrevious`/auto-advance actually step
+  // through.
+  playbackOrder: Song[]
+  repeatCurrentSong: boolean
+  toggleRepeatCurrentSong: () => void
   // `queue`, when provided, replaces the current play queue - the songs that
   // auto-play in order after this one ends. Omit it to just resume/pause
   // whatever's already loaded (e.g. from the mini player's own controls).
@@ -31,6 +63,8 @@ interface PlayerContextValue {
   // play/pause if it's already the loaded one - for explicit play buttons.
   selectSong: (song: Song, queue?: Song[]) => void
   playOrToggle: (song: Song, queue?: Song[]) => void
+  playNext: () => void
+  playPrevious: () => void
   skip: (seconds: number) => void
   seek: (time: number) => void
 }
@@ -51,27 +85,57 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
   // element, so the audio graph is built lazily on first playback and cached
   // here rather than recreated per song.
   const audioContextRef = useRef<AudioContext | null>(null)
+  const soundTouchNodeRef = useRef<SoundTouchNode | null>(null)
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null)
   const [activeSongId, setActiveSongId] = useState<string | null>(null)
   const [loadingSongId, setLoadingSongId] = useState<string | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [volume, setVolumeState] = useState(1)
+  const [speed, setSpeedState] = useState(1)
+  const [transposeSemitones, setTransposeSemitonesState] = useState(0)
+  const [loopSection, setLoopSection] = useState<LoopSection | null>(null)
+  const [isShuffling, setIsShuffling] = useState(false)
+  const [repeatCurrentSong, setRepeatCurrentSong] = useState(false)
 
   // The songs to auto-advance through when the current one ends. Mirrored
   // into refs so the "ended" listener (registered once on mount) always
   // reads the latest queue/song instead of a stale closure.
   const [queue, setQueue] = useState<Song[]>([])
+  // Recomputed only when `queue` itself changes, so toggling shuffle on/off
+  // doesn't reshuffle mid-session - order stays stable for the life of a
+  // given queue.
+  const shuffledQueue = useMemo(() => shuffleArray(queue), [queue])
+  const playbackOrder = isShuffling ? shuffledQueue : queue
+  const playbackOrderRef = useRef<Song[]>([])
   const queueRef = useRef<Song[]>([])
   const activeSongIdRef = useRef<string | null>(null)
+  // The `timeupdate` listener is registered once on mount, so it needs a ref
+  // (not the `loopSection` state directly) to always read the latest value
+  // instead of a stale closure.
+  const loopSectionRef = useRef<LoopSection | null>(null)
+  const repeatCurrentSongRef = useRef(false)
 
   useEffect(() => {
     queueRef.current = queue
   }, [queue])
 
   useEffect(() => {
+    playbackOrderRef.current = playbackOrder
+  }, [playbackOrder])
+
+  useEffect(() => {
     activeSongIdRef.current = activeSongId
   }, [activeSongId])
+
+  useEffect(() => {
+    loopSectionRef.current = loopSection
+  }, [loopSection])
+
+  useEffect(() => {
+    repeatCurrentSongRef.current = repeatCurrentSong
+  }, [repeatCurrentSong])
 
   const ensureAudioGraph = async () => {
     const audio = audioRef.current
@@ -79,6 +143,28 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
 
     const context = new AudioContext()
     const source = context.createMediaElementSource(audio)
+
+    // SoundTouchNode will drive speed (time-stretch) and transpose
+    // (pitch-shift) independently, in real time, once the UI controls for
+    // them return - the native element's own `playbackRate` is deliberately
+    // left untouched (see setSpeed) so there's only one source of truth for
+    // tempo. It's registered and instantiated eagerly so setSpeed/
+    // setTransposeSemitones have a live node to write to, but it's not
+    // wired into the signal path below yet (bypassed, source connects
+    // straight to the analyser) - keep it that way until it's re-verified
+    // end to end.
+    //
+    // Imported dynamically rather than as a static top-level import: the
+    // package's SoundTouchNode class declaration does `extends
+    // AudioWorkletNode`, which evaluates immediately at module load - a
+    // static import would crash when this "use client" module gets
+    // evaluated during SSR, since Node has no AudioWorkletNode global. A
+    // dynamic import here only ever runs inside this browser-only function.
+    const { SoundTouchNode } = await import("@soundtouchjs/audio-worklet")
+    await SoundTouchNode.register(context, "/soundtouch-processor.js")
+    const soundTouch = new SoundTouchNode({ context })
+    soundTouchNodeRef.current = soundTouch
+
     const analyser = context.createAnalyser()
     analyser.fftSize = 256
     analyser.smoothingTimeConstant = 0.8
@@ -126,6 +212,9 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
       setActiveSongId(song.id)
       setCurrentTime(0)
       setDuration(0)
+      // A loop range is a time offset into a specific track - meaningless
+      // once the track changes.
+      setLoopSection(null)
       if (autoplay) {
         const result = await safePlay(audio)
         if (result === "failed") {
@@ -153,9 +242,15 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     const handleEnded = () => {
       setIsPlaying(false)
 
-      const currentQueue = queueRef.current
-      const currentIndex = currentQueue.findIndex((song) => song.id === activeSongIdRef.current)
-      const next = currentIndex >= 0 ? currentQueue[currentIndex + 1] : undefined
+      if (repeatCurrentSongRef.current) {
+        audio.currentTime = 0
+        void safePlay(audio)
+        return
+      }
+
+      const order = playbackOrderRef.current
+      const currentIndex = order.findIndex((song) => song.id === activeSongIdRef.current)
+      const next = currentIndex >= 0 ? order[currentIndex + 1] : undefined
 
       if (next) {
         void loadSong(next, { autoplay: true })
@@ -163,7 +258,13 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
         setActiveSongId(null)
       }
     }
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime)
+    const handleTimeUpdate = () => {
+      const loop = loopSectionRef.current
+      if (loop && audio.currentTime >= loop.end) {
+        audio.currentTime = loop.start
+      }
+      setCurrentTime(audio.currentTime)
+    }
     const handleLoadedMetadata = () => setDuration(audio.duration)
 
     audio.addEventListener("play", handlePlay)
@@ -226,6 +327,38 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     await loadSong(song, { autoplay: true })
   }
 
+  const playNext = async () => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    await ensureAudioGraph()
+    if (audioContextRef.current?.state === "suspended") {
+      await audioContextRef.current.resume()
+    }
+
+    const currentIndex = playbackOrder.findIndex((song) => song.id === activeSongId)
+    const next = currentIndex >= 0 ? playbackOrder[currentIndex + 1] : playbackOrder[0]
+    if (next) await loadSong(next, { autoplay: true })
+  }
+
+  const playPrevious = async () => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    await ensureAudioGraph()
+    if (audioContextRef.current?.state === "suspended") {
+      await audioContextRef.current.resume()
+    }
+
+    const currentIndex = playbackOrder.findIndex((song) => song.id === activeSongId)
+    const previous = currentIndex > 0 ? playbackOrder[currentIndex - 1] : undefined
+    if (previous) await loadSong(previous, { autoplay: true })
+  }
+
+  const toggleShuffle = () => setIsShuffling((prev) => !prev)
+
+  const toggleRepeatCurrentSong = () => setRepeatCurrentSong((prev) => !prev)
+
   const skip = (seconds: number) => {
     const audio = audioRef.current
     if (!audio || !Number.isFinite(audio.duration)) return
@@ -238,6 +371,27 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     audio.currentTime = time
   }
 
+  const setVolume = (value: number) => {
+    const clamped = Math.min(Math.max(value, 0), 1)
+    const audio = audioRef.current
+    if (audio) audio.volume = clamped
+    setVolumeState(clamped)
+  }
+
+  const setSpeed = (value: number) => {
+    const clamped = Math.min(Math.max(value, MIN_SPEED), MAX_SPEED)
+    const soundTouch = soundTouchNodeRef.current
+    if (soundTouch) soundTouch.playbackRate.value = clamped
+    setSpeedState(clamped)
+  }
+
+  const setTransposeSemitones = (value: number) => {
+    const clamped = Math.min(Math.max(value, MIN_TRANSPOSE_SEMITONES), MAX_TRANSPOSE_SEMITONES)
+    const soundTouch = soundTouchNodeRef.current
+    if (soundTouch) soundTouch.pitchSemitones.value = clamped
+    setTransposeSemitonesState(clamped)
+  }
+
   return (
     <PlayerContext.Provider
       value={{
@@ -247,8 +401,24 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
         currentTime,
         duration,
         analyserNode,
+        volume,
+        setVolume,
+        speed,
+        setSpeed,
+        transposeSemitones,
+        setTransposeSemitones,
+        loopSection,
+        setLoopSection,
+        queue,
+        isShuffling,
+        toggleShuffle,
+        playbackOrder,
+        repeatCurrentSong,
+        toggleRepeatCurrentSong,
         selectSong,
         playOrToggle,
+        playNext,
+        playPrevious,
         skip,
         seek,
       }}

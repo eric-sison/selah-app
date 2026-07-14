@@ -12,6 +12,7 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@workspace/ui/components/AlertDialog"
+import { Badge } from "@workspace/ui/components/Badge"
 import { Button } from "@workspace/ui/components/Button"
 import {
   DropdownMenu,
@@ -25,11 +26,12 @@ import { Spinner } from "@workspace/ui/components/Spinner"
 import { cn } from "@workspace/ui/lib/utils"
 import { CloudDownload, EllipsisVertical, Loader2, Music, Pause, Play, RedoDot, Trash } from "lucide-react"
 import Image from "next/image"
-import { FunctionComponent, MouseEvent, useState } from "react"
+import Link from "next/link"
+import { FunctionComponent, MouseEvent, useEffect, useRef, useState } from "react"
 import { apiClient } from "@/lib/api-client"
 import { useSession } from "@/components/SessionProvider"
 import { usePlayer } from "@/components/SongPlayerProvider"
-import type { Song } from "@/components/MiniMusicPlayer"
+import type { Song } from "@/components/NowPlayingCard"
 
 interface SongRowProps {
   song: Song
@@ -76,7 +78,6 @@ const SongRow: FunctionComponent<SongRowProps> = ({
 
   return (
     <div
-      role="button"
       tabIndex={0}
       onClick={onSelect}
       onKeyDown={(e) => {
@@ -127,11 +128,18 @@ const SongRow: FunctionComponent<SongRowProps> = ({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-semibold">{song.title}</p>
+          <Link href={`/songs/${song.id}`} className="truncate text-sm font-semibold hover:underline">
+            {song.title}
+          </Link>
           {song.musicalKey && (
-            <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-primary">
-              {song.musicalKey}
-            </span>
+            <Badge variant="secondary" className="font-mono text-[11px]">
+              Key of {song.musicalKey}
+            </Badge>
+          )}
+          {song.tempo && (
+            <Badge variant="secondary" className="font-mono text-[11px]">
+              {song.tempo} BPM
+            </Badge>
           )}
         </div>
         <p className="truncate text-xs text-muted-foreground">{song.artist ?? "Unknown artist"}</p>
@@ -152,10 +160,14 @@ const SongRow: FunctionComponent<SongRowProps> = ({
           <EllipsisVertical />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={stop}>
-          <DropdownMenuItem disabled>
-            <RedoDot />
-            View Details
-          </DropdownMenuItem>
+          <DropdownMenuItem
+            render={
+              <Link href={`/songs/${song.id}`}>
+                <RedoDot />
+                View Details
+              </Link>
+            }
+          />
           <DropdownMenuItem disabled={isDownloading} onClick={onDownload}>
             {isDownloading ? <Loader2 className="animate-spin" /> : <CloudDownload />}
             Download
@@ -227,6 +239,16 @@ export const SongList: FunctionComponent = () => {
     },
   })
 
+  // Loads (but doesn't play) the first song so the mini player/footer bar
+  // reflect the same default focus the list itself highlights below - only
+  // once, so it doesn't hijack whatever the user has actually picked since.
+  const hasAutoSelectedRef = useRef(false)
+  useEffect(() => {
+    if (hasAutoSelectedRef.current || activeSongId || !songs.data?.length) return
+    hasAutoSelectedRef.current = true
+    selectSong(songs.data[0]!, songs.data)
+  }, [songs.data, activeSongId, selectSong])
+
   const handleDownload = async (song: Song) => {
     setDownloadingId(song.id)
     try {
@@ -276,6 +298,9 @@ export const SongList: FunctionComponent = () => {
   }
 
   const songList = songs.data
+  // Nothing is loaded yet on a fresh visit/refresh - highlight the first
+  // song as a default focus rather than leaving the whole list unhighlighted.
+  const displayActiveId = activeSongId ?? songList[0]?.id ?? null
 
   return (
     <div className="flex flex-col gap-1">
@@ -283,7 +308,7 @@ export const SongList: FunctionComponent = () => {
         <SongRow
           key={song.id}
           song={song}
-          isActive={activeSongId === song.id}
+          isActive={displayActiveId === song.id}
           isPlaying={activeSongId === song.id && isPlaying}
           isLoadingAudio={isLoadingSongId === song.id}
           isDownloading={downloadingId === song.id}

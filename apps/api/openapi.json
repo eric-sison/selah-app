@@ -347,6 +347,10 @@
                       "type": "string",
                       "nullable": true
                     },
+                    "chordpro": {
+                      "type": "string",
+                      "nullable": true
+                    },
                     "originalFileName": {
                       "type": "string"
                     },
@@ -386,6 +390,7 @@
                     "tempo",
                     "album",
                     "releaseDate",
+                    "chordpro",
                     "originalFileName",
                     "mimeType",
                     "fileSizeBytes",
@@ -484,6 +489,10 @@
                         "type": "string",
                         "nullable": true
                       },
+                      "chordpro": {
+                        "type": "string",
+                        "nullable": true
+                      },
                       "originalFileName": {
                         "type": "string"
                       },
@@ -523,6 +532,7 @@
                       "tempo",
                       "album",
                       "releaseDate",
+                      "chordpro",
                       "originalFileName",
                       "mimeType",
                       "fileSizeBytes",
@@ -545,6 +555,381 @@
                 "example": {
                   "status": 401,
                   "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/songs/{id}": {
+      "get": {
+        "operationId": "getSong",
+        "tags": [
+          "Songs"
+        ],
+        "summary": "Get a song by id",
+        "description": "Any authenticated user can fetch a single song's metadata by id.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Song.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "artist": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "musicalKey": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "tempo": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "album": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "releaseDate": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "chordpro": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "originalFileName": {
+                      "type": "string"
+                    },
+                    "mimeType": {
+                      "type": "string"
+                    },
+                    "fileSizeBytes": {
+                      "type": "number"
+                    },
+                    "hasAlbumArt": {
+                      "type": "boolean"
+                    },
+                    "uploader": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "artist",
+                    "musicalKey",
+                    "tempo",
+                    "album",
+                    "releaseDate",
+                    "chordpro",
+                    "originalFileName",
+                    "mimeType",
+                    "fileSizeBytes",
+                    "hasAlbumArt",
+                    "uploader",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateSong",
+        "tags": [
+          "Songs"
+        ],
+        "summary": "Update a song's chord sheet",
+        "description": "Any authenticated user can update a song's chord-over-lyric sheet.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chordpro": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "chordpro"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Song updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "artist": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "musicalKey": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "tempo": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "album": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "releaseDate": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "chordpro": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "originalFileName": {
+                      "type": "string"
+                    },
+                    "mimeType": {
+                      "type": "string"
+                    },
+                    "fileSizeBytes": {
+                      "type": "number"
+                    },
+                    "hasAlbumArt": {
+                      "type": "boolean"
+                    },
+                    "uploader": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "artist",
+                    "musicalKey",
+                    "tempo",
+                    "album",
+                    "releaseDate",
+                    "chordpro",
+                    "originalFileName",
+                    "mimeType",
+                    "fileSizeBytes",
+                    "hasAlbumArt",
+                    "uploader",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSong",
+        "tags": [
+          "Songs"
+        ],
+        "summary": "Delete a song",
+        "description": "Admin-only. Deletes the song's database record and its audio file and album art (if any) from storage.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Song deleted."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
                 }
               }
             }
@@ -738,74 +1123,6 @@
                 "example": {
                   "status": 401,
                   "message": "Unauthorized. Missing or invalid authentication."
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found. Resource does not exist.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "status": 404,
-                  "message": "Not found. Resource does not exist."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/songs/{id}": {
-      "delete": {
-        "operationId": "deleteSong",
-        "tags": [
-          "Songs"
-        ],
-        "summary": "Delete a song",
-        "description": "Admin-only. Deletes the song's database record and its audio file and album art (if any) from storage.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Song deleted."
-          },
-          "401": {
-            "description": "Unauthorized. Missing or invalid authentication.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "status": 401,
-                  "message": "Unauthorized. Missing or invalid authentication."
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden. Insufficient permissions.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "status": 403,
-                  "message": "Forbidden. Insufficient permissions."
                 }
               }
             }

@@ -252,6 +252,28 @@ const { data, error } = await apiClient.GET("/api/invitations/{token}", {
 
 ---
 
+## `lib/` vs `utils/`
+
+Both directories exist in `apps/web` on purpose — they're not
+interchangeable:
+
+- `lib/` — thin wrapper/client modules for external services and
+  integration points: `api-client.ts` (the `openapi-fetch` client),
+  `auth-client.ts` (the `better-auth/react` client), `session.ts`
+  (server-only session fetching). These hold configuration or instantiate a
+  client; they're the "how we talk to something outside this app" layer.
+- `utils/` — small, pure, stateless helper functions with no external
+  dependencies or side effects beyond their inputs: `format-time.ts`,
+  `transpose-key.ts`, `is-safe-redirect.ts`, `route-metadata.ts`,
+  `error-messages.ts`, `sidebar-items.ts`. If it's a plain function that
+  transforms an input into an output and doesn't touch a network/client/env
+  var, it belongs here.
+
+New code should follow whichever bucket it fits, rather than defaulting to
+one directory for everything.
+
+---
+
 # apps/api
 
 - Prefer named exports.

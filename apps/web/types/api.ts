@@ -4,751 +4,922 @@
  */
 
 export interface paths {
-  "/api/health": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Liveness check
-     * @description Confirms the API process is up and able to respond to requests. This does not verify downstream dependencies (database, SMTP, etc.) so a 200 here does not guarantee those are reachable.
-     */
-    get: operations["getHealth"]
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/invitations": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Invite a new user
-     * @description Admin-only. Generates an invitation link (valid for 2 hours) and emails it to the given address.
-     */
-    post: operations["createInvitation"]
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/invitations/{token}": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Look up an invitation by token
-     * @description Public. Used by the sign-up page to check whether a token is still valid before showing the form.
-     */
-    get: operations["getInvitation"]
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/songs": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List uploaded songs
-     * @description Any authenticated user can list all uploaded songs.
-     */
-    get: operations["listSongs"]
-    put?: never
-    /**
-     * Upload a song
-     * @description Any authenticated user can upload a song's audio file and basic metadata.
-     */
-    post: operations["createSong"]
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/songs/{id}/stream-url": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a temporary playback URL for a song
-     * @description Any authenticated user can request a short-lived, signed URL for streaming a song's audio file directly from storage.
-     */
-    get: operations["getSongStreamUrl"]
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/songs/{id}/download-url": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a temporary download URL for a song
-     * @description Any authenticated user can request a short-lived, signed URL for downloading a song's original audio file.
-     */
-    get: operations["getSongDownloadUrl"]
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/songs/{id}/album-url": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a temporary URL for a song's album art
-     * @description Any authenticated user can request a short-lived, signed URL for a song's album art image, if one was uploaded.
-     */
-    get: operations["getSongAlbumUrl"]
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/songs/{id}": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    /**
-     * Delete a song
-     * @description Admin-only. Deletes the song's database record and its audio file and album art (if any) from storage.
-     */
-    delete: operations["deleteSong"]
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
+    "/api/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liveness check
+         * @description Confirms the API process is up and able to respond to requests. This does not verify downstream dependencies (database, SMTP, etc.) so a 200 here does not guarantee those are reachable.
+         */
+        get: operations["getHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite a new user
+         * @description Admin-only. Generates an invitation link (valid for 2 hours) and emails it to the given address.
+         */
+        post: operations["createInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invitations/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Look up an invitation by token
+         * @description Public. Used by the sign-up page to check whether a token is still valid before showing the form.
+         */
+        get: operations["getInvitation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List uploaded songs
+         * @description Any authenticated user can list all uploaded songs.
+         */
+        get: operations["listSongs"];
+        put?: never;
+        /**
+         * Upload a song
+         * @description Any authenticated user can upload a song's audio file and basic metadata.
+         */
+        post: operations["createSong"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a song by id
+         * @description Any authenticated user can fetch a single song's metadata by id.
+         */
+        get: operations["getSong"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a song
+         * @description Admin-only. Deletes the song's database record and its audio file and album art (if any) from storage.
+         */
+        delete: operations["deleteSong"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a song's chord sheet
+         * @description Any authenticated user can update a song's chord-over-lyric sheet.
+         */
+        patch: operations["updateSong"];
+        trace?: never;
+    };
+    "/api/songs/{id}/stream-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a temporary playback URL for a song
+         * @description Any authenticated user can request a short-lived, signed URL for streaming a song's audio file directly from storage.
+         */
+        get: operations["getSongStreamUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs/{id}/download-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a temporary download URL for a song
+         * @description Any authenticated user can request a short-lived, signed URL for downloading a song's original audio file.
+         */
+        get: operations["getSongDownloadUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs/{id}/album-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a temporary URL for a song's album art
+         * @description Any authenticated user can request a short-lived, signed URL for a song's album art image, if one was uploaded.
+         */
+        get: operations["getSongAlbumUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
-export type webhooks = Record<string, never>
+export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    ErrorResponse: {
-      status: number
-      message: string
-      code?: string
-    }
-  }
-  responses: never
-  parameters: never
-  requestBodies: never
-  headers: never
-  pathItems: never
+    schemas: {
+        ErrorResponse: {
+            status: number;
+            message: string;
+            code?: string;
+        };
+    };
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
-export type $defs = Record<string, never>
+export type $defs = Record<string, never>;
 export interface operations {
-  getHealth: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Service is healthy and running. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 200,
-           *       "message": "Service is healthy and running.",
-           *       "code": "OK"
-           *     }
-           */
-          "application/json": {
-            /**
-             * @description HTTP status code, duplicated from the response status.
-             * @example 200
-             */
-            status: number
-            /**
-             * @description Human-readable summary of the health check result.
-             * @example Service is healthy and running.
-             */
-            message: string
-            /**
-             * @description Machine-readable status code.
-             * @example OK
-             */
-            code: string
-          }
-        }
-      }
-      /** @description Internal server error. Something went wrong. */
-      500: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 500,
-           *       "message": "Internal server error. Something went wrong."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  createInvitation: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          /** Format: email */
-          email: string
-        }
-      }
-    }
-    responses: {
-      /** @description Invitation created. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            email: string
-            expiresAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Conflict. Resource already exists. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 409,
-           *       "message": "Conflict. Resource already exists."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  getInvitation: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        token: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Invitation is valid. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            email: string
-            expiresAt: string
-          }
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  listSongs: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description List of songs. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            title: string
-            artist: string | null
-            musicalKey: string | null
-            tempo: number | null
-            album: string | null
-            releaseDate: string | null
-            originalFileName: string
-            mimeType: string
-            fileSizeBytes: number
-            hasAlbumArt: boolean
-            uploader: {
-              id: string
-              name: string
-            }
-            createdAt: string
-          }[]
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  createSong: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "multipart/form-data": {
-          title: string
-          artist?: string
-          musicalKey?: string
-          tempo?: number
-          album?: string
-          /** Format: date */
-          releaseDate?: string
-          /** Format: binary */
-          file: string
-          /** Format: binary */
-          albumArt?: string
-        }
-      }
-    }
-    responses: {
-      /** @description Song uploaded. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            title: string
-            artist: string | null
-            musicalKey: string | null
-            tempo: number | null
-            album: string | null
-            releaseDate: string | null
-            originalFileName: string
-            mimeType: string
-            fileSizeBytes: number
-            hasAlbumArt: boolean
-            uploader: {
-              id: string
-              name: string
-            }
-            createdAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Payload too large. Request body exceeds the maximum allowed size. */
-      413: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 413,
-           *       "message": "Payload too large. Request body exceeds the maximum allowed size."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  getSongStreamUrl: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Signed playback URL. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            url: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  getSongDownloadUrl: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Signed download URL. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            url: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  getSongAlbumUrl: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Signed album art URL. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            url: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  deleteSong: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Song deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
+    getHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service is healthy and running. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 200,
+                     *       "message": "Service is healthy and running.",
+                     *       "code": "OK"
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description HTTP status code, duplicated from the response status.
+                         * @example 200
+                         */
+                        status: number;
+                        /**
+                         * @description Human-readable summary of the health check result.
+                         * @example Service is healthy and running.
+                         */
+                        message: string;
+                        /**
+                         * @description Machine-readable status code.
+                         * @example OK
+                         */
+                        code: string;
+                    };
+                };
+            };
+            /** @description Internal server error. Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 500,
+                     *       "message": "Internal server error. Something went wrong."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: email */
+                    email: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Invitation created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        email: string;
+                        expiresAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict. Resource already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 409,
+                     *       "message": "Conflict. Resource already exists."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invitation is valid. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        email: string;
+                        expiresAt: string;
+                    };
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listSongs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of songs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        title: string;
+                        artist: string | null;
+                        musicalKey: string | null;
+                        tempo: number | null;
+                        album: string | null;
+                        releaseDate: string | null;
+                        chordpro: string | null;
+                        originalFileName: string;
+                        mimeType: string;
+                        fileSizeBytes: number;
+                        hasAlbumArt: boolean;
+                        uploader: {
+                            id: string;
+                            name: string;
+                        };
+                        createdAt: string;
+                    }[];
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    title: string;
+                    artist?: string;
+                    musicalKey?: string;
+                    tempo?: number;
+                    album?: string;
+                    /** Format: date */
+                    releaseDate?: string;
+                    /** Format: binary */
+                    file: string;
+                    /** Format: binary */
+                    albumArt?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Song uploaded. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        title: string;
+                        artist: string | null;
+                        musicalKey: string | null;
+                        tempo: number | null;
+                        album: string | null;
+                        releaseDate: string | null;
+                        chordpro: string | null;
+                        originalFileName: string;
+                        mimeType: string;
+                        fileSizeBytes: number;
+                        hasAlbumArt: boolean;
+                        uploader: {
+                            id: string;
+                            name: string;
+                        };
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Payload too large. Request body exceeds the maximum allowed size. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 413,
+                     *       "message": "Payload too large. Request body exceeds the maximum allowed size."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Song. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        title: string;
+                        artist: string | null;
+                        musicalKey: string | null;
+                        tempo: number | null;
+                        album: string | null;
+                        releaseDate: string | null;
+                        chordpro: string | null;
+                        originalFileName: string;
+                        mimeType: string;
+                        fileSizeBytes: number;
+                        hasAlbumArt: boolean;
+                        uploader: {
+                            id: string;
+                            name: string;
+                        };
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Song deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    chordpro: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Song updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        title: string;
+                        artist: string | null;
+                        musicalKey: string | null;
+                        tempo: number | null;
+                        album: string | null;
+                        releaseDate: string | null;
+                        chordpro: string | null;
+                        originalFileName: string;
+                        mimeType: string;
+                        fileSizeBytes: number;
+                        hasAlbumArt: boolean;
+                        uploader: {
+                            id: string;
+                            name: string;
+                        };
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSongStreamUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed playback URL. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSongDownloadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed download URL. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSongAlbumUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed album art URL. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
 }

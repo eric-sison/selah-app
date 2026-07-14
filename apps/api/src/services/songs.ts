@@ -90,6 +90,30 @@ export async function listSongs() {
   })
 }
 
+export async function getSong(id: string) {
+  return db.query.song.findFirst({
+    where: eq(song.id, id),
+    with: {
+      uploader: {
+        columns: { id: true, name: true },
+      },
+    },
+  })
+}
+
+export interface UpdateSongInput {
+  chordpro: string | null
+}
+
+export async function updateSong(id: string, { chordpro }: UpdateSongInput) {
+  const [updated] = await db.update(song).set({ chordpro }).where(eq(song.id, id)).returning()
+  if (!updated) return undefined
+
+  // The plain `.returning()` row has no `uploader` join - re-fetch through
+  // `getSong` so the response shape matches every other song endpoint.
+  return getSong(id)
+}
+
 export async function getSongStreamUrl(id: string): Promise<string | null> {
   const found = await db.query.song.findFirst({ where: eq(song.id, id) })
   if (!found) return null

@@ -4,9 +4,7 @@ import { redirect } from "next/navigation"
 import { getServerSession } from "@/lib/session"
 import { SessionProvider } from "@/components/SessionProvider"
 import { AppSidebar } from "@/components/AppSidebar"
-import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
 import { SidebarInset, SidebarProvider } from "@workspace/ui/components/Sidebar"
-import { Page, PageContent } from "@workspace/ui/components/Page"
 
 export default async function ProtectedLayout({ children }: Readonly<PropsWithChildren>) {
   const session = await getServerSession()
@@ -18,14 +16,15 @@ export default async function ProtectedLayout({ children }: Readonly<PropsWithCh
 
   return (
     <SessionProvider value={session}>
-      <SidebarProvider style={{ "--sidebar-width": "15rem" } as CSSProperties}>
-        <AppSidebar variant="sidebar" />
-        <SidebarInset>
-          <Page>
-            <PageBreadcrumbNav />
-            <PageContent>{children}</PageContent>
-          </Page>
-        </SidebarInset>
+      <SidebarProvider
+        style={{ "--sidebar-width": "15rem" } as CSSProperties}
+        className="bg-linear-to-b from-primary/8 to-transparent"
+      >
+        {/* Both the sidebar's own inner panel and SidebarInset paint an
+          opaque background by default, which would otherwise fully hide
+          the gradient above - clear them so it shows through everywhere. */}
+        <AppSidebar variant="sidebar" className="**:data-[slot=sidebar-inner]:bg-transparent" />
+        <SidebarInset className="bg-transparent">{children}</SidebarInset>
       </SidebarProvider>
     </SessionProvider>
   )

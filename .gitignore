@@ -45,3 +45,7 @@ yarn-error.log*
 next-env.d.ts
 
 scratch.txt
+
+# vendored audio worklet, copied from node_modules on dev/build - see
+# apps/web/scripts/copy-soundtouch-worklet.mjs
+apps/web/public/soundtouch-processor.js

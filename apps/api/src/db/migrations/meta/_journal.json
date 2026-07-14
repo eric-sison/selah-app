@@ -50,6 +50,13 @@
       "when": 1783734623052,
       "tag": "0006_rename_tables_to_plural",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783977158218,
+      "tag": "0007_dry_bruce_banner",
+      "breakpoints": true
     }
   ]
 }

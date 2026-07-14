@@ -92,11 +92,16 @@ function PageContent({ className, ...props }: ComponentProps<"div">) {
 }
 
 function PageFooter({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cn("w-full shrink-0", className)} {...props} />
+  return <div className={cn("w-full shrink-0 border-t bg-muted/50", className)} {...props} />
 }
 
-function Page({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cn("flex h-full flex-col space-y-5 overflow-hidden", className)} {...props} />
+function Page({ className, noGap, ...props }: ComponentProps<"div"> & { noGap?: boolean }) {
+  return (
+    <div
+      className={cn("flex h-full flex-col overflow-hidden", !noGap && "space-y-5", className)}
+      {...props}
+    />
+  )
 }
 
 export { Page, PageAction, PageBreadcrumb, PageContent, PageDescription, PageFooter, PageHeader, PageTitle }

@@ -3,14 +3,16 @@ import { bodyLimit } from "hono/body-limit"
 import type { RequestContext } from "../types/request-context.js"
 import { requireAdmin } from "../middleware/require-admin.js"
 import { requireAuth } from "../middleware/require-auth.js"
-import { commonErrors, defaultHook, jsonResponse } from "../utils/error-reponses.js"
+import { commonErrors, defaultHook, jsonBody, jsonResponse } from "../utils/error-reponses.js"
 import {
   createSong,
   deleteSong,
+  getSong,
   getSongAlbumUrl,
   getSongDownloadUrl,
   getSongStreamUrl,
   listSongs,
+  updateSong,
 } from "../services/songs.js"
 
 const MAX_FILE_SIZE_BYTES = 30 * 1024 * 1024
@@ -47,6 +49,7 @@ const SongResponseSchema = z.object({
   tempo: z.number().nullable(),
   album: z.string().nullable(),
   releaseDate: z.string().nullable(),
+  chordpro: z.string().nullable(),
   originalFileName: z.string(),
   mimeType: z.string(),
   fileSizeBytes: z.number(),
@@ -91,6 +94,48 @@ const listSongsRoute = createRoute({
   responses: {
     200: jsonResponse(z.array(SongResponseSchema), "List of songs."),
     401: commonErrors[401],
+  },
+})
+
+const getSongRoute = createRoute({
+  method: "get",
+  path: "/songs/{id}",
+  operationId: "getSong",
+  tags: ["Songs"],
+  summary: "Get a song by id",
+  description: "Any authenticated user can fetch a single song's metadata by id.",
+  middleware: [requireAuth] as const,
+  request: {
+    params: z.object({ id: z.uuid() }),
+  },
+  responses: {
+    200: jsonResponse(SongResponseSchema, "Song."),
+    401: commonErrors[401],
+    404: commonErrors[404],
+  },
+})
+
+const UpdateSongBodySchema = z.object({
+  chordpro: z.string().nullable(),
+})
+
+const updateSongRoute = createRoute({
+  method: "patch",
+  path: "/songs/{id}",
+  operationId: "updateSong",
+  tags: ["Songs"],
+  summary: "Update a song's chord sheet",
+  description: "Any authenticated user can update a song's chord-over-lyric sheet.",
+  middleware: [requireAuth] as const,
+  request: {
+    params: z.object({ id: z.uuid() }),
+    ...jsonBody(UpdateSongBodySchema),
+  },
+  responses: {
+    200: jsonResponse(SongResponseSchema, "Song updated."),
+    401: commonErrors[401],
+    404: commonErrors[404],
+    422: commonErrors[422],
   },
 })
 
@@ -210,6 +255,7 @@ export const songsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
         tempo: created.tempo,
         album: created.album,
         releaseDate: created.releaseDate,
+        chordpro: created.chordpro,
         originalFileName: created.originalFileName,
         mimeType: created.mimeType,
         fileSizeBytes: created.fileSizeBytes,
@@ -232,6 +278,7 @@ export const songsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
         tempo: s.tempo,
         album: s.album,
         releaseDate: s.releaseDate,
+        chordpro: s.chordpro,
         originalFileName: s.originalFileName,
         mimeType: s.mimeType,
         fileSizeBytes: s.fileSizeBytes,
@@ -239,6 +286,63 @@ export const songsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
         uploader: { id: s.uploader.id, name: s.uploader.name },
         createdAt: s.createdAt.toISOString(),
       })),
+      200
+    )
+  })
+  .openapi(getSongRoute, async (c) => {
+    const { id } = c.req.valid("param")
+    const found = await getSong(id)
+
+    if (!found) {
+      return c.json({ status: 404, message: "Song not found." }, 404)
+    }
+
+    return c.json(
+      {
+        id: found.id,
+        title: found.title,
+        artist: found.artist,
+        musicalKey: found.musicalKey,
+        tempo: found.tempo,
+        album: found.album,
+        releaseDate: found.releaseDate,
+        chordpro: found.chordpro,
+        originalFileName: found.originalFileName,
+        mimeType: found.mimeType,
+        fileSizeBytes: found.fileSizeBytes,
+        hasAlbumArt: found.albumArtStorageKey !== null,
+        uploader: { id: found.uploader.id, name: found.uploader.name },
+        createdAt: found.createdAt.toISOString(),
+      },
+      200
+    )
+  })
+  .openapi(updateSongRoute, async (c) => {
+    const { id } = c.req.valid("param")
+    const { chordpro } = c.req.valid("json")
+    const updated = await updateSong(id, { chordpro })
+
+    if (!updated) {
+      return c.json({ status: 404, message: "Song not found." }, 404)
+    }
+
+    return c.json(
+      {
+        id: updated.id,
+        title: updated.title,
+        artist: updated.artist,
+        musicalKey: updated.musicalKey,
+        tempo: updated.tempo,
+        album: updated.album,
+        releaseDate: updated.releaseDate,
+        chordpro: updated.chordpro,
+        originalFileName: updated.originalFileName,
+        mimeType: updated.mimeType,
+        fileSizeBytes: updated.fileSizeBytes,
+        hasAlbumArt: updated.albumArtStorageKey !== null,
+        uploader: { id: updated.uploader.id, name: updated.uploader.name },
+        createdAt: updated.createdAt.toISOString(),
+      },
       200
     )
   })

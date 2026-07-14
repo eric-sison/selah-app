@@ -32,6 +32,7 @@ export const song = pgTable(
     tempo: integer("tempo"),
     album: text("album"),
     releaseDate: date("release_date"),
+    chordpro: text("chordpro"),
     storageKey: text("storage_key").notNull(),
     albumArtStorageKey: text("album_art_storage_key"),
     originalFileName: text("original_file_name").notNull(),
