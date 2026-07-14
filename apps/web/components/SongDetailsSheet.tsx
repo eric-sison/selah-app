@@ -22,7 +22,15 @@ export const SongDetailsSheet: FunctionComponent<SongDetailsSheetProps> = ({
 }) => {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex flex-col gap-6 sm:max-w-sm">
+      {/* Stops clicks (including the close button, whose focus-restoration
+        can land back on the row that opened this) from bubbling to an
+        ancestor row's own onClick - see SongList.tsx's SongRow, which
+        selects/pauses the player on row click. */}
+      <SheetContent
+        side="right"
+        className="flex flex-col gap-6 sm:max-w-sm"
+        onClick={(e) => e.stopPropagation()}
+      >
         <SheetHeader>
           <SheetTitle>Song details</SheetTitle>
         </SheetHeader>
