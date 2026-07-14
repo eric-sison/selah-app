@@ -24,7 +24,7 @@ import {
 import { toast } from "@workspace/ui/components/Sonner"
 import { Spinner } from "@workspace/ui/components/Spinner"
 import { cn } from "@workspace/ui/lib/utils"
-import { CloudDownload, EllipsisVertical, Music, Pause, Play, RedoDot, Trash } from "lucide-react"
+import { CloudDownload, EllipsisVertical, LibraryBig, Music, Pause, Play, RedoDot, Trash } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { FunctionComponent, MouseEvent, useEffect, useRef, useState } from "react"
@@ -161,10 +161,14 @@ const SongRow: FunctionComponent<SongRowProps> = ({
         >
           <EllipsisVertical />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" onClick={stop}>
+        <DropdownMenuContent className="w-40" align="end" onClick={stop}>
           <DropdownMenuItem onClick={() => setDetailsOpen(true)}>
             <RedoDot />
             View Details
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled>
+            <LibraryBig />
+            Add to line up
           </DropdownMenuItem>
           <DropdownMenuItem disabled={isDownloading} onClick={onDownload}>
             {isDownloading ? <Spinner /> : <CloudDownload />}
