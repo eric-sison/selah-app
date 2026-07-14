@@ -1,8 +1,10 @@
 import { FunctionComponent } from "react"
 import { parseChordPro } from "@/utils/chordpro"
+import { transposeChord } from "@/utils/transpose-key"
 
 interface ChordProViewProps {
   chordpro: string
+  transposeSemitones?: number
 }
 
 // An actual non-breaking space, not a plain " " - a span whose only content
@@ -11,7 +13,7 @@ interface ChordProViewProps {
 // line's first chord) and misaligning them against their siblings.
 const NBSP = " "
 
-export const ChordProView: FunctionComponent<ChordProViewProps> = ({ chordpro }) => {
+export const ChordProView: FunctionComponent<ChordProViewProps> = ({ chordpro, transposeSemitones = 0 }) => {
   const lines = parseChordPro(chordpro)
 
   return (
@@ -38,12 +40,15 @@ export const ChordProView: FunctionComponent<ChordProViewProps> = ({ chordpro })
 
         return (
           <div key={index} className="flex flex-nowrap">
-            {line.segments.map((segment, segmentIndex) => (
-              <span key={segmentIndex} className="inline-flex shrink-0 flex-col items-start">
-                <span className="text-sm font-extrabold text-primary">{segment.chord ?? NBSP}</span>
-                <span className="whitespace-pre">{segment.text}</span>
-              </span>
-            ))}
+            {line.segments.map((segment, segmentIndex) => {
+              const chord = segment.chord ? transposeChord(segment.chord, transposeSemitones) : null
+              return (
+                <span key={segmentIndex} className="inline-flex shrink-0 flex-col items-start">
+                  <span className="text-sm font-extrabold text-primary">{chord ?? NBSP}</span>
+                  <span className="whitespace-pre">{segment.text}</span>
+                </span>
+              )
+            })}
           </div>
         )
       })}

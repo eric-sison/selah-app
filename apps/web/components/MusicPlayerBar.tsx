@@ -444,7 +444,10 @@ export const MusicPlayerBar: FunctionComponent = () => {
           </Button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          <SongLyricsChords song={song} />
+          {/* Keyed by song id so the transpose stepper's local state resets
+            when the displayed song changes, same reasoning as
+            EditChordProDialog below. */}
+          <SongLyricsChords key={song.id} song={song} />
         </div>
         <div className="border-t p-4">
           <Button className="w-full" onClick={() => setIsEditOpen(true)}>
