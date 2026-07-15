@@ -9,6 +9,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed:admin": "tsx src/scripts/seed-admin.ts",
+    "db:seed:musicians": "tsx src/scripts/seed-musicians.ts",
     "openapi:generate": "tsx src/scripts/generate-openapi-spec.ts",
     "storage:configure-cors": "tsx src/scripts/configure-storage-cors.ts",
     "test": "vitest run",

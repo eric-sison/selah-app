@@ -64,6 +64,20 @@
       "when": 1784051926747,
       "tag": "0008_add_song_search_trgm_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784153779389,
+      "tag": "0009_rich_ultimatum",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1784154611698,
+      "tag": "0010_familiar_toad_men",
+      "breakpoints": true
     }
   ]
 }
