@@ -1,5 +1,4 @@
 import {
-  Page,
   PageAction,
   PageContent,
   PageDescription,
@@ -10,15 +9,13 @@ import {
 import { ScrollArea } from "@workspace/ui/components/ScrollArea"
 import { NowPlayingCard } from "@/components/NowPlayingCard"
 import { MusicPlayerBar } from "@/components/MusicPlayerBar"
-import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
 import { SongList } from "@/components/SongList"
 import { SongSearchCombobox } from "@/components/SongSearchCombobox"
 import { UploadSongDialog } from "@/components/UploadSongDialog"
 
 export default function SongBank() {
   return (
-    <Page>
-      <PageBreadcrumbNav />
+    <>
       <PageContent>
         <div className="flex h-full flex-col">
           <PageHeader>
@@ -42,6 +39,6 @@ export default function SongBank() {
       <PageFooter className="mt-0!">
         <MusicPlayerBar />
       </PageFooter>
-    </Page>
+    </>
   )
 }

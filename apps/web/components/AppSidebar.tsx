@@ -125,7 +125,7 @@ export const AppSidebar: FunctionComponent<ComponentPropsWithoutRef<typeof Sideb
         {sidebarItems().map((sidebarItem) => (
           <SidebarGroup key={sidebarItem.groupId}>
             {sidebarItem.group && (
-              <SidebarGroupLabel className="text-[10px] font-bold tracking-wider text-muted uppercase">
+              <SidebarGroupLabel className="text-[10px] font-bold tracking-wider uppercase">
                 {sidebarItem.group}
               </SidebarGroupLabel>
             )}

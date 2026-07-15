@@ -1,13 +1,9 @@
-import { Page, PageContent } from "@workspace/ui/components/Page"
-import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
+import { PageContent } from "@workspace/ui/components/Page"
 
 export default function DashboardPage() {
   return (
-    <Page>
-      <PageBreadcrumbNav />
-      <PageContent>
-        <div>Dashboard</div>
-      </PageContent>
-    </Page>
+    <PageContent>
+      <div>Dashboard</div>
+    </PageContent>
   )
 }

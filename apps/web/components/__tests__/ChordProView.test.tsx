@@ -47,4 +47,12 @@ describe("ChordProView", () => {
     expect(screen.getByText("D")).toBeInTheDocument()
     expect(screen.queryByText("C")).not.toBeInTheDocument()
   })
+
+  it("renders nothing (and takes no vertical space) for a directive line", () => {
+    const { container } = render(<ChordProView chordpro={"{capo: 2}\n[C]Test"} />)
+
+    expect(screen.queryByText("capo", { exact: false })).not.toBeInTheDocument()
+    expect(container.querySelectorAll(".h-4")).toHaveLength(0)
+    expect(screen.getByText("Test")).toBeInTheDocument()
+  })
 })

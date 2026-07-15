@@ -1,10 +1,12 @@
 import type { CSSProperties, PropsWithChildren } from "react"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
+import { Page } from "@workspace/ui/components/Page"
+import { SidebarInset, SidebarProvider } from "@workspace/ui/components/Sidebar"
 import { getServerSession } from "@/lib/session"
 import { SessionProvider } from "@/components/SessionProvider"
 import { AppSidebar } from "@/components/AppSidebar"
-import { SidebarInset, SidebarProvider } from "@workspace/ui/components/Sidebar"
+import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
 
 export default async function ProtectedLayout({ children }: Readonly<PropsWithChildren>) {
   const session = await getServerSession()
@@ -29,7 +31,12 @@ export default async function ProtectedLayout({ children }: Readonly<PropsWithCh
           opaque background by default, which would otherwise fully hide
           the gradient above - clear them so it shows through everywhere. */}
         <AppSidebar variant="sidebar" className="**:data-[slot=sidebar-inner]:bg-transparent" />
-        <SidebarInset className="bg-transparent">{children}</SidebarInset>
+        <SidebarInset className="bg-transparent">
+          <Page>
+            <PageBreadcrumbNav />
+            {children}
+          </Page>
+        </SidebarInset>
       </SidebarProvider>
     </SessionProvider>
   )

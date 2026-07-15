@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseChordPro } from "@/utils/chordpro"
+import { getDeclaredCapo, getDeclaredTranspose, parseChordPro } from "@/utils/chordpro"
 
 describe("parseChordPro", () => {
   it("treats an empty/whitespace-only line as blank", () => {
@@ -115,5 +115,87 @@ describe("parseChordPro", () => {
     expect(parseChordPro("[G]second")).toEqual([
       { type: "lyric", segments: [{ chord: "G", text: "second" }] },
     ])
+  })
+
+  it("parses a directive line with a value", () => {
+    expect(parseChordPro("{capo: 2}")).toEqual([{ type: "directive", name: "capo", value: "2" }])
+  })
+
+  it("lowercases the directive name but preserves the value's casing", () => {
+    expect(parseChordPro("{Title: Amazing Grace}")).toEqual([
+      { type: "directive", name: "title", value: "Amazing Grace" },
+    ])
+  })
+
+  it("parses a bare directive with no value as null", () => {
+    expect(parseChordPro("{soc}")).toEqual([{ type: "directive", name: "soc", value: null }])
+  })
+
+  it("trims whitespace around a directive's name and value", () => {
+    expect(parseChordPro("{  capo :  2  }")).toEqual([{ type: "directive", name: "capo", value: "2" }])
+  })
+
+  it("does not treat a bracket tag as a directive (braces vs. brackets are distinct syntax)", () => {
+    expect(parseChordPro("[capo: 2]")).toEqual([{ type: "section", label: "capo: 2" }])
+  })
+})
+
+describe("getDeclaredCapo", () => {
+  it("returns the declared fret from a {capo: N} directive", () => {
+    expect(getDeclaredCapo(parseChordPro("{capo: 3}\n[D]Test"))).toBe(3)
+  })
+
+  it("returns null when there is no capo directive", () => {
+    expect(getDeclaredCapo(parseChordPro("[D]Test"))).toBeNull()
+  })
+
+  it("returns null for a bare {capo} directive with no value", () => {
+    expect(getDeclaredCapo(parseChordPro("{capo}"))).toBeNull()
+  })
+
+  it("ignores a non-numeric capo value", () => {
+    expect(getDeclaredCapo(parseChordPro("{capo: banana}"))).toBeNull()
+  })
+
+  it("ignores a negative capo value", () => {
+    expect(getDeclaredCapo(parseChordPro("{capo: -1}"))).toBeNull()
+  })
+
+  it("ignores unrecognized directives entirely", () => {
+    expect(getDeclaredCapo(parseChordPro("{title: Amazing Grace}\n[D]Test"))).toBeNull()
+  })
+
+  it("uses the first valid capo directive when multiple are present", () => {
+    expect(getDeclaredCapo(parseChordPro("{capo: 2}\n{capo: 5}"))).toBe(2)
+  })
+})
+
+describe("getDeclaredTranspose", () => {
+  it("returns the declared offset from a {transpose: N} directive", () => {
+    expect(getDeclaredTranspose(parseChordPro("{transpose: 3}\n[D]Test"))).toBe(3)
+  })
+
+  it("returns a negative declared offset (transpose can go down, unlike capo)", () => {
+    expect(getDeclaredTranspose(parseChordPro("{transpose: -2}\n[D]Test"))).toBe(-2)
+  })
+
+  it("returns null when there is no transpose directive", () => {
+    expect(getDeclaredTranspose(parseChordPro("[D]Test"))).toBeNull()
+  })
+
+  it("returns null for a bare {transpose} directive with no value", () => {
+    expect(getDeclaredTranspose(parseChordPro("{transpose}"))).toBeNull()
+  })
+
+  it("ignores a non-numeric transpose value", () => {
+    expect(getDeclaredTranspose(parseChordPro("{transpose: banana}"))).toBeNull()
+  })
+
+  it("ignores unrecognized directives entirely", () => {
+    expect(getDeclaredTranspose(parseChordPro("{title: Amazing Grace}\n[D]Test"))).toBeNull()
+  })
+
+  it("uses the first valid transpose directive when multiple are present", () => {
+    expect(getDeclaredTranspose(parseChordPro("{transpose: 2}\n{transpose: 5}"))).toBe(2)
   })
 })

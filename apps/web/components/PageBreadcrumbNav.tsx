@@ -1,9 +1,19 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import type { FunctionComponent } from "react"
 import { routeMap } from "@/utils/route-metadata"
 import { PageBreadcrumb } from "@workspace/ui/components/Page"
+import { useSession } from "./SessionProvider"
+import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/Avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/DropdownMenu"
+import { authClient } from "@/lib/auth-client"
 
 // The layout that renders this is a Server Component - it only runs once
 // per full page load, so a pathname read there via headers() goes stale on
@@ -12,6 +22,46 @@ import { PageBreadcrumb } from "@workspace/ui/components/Page"
 // segment). usePathname() is a client hook that tracks the router's live
 // state instead, so this has to be a client component.
 export const PageBreadcrumbNav: FunctionComponent = () => {
+  const router = useRouter()
   const pathname = usePathname()
-  return <PageBreadcrumb pathname={pathname} routes={routeMap} />
+  const session = useSession()
+  const imgUrl = session?.user.image as string | undefined
+  const userName = session?.user.name as string | undefined
+
+  return (
+    <nav className="flex w-full items-center justify-between border-b px-4 py-2.5">
+      <PageBreadcrumb pathname={pathname} routes={routeMap} />
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <button>
+              <Avatar>
+                <AvatarImage src={imgUrl} />
+                <AvatarFallback className="uppercase">{userName?.charAt(0)}</AvatarFallback>
+              </Avatar>
+            </button>
+          }
+        />
+        <DropdownMenuContent>
+          <DropdownMenuItem>Profile</DropdownMenuItem>
+          <DropdownMenuItem>Settings</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => {
+              authClient.signOut({
+                fetchOptions: {
+                  onSuccess() {
+                    router.push("/auth/sign-in")
+                  },
+                },
+              })
+            }}
+          >
+            Sign out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </nav>
+  )
 }

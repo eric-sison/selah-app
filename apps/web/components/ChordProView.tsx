@@ -27,6 +27,13 @@ export const ChordProView: FunctionComponent<ChordProViewProps> = ({ chordpro, t
           return <div key={index} className="h-4" />
         }
 
+        // Directives (e.g. "{capo: 2}") are metadata, not lyrics - never
+        // rendered, and contribute no vertical space of their own (unlike
+        // a blank line, which intentionally preserves the sheet's spacing).
+        if (line.type === "directive") {
+          return null
+        }
+
         if (line.type === "section") {
           return (
             <p
@@ -44,7 +51,7 @@ export const ChordProView: FunctionComponent<ChordProViewProps> = ({ chordpro, t
               const chord = segment.chord ? transposeChord(segment.chord, transposeSemitones) : null
               return (
                 <span key={segmentIndex} className="inline-flex shrink-0 flex-col items-start">
-                  <span className="text-sm font-extrabold text-primary">{chord ?? NBSP}</span>
+                  <span className="text-sm font-extrabold text-sidebar-primary">{chord ?? NBSP}</span>
                   <span className="whitespace-pre">{segment.text}</span>
                 </span>
               )

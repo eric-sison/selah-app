@@ -1,6 +1,5 @@
-import { Page, PageContent } from "@workspace/ui/components/Page"
+import { PageContent } from "@workspace/ui/components/Page"
 import { addDays, startOfMonth } from "date-fns"
-import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
 import { ScheduleCalendar, type ScheduleCalendarEvent } from "@/components/ScheduleCalendar"
 
 // Placeholder data until schedules/events have a real API-backed model -
@@ -18,18 +17,19 @@ const mockEvents: ScheduleCalendarEvent[] = [
 
 export default function Schedules() {
   return (
-    <Page noGap>
-      <PageBreadcrumbNav />
-      <PageContent className="py-5">
-        {/* <PageHeader>
-          <PageTitle>Schedules</PageTitle>
-          <PageDescription>
-            Plan services, rehearsals, and set lists, and see what is coming up next.
-          </PageDescription>
-        </PageHeader> */}
+    // The layout's <Page> always applies its default `space-y-5` gap above
+    // this (no per-page `noGap` control anymore now that <Page> lives at the
+    // layout level) - only `pb-5` here, not `py-5`, so the top doesn't get a
+    // doubled-up gap.
+    <PageContent className="pb-5">
+      {/* <PageHeader>
+        <PageTitle>Schedules</PageTitle>
+        <PageDescription>
+          Plan services, rehearsals, and set lists, and see what is coming up next.
+        </PageDescription>
+      </PageHeader> */}
 
-        <ScheduleCalendar events={mockEvents} />
-      </PageContent>
-    </Page>
+      <ScheduleCalendar events={mockEvents} />
+    </PageContent>
   )
 }

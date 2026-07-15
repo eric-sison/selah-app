@@ -1,4 +1,13 @@
-import { BookOpen, Calendar, LayoutGrid, type LucideIcon, Music, Settings, Users } from "lucide-react"
+import {
+  BookOpen,
+  Calendar,
+  LayoutGrid,
+  LibraryBig,
+  type LucideIcon,
+  Music,
+  Settings,
+  Users,
+} from "lucide-react"
 
 type AppPath = string
 
@@ -40,10 +49,10 @@ export const SIDEBAR_CONTENT_ITEMS = (): SidebarItem[] => [
         subItems: [],
       },
       {
-        id: "general-services",
-        title: "Services",
-        path: "/services",
-        icon: BookOpen,
+        id: "general-line-ups",
+        title: "Line Ups",
+        path: "/line-ups",
+        icon: LibraryBig,
         subItems: [],
       },
       {

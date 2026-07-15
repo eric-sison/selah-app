@@ -7,6 +7,7 @@ import { env } from "../utils/env.js"
 import { getValidInvitationByToken, markInvitationAccepted } from "../services/invitations.js"
 import { sendMail } from "./mailer.js"
 import * as schema from "../db/auth-schema.js"
+import { eq } from "drizzle-orm"
 
 // Local/LAN origins reach the API directly on its own port; the public
 // domain is assumed to reverse-proxy /api on the same host, so it keeps
@@ -57,11 +58,20 @@ export const auth = betterAuth({
       // Facebook sign-in only works for users who already have an account;
       // it never implicitly creates one.
       disableSignUp: true,
+      mapProfileToUser: async (profile) => {
+        const image = profile.picture.data.url
+        return {
+          image,
+        }
+      },
     },
   },
   account: {
+    encryptOAuthTokens: true,
     accountLinking: {
       enabled: true,
+      allowDifferentEmails: true,
+      updateUserInfoOnLink: true,
       // Only link via an explicit authClient.linkSocial() call from an
       // already-authenticated session, never implicitly during sign-in.
       disableImplicitLinking: true,

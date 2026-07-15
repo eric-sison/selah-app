@@ -1,9 +1,11 @@
 import { Button } from "@workspace/ui/components/Button"
-import { FileMusic, Minus, Plus, RotateCcw } from "lucide-react"
-import { FunctionComponent, useState } from "react"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@workspace/ui/components/Card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/Tabs"
+import { FileMusic, Minus, Plus } from "lucide-react"
+import { FunctionComponent, useMemo, useState } from "react"
 import { ChordProView } from "@/components/ChordProView"
 import type { Song } from "@/components/NowPlayingCard"
-import { transposeKey } from "@/utils/transpose-key"
+import { getDeclaredCapo, getDeclaredTranspose, parseChordPro } from "@/utils/chordpro"
 
 interface SongLyricsChordsProps {
   song: Song
@@ -24,9 +26,61 @@ const MAX_TRANSPOSE_SEMITONES = 12
 const MIN_CAPO_FRET = 0
 const MAX_CAPO_FRET = 11
 
+function clampCapoFret(value: number): number {
+  return Math.min(Math.max(value, MIN_CAPO_FRET), MAX_CAPO_FRET)
+}
+
+function clampTransposeSemitones(value: number): number {
+  return Math.min(Math.max(value, MIN_TRANSPOSE_SEMITONES), MAX_TRANSPOSE_SEMITONES)
+}
+
+function formatSignedSemitones(value: number): string {
+  if (value === 0) return "0"
+  return value > 0 ? `+${value}` : `${value}`
+}
+
+function transposeSubtitle(value: number): string {
+  if (value === 0) return "No transpose"
+  const count = Math.abs(value)
+  return `${value > 0 ? "Up" : "Down"} ${count} semitone${count === 1 ? "" : "s"}`
+}
+
+// Only ever called with a fret in [1, MAX_CAPO_FRET] (11), so this doesn't
+// need to be a fully general ordinal-suffix function - 11 is the only
+// "teens" exception in that range (12th/13th's exceptions never apply here).
+function ordinal(value: number): string {
+  if (value === 11) return "11th"
+
+  const lastDigit = value % 10
+  if (lastDigit === 1) return `${value}st`
+  if (lastDigit === 2) return `${value}nd`
+  if (lastDigit === 3) return `${value}rd`
+  return `${value}th`
+}
+
+function capoSubtitle(fret: number): string {
+  return fret === 0 ? "No capo applied" : `Capo on ${ordinal(fret)} fret`
+}
+
 export const SongLyricsChords: FunctionComponent<SongLyricsChordsProps> = ({ song }) => {
-  const [transposeSemitones, setTransposeSemitones] = useState(0)
-  const [capoFret, setCapoFret] = useState(0)
+  // The sheet's own declared transpose/capo (real ChordPro `{transpose: N}`
+  // / `{capo: N}` directives in the chordpro text, e.g. as written by
+  // whoever transcribed it) - the steppers below start here instead of
+  // always at 0.
+  const declaredTransposeSemitones = useMemo(() => {
+    if (!song.chordpro) return 0
+    const declared = getDeclaredTranspose(parseChordPro(song.chordpro))
+    return declared === null ? 0 : clampTransposeSemitones(declared)
+  }, [song.chordpro])
+
+  const declaredCapoFret = useMemo(() => {
+    if (!song.chordpro) return 0
+    const declared = getDeclaredCapo(parseChordPro(song.chordpro))
+    return declared === null ? 0 : clampCapoFret(declared)
+  }, [song.chordpro])
+
+  const [transposeSemitones, setTransposeSemitones] = useState(declaredTransposeSemitones)
+  const [capoFret, setCapoFret] = useState(declaredCapoFret)
 
   if (!song.chordpro) {
     return (
@@ -42,87 +96,89 @@ export const SongLyricsChords: FunctionComponent<SongLyricsChordsProps> = ({ son
     )
   }
 
-  const displayedKey = transposeKey(song.musicalKey, transposeSemitones)
   // The semitone offset actually applied to rendered chord letters - capo
   // cancels out part of the transpose, since it's a different way of
   // reaching the same sounding pitch. See the MIN/MAX_CAPO_FRET comment.
   const shapeSemitones = transposeSemitones - capoFret
-  const shapeKey = transposeKey(song.musicalKey, shapeSemitones)
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2 rounded-lg border bg-muted/40 px-3 py-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-medium text-muted-foreground">
-            {displayedKey ? `Key of ${displayedKey}` : "Transpose"}
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label="Transpose down a semitone"
-              disabled={transposeSemitones <= MIN_TRANSPOSE_SEMITONES}
-              onClick={() => setTransposeSemitones((value) => Math.max(MIN_TRANSPOSE_SEMITONES, value - 1))}
-            >
-              <Minus />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label="Reset transpose"
-              disabled={transposeSemitones === 0}
-              onClick={() => setTransposeSemitones(0)}
-            >
-              <RotateCcw />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label="Transpose up a semitone"
-              disabled={transposeSemitones >= MAX_TRANSPOSE_SEMITONES}
-              onClick={() => setTransposeSemitones((value) => Math.min(MAX_TRANSPOSE_SEMITONES, value + 1))}
-            >
-              <Plus />
-            </Button>
-          </div>
-        </div>
+    <Tabs defaultValue="lyrics" className="gap-3">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="lyrics">Lyrics & Chords</TabsTrigger>
+        <TabsTrigger value="capo-transpose">Capo & Transpose</TabsTrigger>
+      </TabsList>
 
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-medium text-muted-foreground">
-            {capoFret > 0 && shapeKey ? `Capo ${capoFret} · shapes in ${shapeKey}` : "Capo"}
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label="Move capo down a fret"
-              disabled={capoFret <= MIN_CAPO_FRET}
-              onClick={() => setCapoFret((value) => Math.max(MIN_CAPO_FRET, value - 1))}
-            >
-              <Minus />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label="Remove capo"
-              disabled={capoFret === 0}
-              onClick={() => setCapoFret(0)}
-            >
-              <RotateCcw />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              aria-label="Move capo up a fret"
-              disabled={capoFret >= MAX_CAPO_FRET}
-              onClick={() => setCapoFret((value) => Math.min(MAX_CAPO_FRET, value + 1))}
-            >
-              <Plus />
-            </Button>
-          </div>
-        </div>
-      </div>
-      <ChordProView chordpro={song.chordpro} transposeSemitones={shapeSemitones} />
-    </div>
+      <TabsContent value="lyrics" className="pt-4">
+        <ChordProView chordpro={song.chordpro} transposeSemitones={shapeSemitones} />
+      </TabsContent>
+
+      <TabsContent value="capo-transpose" className="flex flex-col gap-3 pt-4">
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>Transpose</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center gap-3">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label="Transpose down a semitone"
+                disabled={transposeSemitones <= MIN_TRANSPOSE_SEMITONES}
+                onClick={() => setTransposeSemitones((value) => Math.max(MIN_TRANSPOSE_SEMITONES, value - 1))}
+              >
+                <Minus />
+              </Button>
+              <span className="min-w-10 text-center text-3xl font-bold tabular-nums">
+                {formatSignedSemitones(transposeSemitones)}
+              </span>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label="Transpose up a semitone"
+                disabled={transposeSemitones >= MAX_TRANSPOSE_SEMITONES}
+                onClick={() => setTransposeSemitones((value) => Math.min(MAX_TRANSPOSE_SEMITONES, value + 1))}
+              >
+                <Plus />
+              </Button>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-center">
+            <p className="text-xs text-muted-foreground">{transposeSubtitle(transposeSemitones)}</p>
+          </CardFooter>
+        </Card>
+
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>Capo</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center gap-3">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label="Move capo down a fret"
+                disabled={capoFret <= MIN_CAPO_FRET}
+                onClick={() => setCapoFret((value) => Math.max(MIN_CAPO_FRET, value - 1))}
+              >
+                <Minus />
+              </Button>
+              <span className="min-w-10 text-center text-3xl font-bold tabular-nums">{capoFret}</span>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label="Move capo up a fret"
+                disabled={capoFret >= MAX_CAPO_FRET}
+                onClick={() => setCapoFret((value) => Math.min(MAX_CAPO_FRET, value + 1))}
+              >
+                <Plus />
+              </Button>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-center">
+            <p className="text-xs text-muted-foreground">{capoSubtitle(capoFret)}</p>
+          </CardFooter>
+        </Card>
+      </TabsContent>
+    </Tabs>
   )
 }

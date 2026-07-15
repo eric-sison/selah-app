@@ -18,7 +18,7 @@ describe("SIDEBAR_CONTENT_ITEMS", () => {
     expect(group?.items.map((item) => item.path)).toEqual([
       "/dashboard",
       "/songs",
-      "/services",
+      "/line-ups",
       "/teams",
       "/schedules",
       "/settings",

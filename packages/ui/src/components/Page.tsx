@@ -42,7 +42,7 @@ function PageBreadcrumb({ pathname, routes, ...props }: PageBreadcrumbProps) {
   })
 
   return (
-    <Breadcrumb className="border-b px-4 py-2.5" {...props}>
+    <Breadcrumb className="w-fit" {...props}>
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink href="/">Home</BreadcrumbLink>
