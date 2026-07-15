@@ -6,7 +6,7 @@ export default function Musicians() {
       <PageHeader>
         <PageTitle>Teams</PageTitle>
         <PageDescription>
-          Manage your worship team roster, their roles, and their availability for upcoming services.
+          Manage your worship team members, their roles, and their availability for upcoming services.
         </PageDescription>
       </PageHeader>
     </PageContent>
