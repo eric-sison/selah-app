@@ -10,7 +10,10 @@
     "db:studio": "drizzle-kit studio",
     "db:seed:admin": "tsx src/scripts/seed-admin.ts",
     "openapi:generate": "tsx src/scripts/generate-openapi-spec.ts",
-    "storage:configure-cors": "tsx src/scripts/configure-storage-cors.ts"
+    "storage:configure-cors": "tsx src/scripts/configure-storage-cors.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1085.0",
@@ -33,9 +36,11 @@
     "@types/node": "^20.11.17",
     "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.15.6",
+    "@vitest/coverage-v8": "^4.1.10",
     "drizzle-kit": "^0.31.10",
     "pino-pretty": "^13.1.3",
     "tsx": "^4.7.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.10"
   }
 }

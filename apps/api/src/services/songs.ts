@@ -3,6 +3,12 @@ import { db } from "../db/index.js"
 import { song } from "../db/app-schema.js"
 import { deleteObject, getDownloadUrl, getStreamUrl, uploadObject } from "../lib/storage.js"
 
+/**
+ * Lowercases a filename and collapses any run of characters outside
+ * `[a-z0-9.]` into a single `-`, trimming leading/trailing `-` - used to
+ * build safe, readable object storage keys from user-supplied filenames
+ * (e.g. `"Amazing Grace.mp3"` → `"amazing-grace.mp3"`).
+ */
 function slugifyFileName(fileName: string): string {
   return fileName
     .toLowerCase()
@@ -28,6 +34,17 @@ export interface CreateSongInput {
   uploadedBy: string
 }
 
+/**
+ * Uploads a song's audio (and optional album art) to object storage and
+ * creates its database row.
+ *
+ * Inserts a placeholder row first to obtain a DB-generated id, uses that id
+ * to build the storage key(s) (`songs/{id}/...`), uploads the file(s), then
+ * updates the row with the real key(s) - the id isn't known until after
+ * insert, so the final key can't be included in that first insert.
+ *
+ * @returns the song row with its final storage key(s) written.
+ */
 export async function createSong({
   title,
   artist,
@@ -90,6 +107,20 @@ export interface ListSongsOptions {
   limit?: number
 }
 
+/**
+ * Lists songs, newest first, with offset-based pagination.
+ *
+ * When `query` is given, filters/orders by a spelling-tolerant match
+ * (trigram similarity on title/artist, `OR`ed with a plain `ILIKE` so a
+ * correctly-spelled partial match is never excluded by the similarity
+ * floor) instead of returning the full library.
+ *
+ * @param options.query - optional search string; omit to list all songs.
+ * @param options.cursor - row offset to start from (0 = first page).
+ * @param options.limit - max rows to return; capped by callers at {@link MAX_SONGS_LIMIT}.
+ * @returns `items` (at most `limit` rows) and `nextCursor` (offset for the
+ *   next page, or `null` if this was the last page).
+ */
 export async function listSongs({ query, cursor = 0, limit = DEFAULT_SONGS_LIMIT }: ListSongsOptions = {}) {
   const withUploader = { uploader: { columns: { id: true, name: true } as const } }
 
@@ -126,6 +157,7 @@ export async function listSongs({ query, cursor = 0, limit = DEFAULT_SONGS_LIMIT
   }
 }
 
+/** Fetches a single song by id, joined with its uploader's id/name. */
 export async function getSong(id: string) {
   return db.query.song.findFirst({
     where: eq(song.id, id),
@@ -141,6 +173,12 @@ export interface UpdateSongInput {
   chordpro: string | null
 }
 
+/**
+ * Updates a song's chord-over-lyric sheet.
+ *
+ * @returns the updated song (re-fetched with its uploader join, see below),
+ *   or `undefined` if no song has this id.
+ */
 export async function updateSong(id: string, { chordpro }: UpdateSongInput) {
   const [updated] = await db.update(song).set({ chordpro }).where(eq(song.id, id)).returning()
   if (!updated) return undefined
@@ -150,6 +188,12 @@ export async function updateSong(id: string, { chordpro }: UpdateSongInput) {
   return getSong(id)
 }
 
+/**
+ * Signs a short-lived, plain playback URL (no `Content-Disposition`
+ * override) for a song's audio file.
+ *
+ * @returns the signed URL, or `null` if no song has this id.
+ */
 export async function getSongStreamUrl(id: string): Promise<string | null> {
   const found = await db.query.song.findFirst({ where: eq(song.id, id) })
   if (!found) return null
@@ -157,6 +201,13 @@ export async function getSongStreamUrl(id: string): Promise<string | null> {
   return getStreamUrl(found.storageKey)
 }
 
+/**
+ * Signs a short-lived download URL (`Content-Disposition: attachment`) for
+ * a song's audio file, so navigating to it saves the original file instead
+ * of playing inline.
+ *
+ * @returns the signed URL, or `null` if no song has this id.
+ */
 export async function getSongDownloadUrl(id: string): Promise<string | null> {
   const found = await db.query.song.findFirst({ where: eq(song.id, id) })
   if (!found) return null
@@ -164,6 +215,11 @@ export async function getSongDownloadUrl(id: string): Promise<string | null> {
   return getDownloadUrl(found.storageKey, found.originalFileName)
 }
 
+/**
+ * Signs a short-lived playback URL for a song's album art image.
+ *
+ * @returns the signed URL, or `null` if no song has this id or it has no album art.
+ */
 export async function getSongAlbumUrl(id: string): Promise<string | null> {
   const found = await db.query.song.findFirst({ where: eq(song.id, id) })
   if (!found || !found.albumArtStorageKey) return null
@@ -171,6 +227,12 @@ export async function getSongAlbumUrl(id: string): Promise<string | null> {
   return getStreamUrl(found.albumArtStorageKey)
 }
 
+/**
+ * Deletes a song's database row and its audio/album-art objects in object
+ * storage (the DB row goes first - see the inline comment below for why).
+ *
+ * @returns `true` if a song with this id was found and deleted, `false` otherwise.
+ */
 export async function deleteSong(id: string): Promise<boolean> {
   const found = await db.query.song.findFirst({ where: eq(song.id, id) })
   if (!found) return false

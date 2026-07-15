@@ -8,6 +8,12 @@ import { sendMail } from "../lib/mailer.js"
 
 const INVITATION_TTL_MS = 2 * 60 * 60 * 1000
 
+/**
+ * Thrown by {@link createInvitation} when the target email already belongs
+ * to a registered user. `code` is machine-readable so route handlers can
+ * map it to a specific HTTP status (409) without string-matching the
+ * message.
+ */
 export class InvitationError extends Error {
   code: "USER_ALREADY_EXISTS"
 
@@ -19,9 +25,19 @@ export class InvitationError extends Error {
 
 export interface CreateInvitationInput {
   email: string
+  /** User id of the admin sending the invite - stored on the row and used as an FK to `users`. */
   invitedBy: string
 }
 
+/**
+ * Creates a sign-up invitation and emails the link to `email`.
+ *
+ * Generates a random token, persists an invitation row valid for
+ * {@link INVITATION_TTL_MS} (2 hours), and sends an email containing a
+ * `/auth/sign-up?token=...` link built from `env.WEB_URL`.
+ *
+ * @throws {InvitationError} if a user with this email is already registered.
+ */
 export async function createInvitation({ email, invitedBy }: CreateInvitationInput) {
   const existingUser = await db.query.users.findFirst({
     where: eq(users.email, email),
@@ -54,6 +70,13 @@ export async function createInvitation({ email, invitedBy }: CreateInvitationInp
   return created
 }
 
+/**
+ * Looks up an invitation by its token, returning it only if it's still
+ * usable - `null` if no invitation has that token, it was already accepted,
+ * or it's past its `expiresAt`. Used by the sign-up page to validate a token
+ * before showing the form, and by the sign-up flow itself before creating
+ * the account.
+ */
 export async function getValidInvitationByToken(token: string) {
   const found = await db.query.invitation.findFirst({
     where: eq(invitation.token, token),
@@ -66,6 +89,11 @@ export async function getValidInvitationByToken(token: string) {
   return found
 }
 
+/**
+ * Stamps an invitation as accepted (`acceptedAt = now`) so
+ * {@link getValidInvitationByToken} stops treating it as usable - called
+ * once the invited user finishes signing up.
+ */
 export async function markInvitationAccepted(id: string) {
   await db.update(invitation).set({ acceptedAt: new Date() }).where(eq(invitation.id, id))
 }

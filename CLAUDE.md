@@ -33,9 +33,11 @@ Always determine which application you are working in before making changes.
 - Preserve strict TypeScript typings.
 - Use named exports unless a framework convention requires otherwise (Next.js
   page components are the main exception — see below).
-- There is no test framework configured anywhere in this repo (no vitest/jest,
-  no `*.test.ts`). Don't invent test conventions or add test files unless
-  explicitly asked to set testing up.
+- Both apps have Vitest set up (see each app's own Testing section below).
+  `apps/web` also has Playwright e2e tests. `apps/api`'s unit tests
+  currently only cover `src/services/`; don't assume other directories
+  (routes, middleware, lib) are covered or invent conventions for them
+  unless explicitly asked to extend testing there.
 
 ---
 
@@ -274,6 +276,86 @@ one directory for everything.
 
 ---
 
+## Testing
+
+### Unit tests (Vitest)
+
+One test file per source file, named identically, in a co-located
+`__tests__` folder — `components/Foo.tsx` → `components/__tests__/Foo.test.tsx`,
+`utils/foo.ts` → `utils/__tests__/foo.test.ts`. Currently covers every file in
+`apps/web/components` and `apps/web/utils`; new files in either directory
+need a matching test file following the same pattern.
+
+[vitest.config.ts](apps/web/vitest.config.ts) hard-enforces **100% coverage**
+(lines/branches/functions/statements) on `components/**` and `utils/**` —
+`pnpm test:coverage` fails the run if a new or changed file drops below that.
+For a branch that's genuinely unreachable (not just hard to trigger — e.g. a
+`noUncheckedIndexedAccess` fallback that can't actually occur given the
+surrounding logic, or an `audioRef.current` null-guard that can't be null
+once mounted), use a `/* v8 ignore next */` comment with a one-line
+justification rather than writing a contrived test. Don't reach for this to
+dodge a legitimately-reachable branch — see
+[transpose-key.ts](apps/web/utils/transpose-key.ts) and
+[SongPlayerProvider.tsx](apps/web/components/SongPlayerProvider.tsx) for
+real examples of both the unreachable and reachable cases.
+
+Shared infra lives in `apps/web/test/` — don't re-mock what's already there:
+
+- [test/setup.ts](apps/web/test/setup.ts) — global browser-API mocks jsdom
+  doesn't implement (`ResizeObserver`, `IntersectionObserver`,
+  `window.matchMedia`, `HTMLMediaElement` playback, a canvas 2D context, a
+  `PointerEvent` polyfill, a baseline `AudioContext` stub). Loaded
+  automatically for every test file.
+- [test/render.tsx](apps/web/test/render.tsx) — re-exports
+  `@testing-library/react` plus `renderWithProviders(ui, { session })`
+  (wraps `QueryClientProvider` + `SessionProvider`, a fresh `QueryClient` per
+  call). Use this instead of plain `render` for anything touching React
+  Query or `useSession()`.
+- [test/fixtures.ts](apps/web/test/fixtures.ts) — `createMockSong`,
+  `createMockSession`, `createMockPlayerContextValue` factories.
+
+Components that consume `usePlayer()` should mock the whole module
+(`vi.mock("@/components/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))`)
+rather than rendering the real provider — except when the component under
+test *is* `SongPlayerProvider`/`MusicPlayerBar`, which need the real Web
+Audio API mocked instead (a controllable `AudioContext`/`SoundTouchNode`
+double, since the provider caches one instance per session in a ref — see
+those two test files for the pattern).
+
+Commands: `pnpm test` (run once), `pnpm test:watch`, `pnpm test:coverage`
+(adds the coverage report and enforces the threshold).
+
+### E2E tests (Playwright)
+
+[playwright.config.ts](apps/web/playwright.config.ts); specs in `apps/web/e2e/`.
+
+- Two "setup" projects run first and cache session state under `e2e/.auth/`:
+  [e2e/auth.setup.ts](apps/web/e2e/auth.setup.ts) (admin, via
+  `E2E_EMAIL`/`E2E_PASSWORD`) and
+  [e2e/member.setup.ts](apps/web/e2e/member.setup.ts) (non-admin `"user"`
+  role, via `E2E_MEMBER_EMAIL`/`E2E_MEMBER_PASSWORD`). Both read from
+  `apps/web/.env.test` (gitignored — copy `.env.test.example`). The member
+  account can't be created via `db:seed:admin` (that only ever sets
+  `role: "admin"`) — it has to go through the real invite → sign-up →
+  email-verify flow once against a running Mailpit.
+- Regular specs run under the `chromium` project (admin session). A spec
+  testing role-gated UI (e.g. that Delete is hidden for non-admins) is named
+  `*.member.spec.ts` to run under `chromium-member` instead (non-admin
+  session) — see the `testMatch`/`testIgnore` split in the config.
+- `webServer` starts both `apps/api` and `apps/web` dev servers
+  automatically (reusing already-running ones locally), but **not** the
+  Docker services — `docker-compose up` (Postgres/Mailpit/Garage) must
+  already be running, since sign-in itself is a real API call.
+- Tests that create data (songs, etc.) must clean up after themselves
+  (delete via `apiClient`/`request` in `afterAll` or at the end of the
+  test) — this suite runs against real local dev data, not a disposable
+  test database. `e2e/fixtures/test-audio.wav` is a tiny synthetic audio
+  file for upload-flow tests.
+
+Commands: `pnpm test:e2e`, `pnpm test:e2e:ui` (interactive runner).
+
+---
+
 # apps/api
 
 - Prefer named exports.
@@ -445,6 +527,33 @@ browsing bucket contents.
   with no data migration needed, but do rework the CLI's output formats —
   re-verify `garage-init.sh`'s `grep` checks against the new version's output
   before assuming it still works.
+
+## Testing
+
+[vitest.config.ts](apps/api/vitest.config.ts) — node environment, currently
+scoped to `src/services/**` only (`include`/`coverage.include`), with the
+same **100% coverage** enforcement as `apps/web` (see that app's Testing
+section for the `/* v8 ignore next */` convention for genuinely unreachable
+branches — same rule applies here).
+
+One test file per service, in a co-located `__tests__` folder:
+`src/services/foo.ts` → `src/services/__tests__/foo.test.ts` (see
+[invitations.test.ts](apps/api/src/services/__tests__/invitations.test.ts) and
+[songs.test.ts](apps/api/src/services/__tests__/songs.test.ts)). Services
+talk to Postgres via the Drizzle `db` client and to Garage via
+`lib/storage.ts` — tests mock both modules entirely
+(`vi.mock("../../db/index.js", ...)`, `vi.mock("../../lib/storage.js", ...)`)
+rather than hitting real infra, hand-building the specific chainable mock
+(`.values().returning()`, `.set().where()`, etc.) each call site actually
+uses rather than a generic fake-Drizzle abstraction — there are few enough
+call sites that a shared mock-builder isn't worth it yet. Relies on
+`dotenv/config` (via `env.ts`) picking up the developer's real local `.env`
+for schema-required vars (`DATABASE_URL`, `S3_*`, etc.) at import time even
+though the DB/storage clients built from it are never actually used — mock
+service-specific things you need deterministic values for (e.g. `env.WEB_URL`
+in `invitations.test.ts`) rather than relying on the ambient `.env`'s value.
+
+Commands: `pnpm test` (run once), `pnpm test:watch`, `pnpm test:coverage`.
 
 ---
 
