@@ -517,6 +517,16 @@ describe("MusicPlayerBar", () => {
     expect(await screen.findByText("Nothing playing.")).toBeInTheDocument()
   })
 
+  it("shows a skeleton (not the 'Nothing playing.' placeholder) while the active song is loading", () => {
+    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1" }))
+    vi.mocked(apiClient.GET).mockReturnValue(new Promise(() => {}) as never)
+
+    const { container } = render(<MusicPlayerBar />)
+
+    expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0)
+    expect(screen.queryByText("Nothing playing.")).not.toBeInTheDocument()
+  })
+
   it("doesn't crash when album art fails to load for a song that has it", async () => {
     const song = createMockSong({ id: "song-1", hasAlbumArt: true })
     vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1" }))

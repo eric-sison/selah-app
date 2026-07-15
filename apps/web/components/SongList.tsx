@@ -21,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/DropdownMenu"
+import { Skeleton } from "@workspace/ui/components/Skeleton"
 import { toast } from "@workspace/ui/components/Sonner"
 import { Spinner } from "@workspace/ui/components/Spinner"
 import { cn } from "@workspace/ui/lib/utils"
@@ -230,6 +231,23 @@ const SongRow: FunctionComponent<SongRowProps> = ({
   )
 }
 
+// Varied widths so the placeholder title lines don't look like a uniform,
+// obviously-fake grid - mirrors SongRow's actual layout (art, title,
+// artist, more-options button) so the swap-in once data loads is seamless.
+const SKELETON_TITLE_WIDTHS = ["w-48", "w-40", "w-56", "w-36", "w-44", "w-52", "w-40", "w-48"]
+const SKELETON_ROW_COUNT = 8
+
+const SongRowSkeleton: FunctionComponent<{ index: number }> = ({ index }) => (
+  <div className="flex items-center gap-3 rounded-lg px-2 py-2">
+    <Skeleton className="size-11 shrink-0 rounded-md" />
+    <div className="min-w-0 flex-1 space-y-2">
+      <Skeleton className={cn("h-4", SKELETON_TITLE_WIDTHS[index % SKELETON_TITLE_WIDTHS.length])} />
+      <Skeleton className="h-3 w-24" />
+    </div>
+    <Skeleton className="size-7 shrink-0 rounded-full" />
+  </div>
+)
+
 export const SongList: FunctionComponent = () => {
   const { activeSongId, isPlaying, isLoadingSongId, selectSong, playOrToggle } = usePlayer()
   const session = useSession()
@@ -322,7 +340,13 @@ export const SongList: FunctionComponent = () => {
   }
 
   if (songs.isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading songs...</p>
+    return (
+      <div className="flex flex-col gap-1">
+        {Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
+          <SongRowSkeleton key={index} index={index} />
+        ))}
+      </div>
+    )
   }
 
   if (!songList.length) {

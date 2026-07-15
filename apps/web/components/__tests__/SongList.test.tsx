@@ -88,14 +88,15 @@ describe("SongList", () => {
     vi.clearAllMocks()
   })
 
-  it("shows a loading state while the first page is in flight", () => {
+  it("shows a skeleton loading state while the first page is in flight", () => {
     mockPlayer()
     mockSession()
     vi.mocked(apiClient.GET).mockReturnValue(new Promise(() => {}) as never)
 
-    renderWithProviders(<SongList />)
+    const { container } = renderWithProviders(<SongList />)
 
-    expect(screen.getByText("Loading songs...")).toBeInTheDocument()
+    expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0)
+    expect(screen.queryByText("No songs uploaded yet.")).not.toBeInTheDocument()
   })
 
   it("shows an empty state when the first page has no items", async () => {

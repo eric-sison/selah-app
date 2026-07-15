@@ -196,6 +196,23 @@ manual API calls.
   creates one `QueryClient` per component instance (`useState(() => new
 QueryClient())`) to avoid cross-request state leakage; follow that when
   adding providers.
+- A page/component's loading state (`query.isLoading`, etc.) must be a
+  skeleton placeholder shaped like the real content, built from
+  `@workspace/ui`'s `Skeleton` — never a bare spinner or "Loading..." text
+  as the primary loading UI for a page's main content. Match each real
+  element's approximate size/shape (e.g. a `size-11 rounded-md` block for
+  an album art square, `h-4`/`h-3` blocks for a title/subtitle pair) so the
+  swap-in once data loads doesn't jump the layout. See
+  [SongDetailsView.tsx](apps/web/components/SongDetailsView.tsx) and
+  [NowPlayingCard.tsx](apps/web/components/NowPlayingCard.tsx) for
+  single-item skeletons, and
+  [SongList.tsx](apps/web/components/SongList.tsx)'s `SongRowSkeleton` for
+  a repeated-row list skeleton (varies placeholder title widths per row so
+  the list doesn't look like an obviously-fake uniform grid). A `Spinner`
+  is still fine for a small, secondary in-progress state (e.g. a button's
+  pending state, "fetching next page" at the bottom of an already-loaded
+  list) — this rule is specifically about a page/section's *primary*
+  content-loading state.
 - Forms use TanStack Form (`@tanstack/react-form`), consistent across
   `SignInForm.tsx`, `SignUpForm.tsx`, `InviteForm.tsx`: a Zod schema passed as
   `validators: { onSubmit: schema }`, `defaultValues`, and `onSubmit`

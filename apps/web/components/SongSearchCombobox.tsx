@@ -10,6 +10,7 @@ import {
   ComboboxList,
 } from "@workspace/ui/components/Combobox"
 import { InputGroupAddon } from "@workspace/ui/components/InputGroup"
+import { Skeleton } from "@workspace/ui/components/Skeleton"
 import { Spinner } from "@workspace/ui/components/Spinner"
 import { Music, Search } from "lucide-react"
 import Image from "next/image"
@@ -63,6 +64,20 @@ const SongSearchResultItem: FunctionComponent<SongSearchResultItemProps> = ({ so
   )
 }
 
+// Mirrors SongSearchResultItem's layout so the swap-in once results arrive
+// doesn't jump the popup's size.
+const SongSearchResultSkeleton: FunctionComponent = () => (
+  <div className="flex w-full items-center gap-2 rounded-md py-1 pl-1.5">
+    <Skeleton className="size-8 shrink-0 rounded-md" />
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <Skeleton className="h-4 w-32" />
+      <Skeleton className="h-3 w-20" />
+    </div>
+  </div>
+)
+
+const SEARCH_SKELETON_ROW_COUNT = 3
+
 export const SongSearchCombobox: FunctionComponent = () => {
   const router = useRouter()
   const { selectSong } = usePlayer()
@@ -110,7 +125,17 @@ export const SongSearchCombobox: FunctionComponent = () => {
       </ComboboxInput>
       <ComboboxContent className="min-w-(--anchor-width)">
         <ComboboxEmpty>
-          {query ? (results.isFetching ? "Searching..." : "No songs found.") : "Start typing to search."}
+          {!query ? (
+            "Start typing to search."
+          ) : results.isFetching ? (
+            <div className="flex w-full flex-col gap-1 p-1">
+              {Array.from({ length: SEARCH_SKELETON_ROW_COUNT }, (_, index) => (
+                <SongSearchResultSkeleton key={index} />
+              ))}
+            </div>
+          ) : (
+            "No songs found."
+          )}
         </ComboboxEmpty>
         <ComboboxList>{(song: Song) => <SongSearchResultItem key={song.id} song={song} />}</ComboboxList>
       </ComboboxContent>

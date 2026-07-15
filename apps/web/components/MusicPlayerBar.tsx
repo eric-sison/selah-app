@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@workspace/ui/components/Button"
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/Popover"
+import { Skeleton } from "@workspace/ui/components/Skeleton"
 import { Slider } from "@workspace/ui/components/Slider"
 import { Spinner } from "@workspace/ui/components/Spinner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/Tooltip"
@@ -50,6 +51,36 @@ const SEEK_DEBOUNCE_MS = 150
 // whole library" rather than a true unbounded fetch, matching the API's
 // GET /songs `limit` max.
 const FALLBACK_QUEUE_LIMIT = 100
+
+// Mirrors the loaded bar's 3-column layout (art+text, transport controls,
+// right-side actions) so there's no layout jump once activeSongQuery
+// resolves - shown only while a song is actively loading, not when nothing
+// is selected at all (see the `!activeSongId` check below).
+const MusicPlayerBarSkeleton: FunctionComponent = () => (
+  <div className="grid h-20 w-full grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 py-3">
+    <div className="flex min-w-0 items-center gap-3">
+      <Skeleton className="size-10 shrink-0 rounded-md" />
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <Skeleton className="h-3 w-32" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+    </div>
+
+    <div className="flex items-center justify-center gap-4">
+      <Skeleton className="size-9 shrink-0 rounded-full" />
+      <Skeleton className="size-9 shrink-0 rounded-full" />
+      <Skeleton className="size-10 shrink-0 rounded-full" />
+      <Skeleton className="size-9 shrink-0 rounded-full" />
+      <Skeleton className="size-9 shrink-0 rounded-full" />
+    </div>
+
+    <div className="flex items-center justify-end gap-1">
+      <Skeleton className="size-9 shrink-0 rounded-full" />
+      <Skeleton className="size-9 shrink-0 rounded-full" />
+      <Skeleton className="size-9 shrink-0 rounded-full" />
+    </div>
+  </div>
+)
 
 // A persistent, app-bar-style player meant to live in `PageFooter` - unlike
 // NowPlayingCard (which falls back to the most recent upload as a browsing
@@ -172,12 +203,19 @@ export const MusicPlayerBar: FunctionComponent = () => {
     enabled: playbackOrder.length === 0 && !!activeSongId,
   })
 
-  if (!song) {
+  // A failed fetch also leaves `song` undefined - without this check it'd
+  // be indistinguishable from "still loading" and get stuck showing the
+  // skeleton forever instead of falling back.
+  if (!activeSongId || activeSongQuery.isError) {
     return (
       <div className="flex h-20 items-center justify-center px-4">
         <p className="text-sm text-muted-foreground">Nothing playing.</p>
       </div>
     )
+  }
+
+  if (!song) {
+    return <MusicPlayerBarSkeleton />
   }
 
   const isLoading = isLoadingSongId === song.id

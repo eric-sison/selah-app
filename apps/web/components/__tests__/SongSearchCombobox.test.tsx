@@ -5,7 +5,7 @@ import { SongSearchCombobox } from "@/components/SongSearchCombobox"
 import { apiClient } from "@/lib/api-client"
 import { usePlayer } from "@/components/SongPlayerProvider"
 import { createMockPlayerContextValue, createMockSong } from "../../test/fixtures"
-import { fireEvent, renderWithProviders as render, screen } from "../../test/render"
+import { fireEvent, renderWithProviders as render, screen, waitFor } from "../../test/render"
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
@@ -86,7 +86,7 @@ describe("SongSearchCombobox", () => {
     expect(await screen.findByText("Amazing Grace", {}, { timeout: 2000 })).toBeInTheDocument()
   })
 
-  it("shows 'Searching...' while the query is in flight, then 'No songs found.' for an empty result", async () => {
+  it("shows skeleton placeholders while the query is in flight, then 'No songs found.' for an empty result", async () => {
     const user = userEvent.setup()
     let resolveGet!: (value: unknown) => void
     const pending = new Promise((resolve) => {
@@ -102,11 +102,17 @@ describe("SongSearchCombobox", () => {
     await user.click(input)
     await user.type(input, "grace")
 
-    expect(await screen.findByText("Searching...")).toBeInTheDocument()
+    // ComboboxContent portals to document.body, outside RTL's own container -
+    // query the document, not container, to see into it.
+    await waitFor(() => {
+      expect(document.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0)
+    })
+    expect(screen.queryByText("Searching...")).not.toBeInTheDocument()
 
     resolveGet({ data: { items: [], nextCursor: null }, error: undefined })
 
     expect(await screen.findByText("No songs found.")).toBeInTheDocument()
+    expect(document.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(0)
   })
 
   it("selects a result: calls selectSong, navigates to the song, and clears the input", async () => {
