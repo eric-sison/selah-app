@@ -1218,7 +1218,7 @@
           "Teams"
         ],
         "summary": "Create a team",
-        "description": "Admin-only. Creates a new, memberless team.",
+        "description": "Admin-only. Creates a new team, optionally with an initial roster and their role assignments, all in one transaction.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1230,12 +1230,38 @@
                     "type": "string",
                     "minLength": 1
                   },
-                  "description": {
-                    "type": "string"
-                  },
                   "teamLeaderId": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "members": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "userId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "roles": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "bass",
+                              "drums",
+                              "singer",
+                              "electric_guitar",
+                              "acoustic_guitar",
+                              "keyboard"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "userId"
+                      ]
+                    }
                   }
                 },
                 "required": [
@@ -1258,10 +1284,6 @@
                     },
                     "name": {
                       "type": "string"
-                    },
-                    "description": {
-                      "type": "string",
-                      "nullable": true
                     },
                     "leader": {
                       "type": "object",
@@ -1344,7 +1366,6 @@
                   "required": [
                     "id",
                     "name",
-                    "description",
                     "leader",
                     "members",
                     "createdAt",
@@ -1420,10 +1441,6 @@
                       },
                       "name": {
                         "type": "string"
-                      },
-                      "description": {
-                        "type": "string",
-                        "nullable": true
                       },
                       "leader": {
                         "type": "object",
@@ -1506,7 +1523,6 @@
                     "required": [
                       "id",
                       "name",
-                      "description",
                       "leader",
                       "members",
                       "createdAt",
@@ -1567,10 +1583,6 @@
                     "name": {
                       "type": "string"
                     },
-                    "description": {
-                      "type": "string",
-                      "nullable": true
-                    },
                     "leader": {
                       "type": "object",
                       "nullable": true,
@@ -1652,7 +1664,6 @@
                   "required": [
                     "id",
                     "name",
-                    "description",
                     "leader",
                     "members",
                     "createdAt",
@@ -1698,7 +1709,7 @@
           "Teams"
         ],
         "summary": "Update a team",
-        "description": "Admin-only. Updates a team's name and/or description.",
+        "description": "Admin-only. Updates a team's name and/or leader.",
         "parameters": [
           {
             "schema": {
@@ -1720,10 +1731,6 @@
                   "name": {
                     "type": "string",
                     "minLength": 1
-                  },
-                  "description": {
-                    "type": "string",
-                    "nullable": true
                   },
                   "teamLeaderId": {
                     "type": "string",
@@ -1748,10 +1755,6 @@
                     },
                     "name": {
                       "type": "string"
-                    },
-                    "description": {
-                      "type": "string",
-                      "nullable": true
                     },
                     "leader": {
                       "type": "object",
@@ -1834,7 +1837,6 @@
                   "required": [
                     "id",
                     "name",
-                    "description",
                     "leader",
                     "members",
                     "createdAt",
@@ -2021,10 +2023,6 @@
                     "name": {
                       "type": "string"
                     },
-                    "description": {
-                      "type": "string",
-                      "nullable": true
-                    },
                     "leader": {
                       "type": "object",
                       "nullable": true,
@@ -2106,7 +2104,6 @@
                   "required": [
                     "id",
                     "name",
-                    "description",
                     "leader",
                     "members",
                     "createdAt",
@@ -2320,10 +2317,6 @@
                     "name": {
                       "type": "string"
                     },
-                    "description": {
-                      "type": "string",
-                      "nullable": true
-                    },
                     "leader": {
                       "type": "object",
                       "nullable": true,
@@ -2405,7 +2398,6 @@
                   "required": [
                     "id",
                     "name",
-                    "description",
                     "leader",
                     "members",
                     "createdAt",
@@ -2560,6 +2552,80 @@
                 "example": {
                   "status": 404,
                   "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "operationId": "listUsers",
+        "tags": [
+          "Users"
+        ],
+        "summary": "List users",
+        "description": "Admin-only. Lists every user, alphabetically by name - used to populate the musician and team-leader pickers when creating or editing a team.",
+        "responses": {
+          "200": {
+            "description": "Users.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "image": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "email",
+                      "image"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
                 }
               }
             }

@@ -4,17 +4,49 @@ import { team, teamMember, teamMemberRole, teamRole } from "../db/app-schema.js"
 
 export type TeamRole = (typeof teamRole.enumValues)[number]
 
-export interface CreateTeamInput {
-  name: string
-  description?: string | null
-  /** User id of the team's leader - doesn't have to also be a rostered member. */
-  teamLeaderId?: string | null
+export interface CreateTeamMemberInput {
+  userId: string
+  roles?: TeamRole[]
 }
 
-/** Creates a new, memberless team. */
-export async function createTeam({ name, description, teamLeaderId }: CreateTeamInput) {
-  const [created] = await db.insert(team).values({ name, description, teamLeaderId }).returning()
-  return created
+export interface CreateTeamInput {
+  name: string
+  /** User id of the team's leader - doesn't have to also be a rostered member. */
+  teamLeaderId?: string | null
+  /** Initial roster to add alongside the team itself, each with its own role assignments. */
+  members?: CreateTeamMemberInput[]
+}
+
+/**
+ * Creates a team and - if given - its initial members and their role
+ * assignments, all in one transaction so a failure partway through (e.g. a
+ * member row violating a constraint) doesn't leave a half-created team
+ * behind.
+ */
+export async function createTeam({ name, teamLeaderId, members = [] }: CreateTeamInput) {
+  return db.transaction(async (tx) => {
+    const [created] = await tx.insert(team).values({ name, teamLeaderId }).returning()
+
+    for (const member of members) {
+      const [createdMember] = await tx
+        .insert(teamMember)
+        .values({ teamId: created.id, userId: member.userId })
+        .returning()
+
+      // De-duped rather than rejected - a repeated role in the input is
+      // harmless (the member ends up with it once either way), unlike a
+      // repeated member, which would violate the (team, user) unique
+      // constraint and is rejected at the route's request-schema level.
+      const roles = [...new Set(member.roles ?? [])]
+      if (roles.length > 0) {
+        await tx
+          .insert(teamMemberRole)
+          .values(roles.map((role) => ({ teamMemberId: createdMember.id, role })))
+      }
+    }
+
+    return created
+  })
 }
 
 /**
@@ -56,12 +88,11 @@ export async function getTeam(id: string) {
 
 export interface UpdateTeamInput {
   name?: string
-  description?: string | null
   teamLeaderId?: string | null
 }
 
 /**
- * Updates a team's name and/or description.
+ * Updates a team's name and/or leader.
  *
  * @returns the updated team, or `undefined` if no team has this id.
  */

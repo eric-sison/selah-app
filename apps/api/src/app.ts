@@ -12,6 +12,7 @@ import { healthcheckHandler } from "./routes/health.js"
 import { invitationsHandler } from "./routes/invitations.js"
 import { songsHandler } from "./routes/songs.js"
 import { teamsHandler } from "./routes/teams.js"
+import { usersHandler } from "./routes/users.js"
 import { errorHandler } from "./middleware/error-handler.js"
 import { defaultHook, ErrorMessages } from "./utils/error-reponses.js"
 
@@ -38,7 +39,7 @@ app.on(["POST", "GET"], "/auth/*", (c) => auth.handler(c.req.raw))
 app.onError(errorHandler)
 app.notFound((c) => c.json({ status: 404, message: ErrorMessages[404] }, 404))
 
-const routes = [healthcheckHandler, invitationsHandler, songsHandler, teamsHandler] as const
+const routes = [healthcheckHandler, invitationsHandler, songsHandler, teamsHandler, usersHandler] as const
 routes.forEach((route) => app.route("/", route))
 
 app.doc("/docs/spec", openApiConfig)

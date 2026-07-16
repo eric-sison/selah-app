@@ -9,6 +9,11 @@ const mockDb = {
   insert: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
+  // createTeam runs everything through db.transaction - since every mock
+  // above lives on mockDb itself, running the callback with mockDb as `tx`
+  // reuses the exact same insert/query mocks a plain (non-transaction) call
+  // would hit.
+  transaction: vi.fn((callback: (tx: typeof mockDb) => unknown) => callback(mockDb)),
 }
 
 vi.mock("../../db/index.js", () => ({ db: mockDb }))
@@ -46,13 +51,36 @@ function mockDeleteWhere() {
   return { where }
 }
 
+// createTeam issues multiple sequential `insert` calls in member/role order
+// (team, then each member, then each member's roles) - this queues a
+// distinct `.values()` mock per call, in that order, so each insert's
+// arguments and return value can be asserted independently.
+function mockSequentialInserts(behaviors: Array<{ returning: unknown[] } | { resolveValue?: unknown }>) {
+  const valuesMocks: ReturnType<typeof vi.fn>[] = []
+  let call = 0
+  mockDb.insert.mockImplementation(() => {
+    const behavior = behaviors[call++]
+    if (!behavior) throw new Error("Unexpected extra insert call")
+    if ("returning" in behavior) {
+      const returning = vi.fn().mockResolvedValue(behavior.returning)
+      const values = vi.fn().mockReturnValue({ returning })
+      valuesMocks.push(values)
+      return { values }
+    }
+    const values = vi.fn().mockResolvedValue(behavior.resolveValue)
+    valuesMocks.push(values)
+    return { values }
+  })
+  return valuesMocks
+}
+
 afterEach(() => {
   vi.clearAllMocks()
 })
 
 describe("createTeam", () => {
   it("inserts a team and returns the created row", async () => {
-    const created = { id: "team-1", name: "Sunday AM Team", description: null, teamLeaderId: null }
+    const created = { id: "team-1", name: "Sunday AM Team", teamLeaderId: null }
     const { values } = mockInsertReturning(created)
 
     const result = await createTeam({ name: "Sunday AM Team" })
@@ -60,7 +88,6 @@ describe("createTeam", () => {
     expect(result).toBe(created)
     expect(values).toHaveBeenCalledWith({
       name: "Sunday AM Team",
-      description: undefined,
       teamLeaderId: undefined,
     })
   })
@@ -74,9 +101,85 @@ describe("createTeam", () => {
     expect(result).toBe(created)
     expect(values).toHaveBeenCalledWith({
       name: "Sunday AM Team",
-      description: undefined,
       teamLeaderId: "user-1",
     })
+  })
+
+  it("runs the insert through db.transaction", async () => {
+    mockInsertReturning({ id: "team-1", name: "Sunday AM Team" })
+
+    await createTeam({ name: "Sunday AM Team" })
+
+    expect(mockDb.transaction).toHaveBeenCalledTimes(1)
+  })
+
+  it("creates a member with role assignments in the same transaction", async () => {
+    const createdTeam = { id: "team-1", name: "Sunday AM Team" }
+    const createdMember = { id: "tm-1", teamId: "team-1", userId: "user-1" }
+    const valuesMocks = mockSequentialInserts([
+      { returning: [createdTeam] },
+      { returning: [createdMember] },
+      { resolveValue: undefined },
+    ])
+
+    const result = await createTeam({
+      name: "Sunday AM Team",
+      members: [{ userId: "user-1", roles: ["bass", "singer"] }],
+    })
+    const [teamValues, memberValues, roleValues] = valuesMocks
+
+    expect(result).toBe(createdTeam)
+    expect(teamValues).toHaveBeenCalledWith({ name: "Sunday AM Team", teamLeaderId: undefined })
+    expect(memberValues).toHaveBeenCalledWith({ teamId: "team-1", userId: "user-1" })
+    expect(roleValues).toHaveBeenCalledWith([
+      { teamMemberId: "tm-1", role: "bass" },
+      { teamMemberId: "tm-1", role: "singer" },
+    ])
+  })
+
+  it("adds a member without inserting any roles when none are given", async () => {
+    const createdTeam = { id: "team-1", name: "Sunday AM Team" }
+    const createdMember = { id: "tm-1", teamId: "team-1", userId: "user-1" }
+    mockSequentialInserts([{ returning: [createdTeam] }, { returning: [createdMember] }])
+
+    await createTeam({ name: "Sunday AM Team", members: [{ userId: "user-1" }] })
+
+    expect(mockDb.insert).toHaveBeenCalledTimes(2)
+  })
+
+  it("de-dupes repeated roles for the same member before inserting", async () => {
+    const createdTeam = { id: "team-1", name: "Sunday AM Team" }
+    const createdMember = { id: "tm-1", teamId: "team-1", userId: "user-1" }
+    const valuesMocks = mockSequentialInserts([
+      { returning: [createdTeam] },
+      { returning: [createdMember] },
+      { resolveValue: undefined },
+    ])
+
+    await createTeam({
+      name: "Sunday AM Team",
+      members: [{ userId: "user-1", roles: ["bass", "bass"] }],
+    })
+
+    expect(valuesMocks[2]).toHaveBeenCalledWith([{ teamMemberId: "tm-1", role: "bass" }])
+  })
+
+  it("creates a membership row for each member in the input", async () => {
+    const createdTeam = { id: "team-1", name: "Sunday AM Team" }
+    const createdMember1 = { id: "tm-1", teamId: "team-1", userId: "user-1" }
+    const createdMember2 = { id: "tm-2", teamId: "team-1", userId: "user-2" }
+    mockSequentialInserts([
+      { returning: [createdTeam] },
+      { returning: [createdMember1] },
+      { returning: [createdMember2] },
+    ])
+
+    await createTeam({
+      name: "Sunday AM Team",
+      members: [{ userId: "user-1" }, { userId: "user-2" }],
+    })
+
+    expect(mockDb.insert).toHaveBeenCalledTimes(3)
   })
 })
 

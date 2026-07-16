@@ -37,7 +37,6 @@ const TeamLeaderResponseSchema = z.object({
 const TeamResponseSchema = z.object({
   id: z.string(),
   name: z.string(),
-  description: z.string().nullable(),
   // A team leader doesn't have to also be a rostered member (see
   // teamLeaderId's comment in app-schema.ts) - reported independently of
   // `members` rather than as a flag on one of its entries.
@@ -56,7 +55,6 @@ function mapTeam(t: TeamWithMembers) {
   return {
     id: t.id,
     name: t.name,
-    description: t.description,
     leader: t.leader ? { id: t.leader.id, name: t.leader.name, image: t.leader.image } : null,
     members: t.members.map((m) => ({
       id: m.id,
@@ -72,11 +70,24 @@ const TeamIdParamSchema = z.object({ id: z.uuid() })
 const TeamMemberParamSchema = z.object({ id: z.uuid(), memberId: z.uuid() })
 const TeamMemberRoleParamSchema = z.object({ id: z.uuid(), memberId: z.uuid(), role: TeamRoleSchema })
 
-const CreateTeamRequestSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  teamLeaderId: z.string().min(1).optional(),
+const TeamMemberInputSchema = z.object({
+  userId: z.string().min(1),
+  roles: z.array(TeamRoleSchema).optional(),
 })
+
+const CreateTeamRequestSchema = z
+  .object({
+    name: z.string().min(1),
+    teamLeaderId: z.string().min(1).optional(),
+    members: z.array(TeamMemberInputSchema).optional(),
+  })
+  .refine(
+    (data) => !data.members || new Set(data.members.map((m) => m.userId)).size === data.members.length,
+    {
+      error: "Duplicate members are not allowed.",
+      path: ["members"],
+    }
+  )
 
 const createTeamRoute = createRoute({
   method: "post",
@@ -84,7 +95,8 @@ const createTeamRoute = createRoute({
   operationId: "createTeam",
   tags: ["Teams"],
   summary: "Create a team",
-  description: "Admin-only. Creates a new, memberless team.",
+  description:
+    "Admin-only. Creates a new team, optionally with an initial roster and their role assignments, all in one transaction.",
   middleware: [requireAdmin] as const,
   request: {
     ...jsonBody(CreateTeamRequestSchema),
@@ -132,7 +144,6 @@ const getTeamRoute = createRoute({
 
 const UpdateTeamRequestSchema = z.object({
   name: z.string().min(1).optional(),
-  description: z.string().nullable().optional(),
   teamLeaderId: z.string().min(1).nullable().optional(),
 })
 
@@ -142,7 +153,7 @@ const updateTeamRoute = createRoute({
   operationId: "updateTeam",
   tags: ["Teams"],
   summary: "Update a team",
-  description: "Admin-only. Updates a team's name and/or description.",
+  description: "Admin-only. Updates a team's name and/or leader.",
   middleware: [requireAdmin] as const,
   request: {
     params: TeamIdParamSchema,
@@ -268,8 +279,8 @@ const removeTeamMemberRoleRoute = createRoute({
 
 export const teamsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
   .openapi(createTeamRoute, async (c) => {
-    const { name, description, teamLeaderId } = c.req.valid("json")
-    const created = await createTeam({ name, description, teamLeaderId })
+    const { name, teamLeaderId, members } = c.req.valid("json")
+    const created = await createTeam({ name, teamLeaderId, members })
 
     // The plain `.returning()` row has no `leader` join - re-fetch through
     // getTeam so the response shape matches every other team endpoint.
@@ -297,8 +308,8 @@ export const teamsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
   })
   .openapi(updateTeamRoute, async (c) => {
     const { id } = c.req.valid("param")
-    const { name, description, teamLeaderId } = c.req.valid("json")
-    const updated = await updateTeam(id, { name, description, teamLeaderId })
+    const { name, teamLeaderId } = c.req.valid("json")
+    const updated = await updateTeam(id, { name, teamLeaderId })
 
     if (!updated) {
       return c.json({ status: 404, message: "Team not found." }, 404)

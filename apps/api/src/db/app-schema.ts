@@ -82,7 +82,6 @@ export const team = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
-    description: text("description"),
     // Nullable and independent of teamMember on purpose - a team leader
     // doesn't have to also be a rostered member with an instrument role
     // (e.g. a pastor overseeing the team). `set null` (not cascade) on
