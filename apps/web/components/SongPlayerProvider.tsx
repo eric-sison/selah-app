@@ -402,6 +402,8 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     if (activeSongIdRef.current !== songId) return
 
     const audio = audioRef.current
+    // See setVolume's identical guard below - unreachable once mounted.
+    /* v8 ignore else */
     if (audio) {
       audio.pause()
       audio.removeAttribute("src")

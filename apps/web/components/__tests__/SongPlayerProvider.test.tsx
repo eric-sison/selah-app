@@ -825,4 +825,45 @@ describe("SongPlayerProvider", () => {
       expect(result.current.loopSection).toBeNull()
     })
   })
+
+  describe("stopIfActive", () => {
+    it("stops playback and clears state when the given id is the active song", async () => {
+      mockStreamUrl()
+      const { result } = renderPlayer()
+      const song = createMockSong({ id: "song-1" })
+      await act(async () => {
+        await result.current.selectSong(song)
+      })
+      // selectSong's own loadSong pauses the element before assigning a new
+      // src - clear that call so the assertions below isolate stopIfActive's
+      // own effect.
+      vi.mocked(getAudioEl().pause).mockClear()
+      vi.mocked(getAudioEl().load).mockClear()
+
+      act(() => result.current.stopIfActive("song-1"))
+
+      expect(result.current.activeSongId).toBeNull()
+      expect(result.current.isPlaying).toBe(false)
+      expect(result.current.currentTime).toBe(0)
+      expect(result.current.duration).toBe(0)
+      expect(getAudioEl().pause).toHaveBeenCalledTimes(1)
+      expect(getAudioEl().load).toHaveBeenCalledTimes(1)
+      expect(getAudioEl().hasAttribute("src")).toBe(false)
+    })
+
+    it("does nothing when the given id doesn't match the active song", async () => {
+      mockStreamUrl()
+      const { result } = renderPlayer()
+      const song = createMockSong({ id: "song-1" })
+      await act(async () => {
+        await result.current.selectSong(song)
+      })
+      vi.mocked(getAudioEl().pause).mockClear()
+
+      act(() => result.current.stopIfActive("some-other-song"))
+
+      expect(result.current.activeSongId).toBe("song-1")
+      expect(getAudioEl().pause).not.toHaveBeenCalled()
+    })
+  })
 })
