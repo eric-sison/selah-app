@@ -292,7 +292,7 @@ describe("MiniMusicPlayer", () => {
     expect(screen.queryByText("Amazing Grace")).not.toBeInTheDocument()
   })
 
-  it("expands on a route change while the song is playing, even if previously minimized", async () => {
+  it("stays minimized on a route change while the song is playing, once explicitly minimized", async () => {
     const user = userEvent.setup()
     const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
     vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: true }))
@@ -307,8 +307,61 @@ describe("MiniMusicPlayer", () => {
     vi.mocked(usePathname).mockReturnValue("/schedules")
     rerender(<MiniMusicPlayer />)
 
+    expect(await screen.findByRole("button", { name: "Expand mini player" })).toBeInTheDocument()
+    expect(screen.queryByText("Amazing Grace")).not.toBeInTheDocument()
+  })
+
+  it("stays expanded on a route change while the song is paused, once explicitly expanded", async () => {
+    const user = userEvent.setup()
+    const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
+    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: false }))
+    mockGetForSong(song)
+    vi.mocked(usePathname).mockReturnValue("/dashboard")
+
+    const { rerender } = render(<MiniMusicPlayer />)
+    await screen.findByText("Amazing Grace")
+    await user.click(screen.getByRole("button", { name: "Minimize mini player" }))
+    expect(await screen.findByRole("button", { name: "Expand mini player" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Expand mini player" }))
+    expect(await screen.findByText("Amazing Grace")).toBeInTheDocument()
+
+    vi.mocked(usePathname).mockReturnValue("/schedules")
+    rerender(<MiniMusicPlayer />)
+
     expect(await screen.findByText("Amazing Grace")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Expand mini player" })).not.toBeInTheDocument()
+  })
+
+  it("calls stopIfActive with the song id when the minimized bubble's close button is clicked", async () => {
+    const user = userEvent.setup()
+    const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
+    const stopIfActive = vi.fn()
+    vi.mocked(usePathname).mockReturnValue("/dashboard")
+    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", stopIfActive }))
+    mockGetForSong(song)
+
+    render(<MiniMusicPlayer />)
+    await screen.findByText("Amazing Grace")
+    await user.click(screen.getByRole("button", { name: "Minimize mini player" }))
+    await screen.findByRole("button", { name: "Expand mini player" })
+    await user.click(screen.getByRole("button", { name: "Close mini player" }))
+
+    expect(stopIfActive).toHaveBeenCalledWith("song-1")
+  })
+
+  it("calls stopIfActive with the song id when the close button is clicked", async () => {
+    const user = userEvent.setup()
+    const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
+    const stopIfActive = vi.fn()
+    vi.mocked(usePathname).mockReturnValue("/dashboard")
+    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", stopIfActive }))
+    mockGetForSong(song)
+
+    render(<MiniMusicPlayer />)
+    await screen.findByText("Amazing Grace")
+    await user.click(screen.getByRole("button", { name: "Close mini player" }))
+
+    expect(stopIfActive).toHaveBeenCalledWith("song-1")
   })
 
   it("does not change the minimized state when isPlaying changes without a route change", async () => {

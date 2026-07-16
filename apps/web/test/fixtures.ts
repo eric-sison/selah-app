@@ -2,6 +2,7 @@ import { vi } from "vitest"
 import type { Song } from "@/components/NowPlayingCard"
 import type { Session } from "@/lib/session"
 import type { LoopSection } from "@/components/SongPlayerProvider"
+import type { Team } from "@/components/TeamList"
 
 // SongPlayerProvider's own PlayerContextValue interface isn't exported -
 // this is a structural duplicate kept in sync by hand. Components under
@@ -69,6 +70,29 @@ export function createMockSession(overrides: Partial<Session["user"]> = {}): Ses
     session: {
       id: "session-1",
     },
+  }
+}
+
+export function createMockTeamMember(
+  overrides: Partial<Team["members"][number]> = {}
+): Team["members"][number] {
+  return {
+    id: "member-1",
+    user: { id: "user-2", name: "Ben Ortega", image: null },
+    roles: [],
+    ...overrides,
+  }
+}
+
+export function createMockTeam(overrides: Partial<Team> = {}): Team {
+  return {
+    id: "team-1",
+    name: "Sunday AM Team",
+    leader: null,
+    members: [],
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    ...overrides,
   }
 }
 

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Button } from "@workspace/ui/components/Button"
 import { Skeleton } from "@workspace/ui/components/Skeleton"
 import { Spinner } from "@workspace/ui/components/Spinner"
-import { Music, Pause, PictureInPicture2, Play, SkipBack, SkipForward } from "lucide-react"
+import { Music, Pause, PictureInPicture2, Play, SkipBack, SkipForward, X } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -32,6 +32,7 @@ export const MiniMusicPlayer: FunctionComponent = () => {
     playOrToggle,
     playNext,
     playPrevious,
+    stopIfActive,
   } = usePlayer()
   const [isMinimized, setIsMinimized] = useState(false)
 
@@ -43,15 +44,22 @@ export const MiniMusicPlayer: FunctionComponent = () => {
     isPlayingRef.current = isPlaying
   }, [isPlaying])
 
+  // Once the user explicitly minimizes or expands the player, that choice
+  // sticks across navigation - the route-change effect below stops
+  // overriding isMinimized entirely, rather than just skipping one run.
+  const hasManuallyToggledRef = useRef(false)
+
   // On every route change (not the initial mount - the ref starts equal to
   // the first pathname, so that run is skipped), default the mini player to
   // minimized if the active song is merely loaded-but-paused, or expanded if
   // it's actually playing - rather than carrying over whatever the user last
-  // toggled manually on the previous page.
+  // toggled manually on the previous page. Skipped entirely once the user
+  // has manually toggled it at all (see hasManuallyToggledRef above).
   const previousPathnameRef = useRef(pathname)
   useEffect(() => {
     if (previousPathnameRef.current === pathname) return
     previousPathnameRef.current = pathname
+    if (hasManuallyToggledRef.current) return
     setIsMinimized(!isPlayingRef.current)
   }, [pathname])
 
@@ -111,14 +119,17 @@ export const MiniMusicPlayer: FunctionComponent = () => {
 
   if (isMinimized) {
     return (
-      <div className="fixed right-4 bottom-4 z-50">
+      <div className="group fixed right-4 bottom-4 z-50">
         <Tooltip>
           <TooltipTrigger
             render={
               <button
                 type="button"
                 aria-label="Expand mini player"
-                onClick={() => setIsMinimized(false)}
+                onClick={() => {
+                  hasManuallyToggledRef.current = true
+                  setIsMinimized(false)
+                }}
                 className="relative flex size-14 shrink-0 rounded-xl p-0.5 shadow-lg"
                 style={{
                   background: `conic-gradient(var(--primary) ${progressPercent * 3.6}deg, var(--border) 0)`,
@@ -143,6 +154,27 @@ export const MiniMusicPlayer: FunctionComponent = () => {
           <TooltipContent>
             <p>Click to expand</p>
           </TooltipContent>
+        </Tooltip>
+
+        {/* Overlaps the bubble's top-right corner (its own bottom-left
+          quadrant sits over the bubble) rather than sitting fully outside
+          it - only shown on hover so the bubble stays a clean circle at
+          rest. */}
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="secondary"
+                size="icon-xs"
+                aria-label="Close mini player"
+                onClick={() => stopIfActive(song.id)}
+                className="absolute -top-2 -right-2 rounded-full opacity-0 shadow-md transition-opacity group-hover:opacity-100"
+              >
+                <X className="size-3" />
+              </Button>
+            }
+          />
+          <TooltipContent>Close</TooltipContent>
         </Tooltip>
       </div>
     )
@@ -219,22 +251,44 @@ export const MiniMusicPlayer: FunctionComponent = () => {
 
         <Separator orientation="vertical" />
 
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0 rounded-full"
-                aria-label="Minimize mini player"
-                onClick={() => setIsMinimized(true)}
-              >
-                <PictureInPicture2 className="size-4" />
-              </Button>
-            }
-          />
-          <TooltipContent>Minimize</TooltipContent>
-        </Tooltip>
+        <div>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 rounded-full"
+                  aria-label="Minimize mini player"
+                  onClick={() => {
+                    hasManuallyToggledRef.current = true
+                    setIsMinimized(true)
+                  }}
+                >
+                  <PictureInPicture2 className="size-4" />
+                </Button>
+              }
+            />
+            <TooltipContent>Minimize</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 rounded-full"
+                  aria-label="Close mini player"
+                  onClick={() => stopIfActive(song.id)}
+                >
+                  <X className="size-4" />
+                </Button>
+              }
+            />
+            <TooltipContent>Close</TooltipContent>
+          </Tooltip>
+        </div>
       </div>
     </div>
   )

@@ -191,7 +191,7 @@ export interface paths {
         put?: never;
         /**
          * Create a team
-         * @description Admin-only. Creates a new, memberless team.
+         * @description Admin-only. Creates a new team, optionally with an initial roster and their role assignments, all in one transaction.
          */
         post: operations["createTeam"];
         delete?: never;
@@ -223,7 +223,7 @@ export interface paths {
         head?: never;
         /**
          * Update a team
-         * @description Admin-only. Updates a team's name and/or description.
+         * @description Admin-only. Updates a team's name and/or leader.
          */
         patch: operations["updateTeam"];
         trace?: never;
@@ -303,6 +303,26 @@ export interface paths {
          * @description Admin-only. Removes a single role from a team member, leaving their membership intact.
          */
         delete: operations["removeTeamMemberRole"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List users
+         * @description Admin-only. Lists every user, alphabetically by name - used to populate the musician and team-leader pickers when creating or editing a team.
+         */
+        get: operations["listUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1097,7 +1117,6 @@ export interface operations {
                     "application/json": {
                         id: string;
                         name: string;
-                        description: string | null;
                         leader: {
                             id: string;
                             name: string;
@@ -1145,8 +1164,11 @@ export interface operations {
             content: {
                 "application/json": {
                     name: string;
-                    description?: string;
                     teamLeaderId?: string;
+                    members?: {
+                        userId: string;
+                        roles?: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                    }[];
                 };
             };
         };
@@ -1160,7 +1182,6 @@ export interface operations {
                     "application/json": {
                         id: string;
                         name: string;
-                        description: string | null;
                         leader: {
                             id: string;
                             name: string;
@@ -1247,7 +1268,6 @@ export interface operations {
                     "application/json": {
                         id: string;
                         name: string;
-                        description: string | null;
                         leader: {
                             id: string;
                             name: string;
@@ -1377,7 +1397,6 @@ export interface operations {
             content: {
                 "application/json": {
                     name?: string;
-                    description?: string | null;
                     teamLeaderId?: string | null;
                 };
             };
@@ -1392,7 +1411,6 @@ export interface operations {
                     "application/json": {
                         id: string;
                         name: string;
-                        description: string | null;
                         leader: {
                             id: string;
                             name: string;
@@ -1500,7 +1518,6 @@ export interface operations {
                     "application/json": {
                         id: string;
                         name: string;
-                        description: string | null;
                         leader: {
                             id: string;
                             name: string;
@@ -1676,7 +1693,6 @@ export interface operations {
                     "application/json": {
                         id: string;
                         name: string;
-                        description: string | null;
                         leader: {
                             id: string;
                             name: string;
@@ -1818,6 +1834,61 @@ export interface operations {
                      * @example {
                      *       "status": 404,
                      *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Users. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        email: string;
+                        image: string | null;
+                    }[];
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];

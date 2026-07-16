@@ -2,7 +2,7 @@
 
 import { Button } from "@workspace/ui/components/Button"
 import { Empty, EmptyAction, EmptyDescription, EmptyIcon, EmptyTitle } from "@workspace/ui/components/Empty"
-import { FileMusic } from "lucide-react"
+import { FileMusic, Plus } from "lucide-react"
 import { FunctionComponent } from "react"
 
 export const LineupList: FunctionComponent = () => {
@@ -14,7 +14,10 @@ export const LineupList: FunctionComponent = () => {
       <EmptyTitle>No line ups yet</EmptyTitle>
       <EmptyDescription>Create a lineup to organize songs for services.</EmptyDescription>
       <EmptyAction>
-        <Button>Create a line up</Button>
+        <Button>
+          <Plus />
+          Create a line up
+        </Button>
       </EmptyAction>
     </Empty>
   )
