@@ -14,6 +14,7 @@ import {
 } from "@workspace/ui/components/AlertDialog"
 import { Badge } from "@workspace/ui/components/Badge"
 import { Button } from "@workspace/ui/components/Button"
+import { Empty, EmptyAction, EmptyDescription, EmptyIcon, EmptyTitle } from "@workspace/ui/components/Empty"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,15 +25,28 @@ import {
 import { Skeleton } from "@workspace/ui/components/Skeleton"
 import { toast } from "@workspace/ui/components/Sonner"
 import { Spinner } from "@workspace/ui/components/Spinner"
+import { ScrollArea } from "@workspace/ui/components/ScrollArea"
 import { cn } from "@workspace/ui/lib/utils"
-import { CloudDownload, EllipsisVertical, LibraryBig, Music, Pause, Play, RedoDot, Trash } from "lucide-react"
+import {
+  CloudDownload,
+  EllipsisVertical,
+  LibraryBig,
+  Music,
+  Pause,
+  Play,
+  PlayOff,
+  RedoDot,
+  Trash,
+} from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { FunctionComponent, MouseEvent, useEffect, useMemo, useRef, useState } from "react"
 import { apiClient } from "@/lib/api-client"
+import { NowPlayingCard } from "@/components/NowPlayingCard"
 import { useSession } from "@/components/SessionProvider"
 import { SongDetailsSheet } from "@/components/SongDetailsSheet"
 import { usePlayer } from "@/components/SongPlayerProvider"
+import { UploadSongDialog } from "@/components/UploadSongDialog"
 import type { Song } from "@/components/NowPlayingCard"
 
 interface SongRowProps {
@@ -249,7 +263,7 @@ const SongRowSkeleton: FunctionComponent<{ index: number }> = ({ index }) => (
 )
 
 export const SongList: FunctionComponent = () => {
-  const { activeSongId, isPlaying, isLoadingSongId, selectSong, playOrToggle } = usePlayer()
+  const { activeSongId, isPlaying, isLoadingSongId, selectSong, playOrToggle, stopIfActive } = usePlayer()
   const session = useSession()
   const queryClient = useQueryClient()
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
@@ -328,6 +342,10 @@ export const SongList: FunctionComponent = () => {
       })
       if (error) throw new Error("Failed to delete song.")
 
+      // A no-op unless this song is the one currently loaded/playing - stops
+      // it and clears the mini player rather than leaving it playing a track
+      // that no longer exists.
+      stopIfActive(song.id)
       toast.success("Song successfully deleted.")
       await queryClient.invalidateQueries({ queryKey: ["songs"] })
       return true
@@ -341,16 +359,37 @@ export const SongList: FunctionComponent = () => {
 
   if (songs.isLoading) {
     return (
-      <div className="flex flex-col gap-1">
-        {Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
-          <SongRowSkeleton key={index} index={index} />
-        ))}
+      <div className="flex min-h-0 flex-1 gap-6 pt-10">
+        <NowPlayingCard />
+        <ScrollArea className="min-h-0 flex-1">
+          <div className="flex flex-col gap-1">
+            {Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
+              <SongRowSkeleton key={index} index={index} />
+            ))}
+          </div>
+        </ScrollArea>
       </div>
     )
   }
 
   if (!songList.length) {
-    return <p className="text-sm text-muted-foreground">No songs uploaded yet.</p>
+    // No NowPlayingCard here - there's nothing for it to preview, and
+    // splitting the page for an empty left column wastes the space this
+    // empty state should have to itself.
+    return (
+      <div className="flex min-h-0 flex-1 pt-10">
+        <Empty>
+          <EmptyIcon>
+            <PlayOff />
+          </EmptyIcon>
+          <EmptyTitle>No songs yet</EmptyTitle>
+          <EmptyDescription>Upload your first track to start building the library.</EmptyDescription>
+          <EmptyAction>
+            <UploadSongDialog />
+          </EmptyAction>
+        </Empty>
+      </div>
+    )
   }
 
   // Nothing is loaded yet on a fresh visit/refresh - highlight the first
@@ -362,29 +401,34 @@ export const SongList: FunctionComponent = () => {
   const displayActiveId = activeSongId ?? songList[0]?.id ?? null
 
   return (
-    <div className="flex flex-col gap-1">
-      {songList.map((song) => (
-        <SongRow
-          key={song.id}
-          song={song}
-          isActive={displayActiveId === song.id}
-          isPlaying={activeSongId === song.id && isPlaying}
-          isLoadingAudio={isLoadingSongId === song.id}
-          isDownloading={downloadingId === song.id}
-          isDeleting={deletingId === song.id}
-          canDelete={canDelete}
-          onSelect={() => selectSong(song, songList)}
-          onTogglePlay={() => playOrToggle(song, songList)}
-          onDownload={() => handleDownload(song)}
-          onDelete={() => handleDelete(song)}
-        />
-      ))}
-      <div ref={loadMoreRef} />
-      {songs.isFetchingNextPage && (
-        <div className="flex justify-center py-4">
-          <Spinner />
+    <div className="flex min-h-0 flex-1 gap-6 pt-10">
+      <NowPlayingCard />
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="flex flex-col gap-1">
+          {songList.map((song) => (
+            <SongRow
+              key={song.id}
+              song={song}
+              isActive={displayActiveId === song.id}
+              isPlaying={activeSongId === song.id && isPlaying}
+              isLoadingAudio={isLoadingSongId === song.id}
+              isDownloading={downloadingId === song.id}
+              isDeleting={deletingId === song.id}
+              canDelete={canDelete}
+              onSelect={() => selectSong(song, songList)}
+              onTogglePlay={() => playOrToggle(song, songList)}
+              onDownload={() => handleDownload(song)}
+              onDelete={() => handleDelete(song)}
+            />
+          ))}
+          <div ref={loadMoreRef} />
+          {songs.isFetchingNextPage && (
+            <div className="flex justify-center py-4">
+              <Spinner />
+            </div>
+          )}
         </div>
-      )}
+      </ScrollArea>
     </div>
   )
 }

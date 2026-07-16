@@ -34,6 +34,7 @@ export interface MockPlayerContextValue {
   playPrevious: () => void
   skip: (seconds: number) => void
   seek: (time: number) => void
+  stopIfActive: (songId: string) => void
 }
 
 export function createMockSong(overrides: Partial<Song> = {}): Song {
@@ -101,6 +102,7 @@ export function createMockPlayerContextValue(
     playPrevious: vi.fn(),
     skip: vi.fn(),
     seek: vi.fn(),
+    stopIfActive: vi.fn(),
     ...overrides,
   }
 }

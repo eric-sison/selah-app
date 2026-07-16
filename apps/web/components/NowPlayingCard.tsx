@@ -74,7 +74,12 @@ export const NowPlayingCard: FunctionComponent = () => {
   if (!song) {
     return (
       <div className="flex w-full max-w-xs flex-col items-center gap-4">
-        <p className="text-sm text-muted-foreground">No songs uploaded yet.</p>
+        <Card className="w-full gap-0 rounded-xl py-0 opacity-95">
+          <CardContent className="flex aspect-square flex-col items-center justify-center gap-2">
+            <Music className="size-32 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No songs yet</p>
+          </CardContent>
+        </Card>
       </div>
     )
   }

@@ -6,8 +6,6 @@ import {
   PageHeader,
   PageTitle,
 } from "@workspace/ui/components/Page"
-import { ScrollArea } from "@workspace/ui/components/ScrollArea"
-import { NowPlayingCard } from "@/components/NowPlayingCard"
 import { MusicPlayerBar } from "@/components/MusicPlayerBar"
 import { SongList } from "@/components/SongList"
 import { SongSearchCombobox } from "@/components/SongSearchCombobox"
@@ -24,16 +22,11 @@ export default function SongBank() {
               Every track uploaded for worship services — key, tempo, and album art at a glance.
             </PageDescription>
             <PageAction className="flex items-center gap-2">
-              <SongSearchCombobox />
+              {/* <SongSearchCombobox /> */}
               <UploadSongDialog />
             </PageAction>
           </PageHeader>
-          <div className="flex min-h-0 flex-1 gap-6 pt-10">
-            <NowPlayingCard />
-            <ScrollArea className="min-h-0 flex-1">
-              <SongList />
-            </ScrollArea>
-          </div>
+          <SongList />
         </div>
       </PageContent>
       <PageFooter className="mt-0!">

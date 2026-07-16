@@ -205,11 +205,78 @@ export const MusicPlayerBar: FunctionComponent = () => {
 
   // A failed fetch also leaves `song` undefined - without this check it'd
   // be indistinguishable from "still loading" and get stuck showing the
-  // skeleton forever instead of falling back.
+  // skeleton forever instead of falling back. Mirrors the loaded bar's
+  // layout with every control disabled, rather than collapsing to a bare
+  // message, so there's no layout jump once a song actually loads.
   if (!activeSongId || activeSongQuery.isError) {
     return (
-      <div className="flex h-20 items-center justify-center px-4">
-        <p className="text-sm text-muted-foreground">Nothing playing.</p>
+      <div className="relative flex h-20 items-center">
+        <div className="absolute inset-x-0 top-0">
+          <Slider value={[0]} min={0} max={100} disabled className="**:data-[slot=slider-track]:h-0.5" />
+        </div>
+
+        <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-card ring-1 ring-foreground/10">
+              <Music className="size-5 text-muted-foreground" />
+            </div>
+            <p className="truncate text-xs text-muted-foreground">Nothing playing</p>
+          </div>
+
+          <div className="flex items-center justify-center gap-4">
+            <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Shuffle" disabled>
+              <Shuffle className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              className="rounded-full"
+              aria-label="Previous song"
+              disabled
+            >
+              <SkipBack className="size-4 fill-current" />
+            </Button>
+            <button aria-label="Play" className="text-muted-foreground" disabled>
+              <Play className="size-8 fill-current" />
+            </button>
+            <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Next song" disabled>
+              <SkipForward className="size-4 fill-current" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              className="rounded-full"
+              aria-label="Repeat current song"
+              disabled
+            >
+              <Repeat className="size-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-end gap-1">
+            <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Volume" disabled>
+              <Volume2 className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              className="rounded-full"
+              aria-label="Lyrics and chords"
+              disabled
+            >
+              <FileMusic className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              className="rounded-full"
+              aria-label="Song details"
+              disabled
+            >
+              <ListMusic className="size-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     )
   }

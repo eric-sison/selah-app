@@ -67,6 +67,11 @@ interface PlayerContextValue {
   playPrevious: () => void
   skip: (seconds: number) => void
   seek: (time: number) => void
+  // Stops playback and clears the active song, but only if `songId` is the
+  // one currently loaded - a no-op otherwise. Called after deleting a song
+  // (see SongList.tsx's handleDelete) so a deleted-but-still-playing track
+  // doesn't keep playing with its now-stale data on screen.
+  stopIfActive: (songId: string) => void
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null)
@@ -393,6 +398,21 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     audio.currentTime = time
   }
 
+  const stopIfActive = (songId: string) => {
+    if (activeSongIdRef.current !== songId) return
+
+    const audio = audioRef.current
+    if (audio) {
+      audio.pause()
+      audio.removeAttribute("src")
+      audio.load()
+    }
+    setActiveSongId(null)
+    setIsPlaying(false)
+    setCurrentTime(0)
+    setDuration(0)
+  }
+
   const setVolume = (value: number) => {
     const clamped = Math.min(Math.max(value, 0), 1)
     const audio = audioRef.current
@@ -447,6 +467,7 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
         playPrevious,
         skip,
         seek,
+        stopIfActive,
       }}
     >
       <audio ref={audioRef} className="hidden" crossOrigin="anonymous" />

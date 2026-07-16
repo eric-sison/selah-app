@@ -7,6 +7,7 @@ import { getServerSession } from "@/lib/session"
 import { SessionProvider } from "@/components/SessionProvider"
 import { AppSidebar } from "@/components/AppSidebar"
 import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
+import { SongPlayerProvider } from "@/components/SongPlayerProvider"
 
 export default async function ProtectedLayout({ children }: Readonly<PropsWithChildren>) {
   const session = await getServerSession()
@@ -31,12 +32,14 @@ export default async function ProtectedLayout({ children }: Readonly<PropsWithCh
           opaque background by default, which would otherwise fully hide
           the gradient above - clear them so it shows through everywhere. */}
         <AppSidebar variant="sidebar" className="**:data-[slot=sidebar-inner]:bg-transparent" />
-        <SidebarInset className="bg-transparent">
-          <Page>
-            <PageBreadcrumbNav />
-            {children}
-          </Page>
-        </SidebarInset>
+        <SongPlayerProvider>
+          <SidebarInset className="bg-transparent">
+            <Page>
+              <PageBreadcrumbNav />
+              {children}
+            </Page>
+          </SidebarInset>
+        </SongPlayerProvider>
       </SidebarProvider>
     </SessionProvider>
   )

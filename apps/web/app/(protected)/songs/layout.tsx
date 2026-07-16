@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from "react"
-import { SongPlayerProvider } from "@/components/SongPlayerProvider"
+//import { SongPlayerProvider } from "@/components/SongPlayerProvider"
 
 export default function SongsLayout({ children }: Readonly<PropsWithChildren>) {
-  return <SongPlayerProvider>{children}</SongPlayerProvider>
+  return <>{children}</>
 }

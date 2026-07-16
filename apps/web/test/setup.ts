@@ -32,6 +32,10 @@ Element.prototype.scrollIntoView = vi.fn()
 Element.prototype.hasPointerCapture = vi.fn(() => false)
 Element.prototype.setPointerCapture = vi.fn()
 Element.prototype.releasePointerCapture = vi.fn()
+// base-ui's ScrollArea viewport calls this to check for an in-flight
+// scroll-into-view animation when deciding whether to show its scrollbar -
+// jsdom doesn't implement the Web Animations API at all.
+Element.prototype.getAnimations = vi.fn(() => [])
 
 // jsdom's PointerEvent is missing fields (pointerType etc.) that base-ui
 // reads when handling pointer interactions.

@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/DropdownMenu"
 import { authClient } from "@/lib/auth-client"
+import { SongSearchCombobox } from "./SongSearchCombobox"
 
 // The layout that renders this is a Server Component - it only runs once
 // per full page load, so a pathname read there via headers() goes stale on
@@ -31,37 +32,41 @@ export const PageBreadcrumbNav: FunctionComponent = () => {
   return (
     <nav className="flex w-full items-center justify-between border-b px-4 py-2.5">
       <PageBreadcrumb pathname={pathname} routes={routeMap} />
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <button>
-              <Avatar>
-                <AvatarImage src={imgUrl} />
-                <AvatarFallback className="uppercase">{userName?.charAt(0)}</AvatarFallback>
-              </Avatar>
-            </button>
-          }
-        />
-        <DropdownMenuContent>
-          <DropdownMenuItem>Profile</DropdownMenuItem>
-          <DropdownMenuItem>Settings</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => {
-              authClient.signOut({
-                fetchOptions: {
-                  onSuccess() {
-                    router.push("/auth/sign-in")
+
+      <div className="flex items-center gap-4">
+        <SongSearchCombobox />
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button>
+                <Avatar>
+                  <AvatarImage src={imgUrl} />
+                  <AvatarFallback className="uppercase">{userName?.charAt(0)}</AvatarFallback>
+                </Avatar>
+              </button>
+            }
+          />
+          <DropdownMenuContent>
+            <DropdownMenuItem>Profile</DropdownMenuItem>
+            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => {
+                authClient.signOut({
+                  fetchOptions: {
+                    onSuccess() {
+                      router.push("/auth/sign-in")
+                    },
                   },
-                },
-              })
-            }}
-          >
-            Sign out
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+                })
+              }}
+            >
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </nav>
   )
 }
