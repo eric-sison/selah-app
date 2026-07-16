@@ -85,6 +85,13 @@
       "when": 1784225210231,
       "tag": "0011_dry_cable",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784234743548,
+      "tag": "0012_add_lineups_and_schedules",
+      "breakpoints": true
     }
   ]
 }
