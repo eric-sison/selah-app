@@ -7,6 +7,7 @@ import { getServerSession } from "@/lib/session"
 import { SessionProvider } from "@/components/SessionProvider"
 import { AppSidebar } from "@/components/AppSidebar"
 import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
+import { MiniMusicPlayer } from "@/components/MiniMusicPlayer"
 import { SongPlayerProvider } from "@/components/SongPlayerProvider"
 
 export default async function ProtectedLayout({ children }: Readonly<PropsWithChildren>) {
@@ -39,6 +40,7 @@ export default async function ProtectedLayout({ children }: Readonly<PropsWithCh
               {children}
             </Page>
           </SidebarInset>
+          <MiniMusicPlayer />
         </SongPlayerProvider>
       </SidebarProvider>
     </SessionProvider>

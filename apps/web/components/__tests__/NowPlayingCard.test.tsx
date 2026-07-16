@@ -37,7 +37,7 @@ describe("NowPlayingCard", () => {
     expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0)
   })
 
-  it("shows 'No songs uploaded yet.' when there is no active song and the recent-song query resolves empty", async () => {
+  it("shows 'No songs yet' when there is no active song and the recent-song query resolves empty", async () => {
     vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: null }))
     vi.mocked(apiClient.GET).mockImplementation((path: string) => {
       if (path === "/api/songs") {
@@ -48,7 +48,7 @@ describe("NowPlayingCard", () => {
 
     render(<NowPlayingCard />)
 
-    expect(await screen.findByText("No songs uploaded yet.")).toBeInTheDocument()
+    expect(await screen.findByText("No songs yet")).toBeInTheDocument()
   })
 
   it("renders the active song's title and artist when activeSongId is set", async () => {
@@ -159,7 +159,7 @@ describe("NowPlayingCard", () => {
     await waitFor(() => expect(container.querySelector("canvas")).toBeInTheDocument())
   })
 
-  it("shows 'No songs uploaded yet.' when the active song query errors", async () => {
+  it("shows 'No songs yet' when the active song query errors", async () => {
     vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1" }))
     vi.mocked(apiClient.GET).mockImplementation((path: string) => {
       if (path === "/api/songs/{id}") {
@@ -170,10 +170,10 @@ describe("NowPlayingCard", () => {
 
     render(<NowPlayingCard />)
 
-    expect(await screen.findByText("No songs uploaded yet.")).toBeInTheDocument()
+    expect(await screen.findByText("No songs yet")).toBeInTheDocument()
   })
 
-  it("shows 'No songs uploaded yet.' when the recent-song query errors", async () => {
+  it("shows 'No songs yet' when the recent-song query errors", async () => {
     vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: null }))
     vi.mocked(apiClient.GET).mockImplementation((path: string) => {
       if (path === "/api/songs") {
@@ -184,7 +184,7 @@ describe("NowPlayingCard", () => {
 
     render(<NowPlayingCard />)
 
-    expect(await screen.findByText("No songs uploaded yet.")).toBeInTheDocument()
+    expect(await screen.findByText("No songs yet")).toBeInTheDocument()
   })
 
   it("falls back to the Music icon when the album art query errors", async () => {

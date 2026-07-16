@@ -1,10 +1,12 @@
 import { usePathname, useRouter } from "next/navigation"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import userEvent from "@testing-library/user-event"
 import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
 import { authClient } from "@/lib/auth-client"
-import { createMockSession } from "../../test/fixtures"
-import { render, renderWithProviders, screen } from "../../test/render"
+import { apiClient } from "@/lib/api-client"
+import { usePlayer } from "@/components/SongPlayerProvider"
+import { createMockPlayerContextValue, createMockSession } from "../../test/fixtures"
+import { renderWithProviders, screen } from "../../test/render"
 
 vi.mock("next/navigation", () => ({
   usePathname: vi.fn(),
@@ -16,6 +18,12 @@ vi.mock("@/lib/auth-client", () => ({
     signOut: vi.fn(),
   },
 }))
+
+// PageBreadcrumbNav renders SongSearchCombobox, which needs both of these.
+vi.mock("@/lib/api-client", () => ({
+  apiClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
+}))
+vi.mock("@/components/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
 
 function mockPush() {
   const push = vi.fn()
@@ -31,11 +39,19 @@ function mockPush() {
 }
 
 describe("PageBreadcrumbNav", () => {
+  beforeEach(() => {
+    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue())
+    // SongSearchCombobox's results query is `enabled: query.length > 0`, and
+    // no test here types into the search box, so it never actually fires -
+    // this just keeps the module import safe.
+    vi.mocked(apiClient.GET).mockReset()
+  })
+
   it("renders breadcrumb items derived from the current pathname", () => {
     mockPush()
     vi.mocked(usePathname).mockReturnValue("/songs")
 
-    render(<PageBreadcrumbNav />)
+    renderWithProviders(<PageBreadcrumbNav />)
 
     expect(screen.getByRole("navigation", { name: /breadcrumb/i })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/")
@@ -45,7 +61,7 @@ describe("PageBreadcrumbNav", () => {
     mockPush()
     vi.mocked(usePathname).mockReturnValue("/songs/song-1")
 
-    render(<PageBreadcrumbNav />)
+    renderWithProviders(<PageBreadcrumbNav />)
 
     expect(screen.getByRole("navigation", { name: /breadcrumb/i })).toBeInTheDocument()
   })
@@ -63,7 +79,7 @@ describe("PageBreadcrumbNav", () => {
     mockPush()
     vi.mocked(usePathname).mockReturnValue("/songs")
 
-    render(<PageBreadcrumbNav />)
+    renderWithProviders(<PageBreadcrumbNav />)
 
     expect(screen.getByRole("button")).toBeInTheDocument()
   })
@@ -73,7 +89,7 @@ describe("PageBreadcrumbNav", () => {
     vi.mocked(usePathname).mockReturnValue("/songs")
     const user = userEvent.setup()
 
-    render(<PageBreadcrumbNav />)
+    renderWithProviders(<PageBreadcrumbNav />)
     await user.click(screen.getByRole("button"))
 
     expect(screen.getByRole("menuitem", { name: "Profile" })).toBeInTheDocument()
@@ -90,7 +106,7 @@ describe("PageBreadcrumbNav", () => {
     })
     const user = userEvent.setup()
 
-    render(<PageBreadcrumbNav />)
+    renderWithProviders(<PageBreadcrumbNav />)
     await user.click(screen.getByRole("button"))
     await user.click(screen.getByRole("menuitem", { name: "Sign out" }))
 

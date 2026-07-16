@@ -110,7 +110,7 @@ describe("MusicPlayerBar", () => {
 
     render(<MusicPlayerBar />)
 
-    expect(screen.getByText("Nothing playing.")).toBeInTheDocument()
+    expect(screen.getByText("Nothing playing")).toBeInTheDocument()
   })
 
   it("renders the active song's uploader/file size and album art fallback icon", async () => {
@@ -514,17 +514,17 @@ describe("MusicPlayerBar", () => {
 
     render(<MusicPlayerBar />)
 
-    expect(await screen.findByText("Nothing playing.")).toBeInTheDocument()
+    expect(await screen.findByText("Nothing playing")).toBeInTheDocument()
   })
 
-  it("shows a skeleton (not the 'Nothing playing.' placeholder) while the active song is loading", () => {
+  it("shows a skeleton (not the 'Nothing playing' placeholder) while the active song is loading", () => {
     vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1" }))
     vi.mocked(apiClient.GET).mockReturnValue(new Promise(() => {}) as never)
 
     const { container } = render(<MusicPlayerBar />)
 
     expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0)
-    expect(screen.queryByText("Nothing playing.")).not.toBeInTheDocument()
+    expect(screen.queryByText("Nothing playing")).not.toBeInTheDocument()
   })
 
   it("doesn't crash when album art fails to load for a song that has it", async () => {

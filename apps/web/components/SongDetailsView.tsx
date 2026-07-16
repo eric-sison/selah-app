@@ -7,13 +7,14 @@ import { Card, CardContent } from "@workspace/ui/components/Card"
 import { LiveWaveform } from "@workspace/ui/components/LiveWaveform"
 import { Skeleton } from "@workspace/ui/components/Skeleton"
 import { Spinner } from "@workspace/ui/components/Spinner"
-import { ChevronLeft, Music } from "lucide-react"
+import { ChevronLeft, Disc3, Music } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { FunctionComponent, useEffect, useRef } from "react"
 import { apiClient } from "@/lib/api-client"
 import { usePlayer } from "@/components/SongPlayerProvider"
 import type { components } from "@/types/api"
+import { Empty, EmptyDescription, EmptyIcon, EmptyTitle } from "@workspace/ui/components/Empty"
 
 interface SongDetailsViewProps {
   songId: string
@@ -95,9 +96,13 @@ export const SongDetailsView: FunctionComponent<SongDetailsViewProps> = ({ songI
             <Skeleton className="h-2 w-full" />
           </div>
         ) : songQuery.isError || !song ? (
-          <p className="text-center text-sm text-muted-foreground">
-            {error?.status === 404 ? "Song not found." : "Failed to load song."}
-          </p>
+          <Empty className="h-full">
+            <EmptyIcon>
+              <Disc3 />
+            </EmptyIcon>
+            <EmptyTitle>Song not found</EmptyTitle>
+            <EmptyDescription>The requested song could not be found.</EmptyDescription>
+          </Empty>
         ) : (
           <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-6">
             <Card className="aspect-square w-full max-w-md overflow-hidden py-0">

@@ -36,6 +36,13 @@ vi.mock("@/components/SongDetailsSheet", () => ({
     open ? <div data-testid="mock-details-sheet">{song.title}</div> : null,
 }))
 
+// NowPlayingCard is a decorative preview panel with its own independent
+// query (most-recently-uploaded song) - mocked out so its async state
+// doesn't race with, or coincidentally collide in text with, the list's own
+// assertions below (its "no songs" fallback also happens to read "No songs
+// yet", identical to SongList's own empty state).
+vi.mock("@/components/NowPlayingCard", () => ({ NowPlayingCard: () => null }))
+
 interface SongsPage {
   items: Song[]
   nextCursor: number | null
@@ -96,7 +103,7 @@ describe("SongList", () => {
     const { container } = renderWithProviders(<SongList />)
 
     expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0)
-    expect(screen.queryByText("No songs uploaded yet.")).not.toBeInTheDocument()
+    expect(screen.queryByText("No songs yet")).not.toBeInTheDocument()
   })
 
   it("shows an empty state when the first page has no items", async () => {
@@ -106,7 +113,7 @@ describe("SongList", () => {
 
     renderWithProviders(<SongList />)
 
-    expect(await screen.findByText("No songs uploaded yet.")).toBeInTheDocument()
+    expect(await screen.findByText("No songs yet")).toBeInTheDocument()
   })
 
   it("renders song rows with title, artist, and conditional key/tempo badges", async () => {
@@ -517,7 +524,7 @@ describe("SongList", () => {
 
     renderWithProviders(<SongList />)
 
-    expect(await screen.findByText("No songs uploaded yet.")).toBeInTheDocument()
+    expect(await screen.findByText("No songs yet")).toBeInTheDocument()
   })
 
   it("shows a spinner in the play button while this row's audio is loading", async () => {

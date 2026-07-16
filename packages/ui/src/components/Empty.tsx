@@ -28,7 +28,7 @@ function EmptyIcon({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 function EmptyTitle({ className, ...props }: React.ComponentProps<"p">) {
-  return <p data-slot="empty-title" className={cn("text-sm font-medium", className)} {...props} />
+  return <p data-slot="empty-title" className={cn("text-xl font-bold tracking-wide", className)} {...props} />
 }
 
 function EmptyDescription({ className, ...props }: React.ComponentProps<"p">) {

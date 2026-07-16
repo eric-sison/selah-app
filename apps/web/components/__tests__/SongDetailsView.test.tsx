@@ -143,22 +143,23 @@ describe("SongDetailsView", () => {
     expect(document.querySelector(".z-10")).toBeInTheDocument()
   })
 
-  it("shows 'Song not found.' for a 404 error", async () => {
+  it("shows the 'Song not found' empty state for a 404 error", async () => {
     vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue())
     mockSongResponse(undefined, { status: 404, message: "Not found" })
 
     renderWithProviders(<SongDetailsView songId="song-1" />)
 
-    expect(await screen.findByText("Song not found.")).toBeInTheDocument()
+    expect(await screen.findByText("Song not found")).toBeInTheDocument()
+    expect(screen.getByText("The requested song could not be found.")).toBeInTheDocument()
   })
 
-  it("shows 'Failed to load song.' for a non-404 error", async () => {
+  it("shows the same 'Song not found' empty state for a non-404 error", async () => {
     vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue())
     mockSongResponse(undefined, { status: 500, message: "Server error" })
 
     renderWithProviders(<SongDetailsView songId="song-1" />)
 
-    expect(await screen.findByText("Failed to load song.")).toBeInTheDocument()
+    expect(await screen.findByText("Song not found")).toBeInTheDocument()
   })
 
   it("does not auto-select the song when activeSongId is already set", async () => {
