@@ -1,11 +1,11 @@
 import userEvent from "@testing-library/user-event"
 import { toast } from "@workspace/ui/components/Sonner"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { TeamList } from "@/components/TeamList"
+import { TeamList } from "@/components/teams/TeamList"
 import { apiClient } from "@/lib/api-client"
-import { createMockSession, createMockTeam, createMockTeamMember } from "../../test/fixtures"
-import { fireEvent, renderWithProviders as render, screen, waitFor, within } from "../../test/render"
-import type { Team } from "@/components/TeamList"
+import { createMockSession, createMockTeam, createMockTeamMember } from "../../../test/fixtures"
+import { fireEvent, renderWithProviders as render, screen, waitFor, within } from "../../../test/render"
+import type { Team } from "@/components/teams/TeamList"
 
 vi.mock("@workspace/ui/components/Sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
@@ -18,7 +18,7 @@ vi.mock("@/lib/api-client", () => ({
 // Isolates TeamList/TeamCard's own logic (loading/empty states, member
 // count text, leader/avatar rendering, dropdown gating, delete flow) from
 // TeamDetailsSheet's own behavior, which has its own dedicated test file.
-vi.mock("@/components/TeamDetailsSheet", () => ({
+vi.mock("@/components/teams/TeamDetailsSheet", () => ({
   TeamDetailsSheet: ({
     team,
     open,

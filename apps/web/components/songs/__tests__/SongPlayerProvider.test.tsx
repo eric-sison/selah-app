@@ -2,8 +2,8 @@ import { act, fireEvent, renderHook } from "@testing-library/react"
 import type { ReactNode } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { apiClient } from "@/lib/api-client"
-import { SongPlayerProvider, usePlayer } from "@/components/SongPlayerProvider"
-import { createMockSong } from "../../test/fixtures"
+import { SongPlayerProvider, usePlayer } from "@/components/songs/SongPlayerProvider"
+import { createMockSong } from "../../../test/fixtures"
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: { GET: vi.fn() },
@@ -864,6 +864,25 @@ describe("SongPlayerProvider", () => {
 
       expect(result.current.activeSongId).toBe("song-1")
       expect(getAudioEl().pause).not.toHaveBeenCalled()
+    })
+
+    it("suppresses the error toast for a song's load once it's been stopped", async () => {
+      // Mirrors the real race: a `loadSong` request for this id is still in
+      // flight (e.g. the auto-select-first-song effect, or a play click
+      // right before deleting) when the row gets deleted and `stopIfActive`
+      // is called - the eventual 404 shouldn't surface a misleading toast.
+      const { toast } = await import("@workspace/ui/components/Sonner")
+      mockStreamUrlError()
+      const { result } = renderPlayer()
+      const song = createMockSong({ id: "song-1" })
+
+      act(() => result.current.stopIfActive("song-1"))
+
+      await act(async () => {
+        await result.current.selectSong(song)
+      })
+
+      expect(toast.error).not.toHaveBeenCalled()
     })
   })
 })

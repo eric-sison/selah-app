@@ -10,7 +10,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { FunctionComponent, useEffect, useRef, useState } from "react"
 import { apiClient } from "@/lib/api-client"
-import { usePlayer } from "@/components/SongPlayerProvider"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/Tooltip"
 import { Separator } from "@workspace/ui/components/Separator"
 

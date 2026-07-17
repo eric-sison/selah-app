@@ -1,6 +1,6 @@
 import { format } from "date-fns"
 import { FunctionComponent } from "react"
-import type { Song } from "@/components/NowPlayingCard"
+import type { Song } from "@/components/songs/NowPlayingCard"
 import { formatFileSize } from "@/utils/format-file-size"
 
 interface SongDetailInfoProps {

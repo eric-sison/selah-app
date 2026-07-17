@@ -18,8 +18,8 @@ import { useRouter } from "next/navigation"
 import { FunctionComponent, useState } from "react"
 import { apiClient } from "@/lib/api-client"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
-import type { Song } from "@/components/NowPlayingCard"
-import { usePlayer } from "@/components/SongPlayerProvider"
+import type { Song } from "@/components/songs/NowPlayingCard"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
 
 const SEARCH_DEBOUNCE_MS = 250
 

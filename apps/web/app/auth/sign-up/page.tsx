@@ -1,4 +1,4 @@
-import { SignUpForm } from "@/components/SignUpForm"
+import { SignUpForm } from "@/components/auth/SignUpForm"
 
 const API_URL = process.env.API_URL ?? "http://localhost:4000"
 

@@ -7,8 +7,8 @@ import { getServerSession } from "@/lib/session"
 import { SessionProvider } from "@/components/SessionProvider"
 import { AppSidebar } from "@/components/AppSidebar"
 import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
-import { MiniMusicPlayer } from "@/components/MiniMusicPlayer"
-import { SongPlayerProvider } from "@/components/SongPlayerProvider"
+import { MiniMusicPlayer } from "@/components/songs/MiniMusicPlayer"
+import { SongPlayerProvider } from "@/components/songs/SongPlayerProvider"
 
 export default async function ProtectedLayout({ children }: Readonly<PropsWithChildren>) {
   const session = await getServerSession()

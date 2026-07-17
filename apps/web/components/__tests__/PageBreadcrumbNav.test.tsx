@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event"
 import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
 import { authClient } from "@/lib/auth-client"
 import { apiClient } from "@/lib/api-client"
-import { usePlayer } from "@/components/SongPlayerProvider"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
 import { createMockPlayerContextValue, createMockSession } from "../../test/fixtures"
 import { renderWithProviders, screen } from "../../test/render"
 
@@ -23,7 +23,7 @@ vi.mock("@/lib/auth-client", () => ({
 vi.mock("@/lib/api-client", () => ({
   apiClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
 }))
-vi.mock("@/components/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
+vi.mock("@/components/songs/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
 
 function mockPush() {
   const push = vi.fn()

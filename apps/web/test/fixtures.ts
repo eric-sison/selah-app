@@ -1,8 +1,8 @@
 import { vi } from "vitest"
-import type { Song } from "@/components/NowPlayingCard"
+import type { Song } from "@/components/songs/NowPlayingCard"
 import type { Session } from "@/lib/session"
-import type { LoopSection } from "@/components/SongPlayerProvider"
-import type { Team } from "@/components/TeamList"
+import type { LoopSection } from "@/components/songs/SongPlayerProvider"
+import type { Team } from "@/components/teams/TeamList"
 
 // SongPlayerProvider's own PlayerContextValue interface isn't exported -
 // this is a structural duplicate kept in sync by hand. Components under
@@ -79,7 +79,8 @@ export function createMockTeamMember(
   return {
     id: "member-1",
     user: { id: "user-2", name: "Ben Ortega", image: null },
-    roles: [],
+    musicianId: "musician-1",
+    instruments: [],
     ...overrides,
   }
 }

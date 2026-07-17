@@ -2,24 +2,24 @@ import { fireEvent, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { apiClient } from "@/lib/api-client"
-import { MusicPlayerBar } from "@/components/MusicPlayerBar"
-import { usePlayer } from "@/components/SongPlayerProvider"
-import { createMockPlayerContextValue, createMockSong } from "../../test/fixtures"
-import { renderWithProviders as render } from "../../test/render"
+import { MusicPlayerBar } from "@/components/songs/MusicPlayerBar"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
+import { createMockPlayerContextValue, createMockSong } from "../../../test/fixtures"
+import { renderWithProviders as render } from "../../../test/render"
 
-vi.mock("@/components/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
+vi.mock("@/components/songs/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
 vi.mock("@/lib/api-client", () => ({ apiClient: { GET: vi.fn() } }))
 
-vi.mock("@/components/SongDetailsSheet", () => ({
+vi.mock("@/components/songs/SongDetailsSheet", () => ({
   SongDetailsSheet: ({ open, song }: { open: boolean; song: { title: string } }) =>
     open ? <div data-testid="mock-details-sheet">{song.title}</div> : null,
 }))
-vi.mock("@/components/SongLyricsChords", () => ({
+vi.mock("@/components/songs/SongLyricsChords", () => ({
   SongLyricsChords: ({ song }: { song: { title: string } }) => (
     <div data-testid="mock-lyrics">{song.title}</div>
   ),
 }))
-vi.mock("@/components/EditChordProDialog", () => ({
+vi.mock("@/components/songs/EditChordProDialog", () => ({
   EditChordProDialog: ({ open, song }: { open: boolean; song: { title: string } }) =>
     open ? <div data-testid="mock-edit-dialog">{song.title}</div> : null,
 }))

@@ -30,10 +30,10 @@ import { FunctionComponent, useEffect, useRef, useState } from "react"
 import { apiClient } from "@/lib/api-client"
 import { formatFileSize } from "@/utils/format-file-size"
 import { formatTime } from "@/utils/format-time"
-import { usePlayer } from "@/components/SongPlayerProvider"
-import { EditChordProDialog } from "@/components/EditChordProDialog"
-import { SongDetailsSheet } from "@/components/SongDetailsSheet"
-import { SongLyricsChords } from "@/components/SongLyricsChords"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
+import { EditChordProDialog } from "@/components/songs/EditChordProDialog"
+import { SongDetailsSheet } from "@/components/songs/SongDetailsSheet"
+import { SongLyricsChords } from "@/components/songs/SongLyricsChords"
 
 // See NowPlayingCard.tsx - the shared Slider uses `thumbAlignment="edge"`
 // with a 12px (size-3) thumb, so the thumb's on-screen center isn't a pure

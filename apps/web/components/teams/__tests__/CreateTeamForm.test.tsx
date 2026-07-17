@@ -2,9 +2,9 @@ import userEvent from "@testing-library/user-event"
 import { Sheet } from "@workspace/ui/components/Sheet"
 import { toast } from "@workspace/ui/components/Sonner"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { CreateTeamForm } from "@/components/CreateTeamForm"
+import { CreateTeamForm } from "@/components/teams/CreateTeamForm"
 import { apiClient } from "@/lib/api-client"
-import { renderWithProviders, screen, waitFor } from "../../test/render"
+import { renderWithProviders, screen, waitFor } from "../../../test/render"
 
 // CreateTeamForm renders <SheetClose> (from its SheetFooter), which reads
 // base-ui's dialog root context - it's only ever mounted inside a <Sheet>
@@ -28,7 +28,7 @@ vi.mock("@/lib/api-client", () => ({
 // Isolates CreateTeamForm's own logic (name validation, submit payload,
 // mutation outcome) from TeamMembershipFields' own combobox/popover
 // behavior, which has its own dedicated test file.
-vi.mock("@/components/TeamMembershipFields", () => ({
+vi.mock("@/components/teams/TeamMembershipFields", () => ({
   TeamMembershipFields: ({
     onTeamLeaderIdChange,
     onMembersChange,
@@ -46,7 +46,9 @@ vi.mock("@/components/TeamMembershipFields", () => ({
       <button
         type="button"
         onClick={() =>
-          onMembersChange([{ user: { id: "user-2", name: "Ben Ortega", image: null }, roles: ["bass"] }])
+          onMembersChange([
+            { musicianId: "musician-2", user: { id: "user-2", name: "Ben Ortega", image: null }, instruments: ["bass"] },
+          ])
         }
       >
         mock-add-member
@@ -100,7 +102,7 @@ describe("CreateTeamForm", () => {
         body: {
           name: "Worship Team",
           teamLeaderId: "user-1",
-          members: [{ userId: "user-2", roles: ["bass"] }],
+          members: [{ userId: "user-2" }],
         },
       })
     })

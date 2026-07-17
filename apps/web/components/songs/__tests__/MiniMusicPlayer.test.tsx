@@ -1,17 +1,17 @@
 import userEvent from "@testing-library/user-event"
 import { usePathname } from "next/navigation"
 import { describe, expect, it, vi } from "vitest"
-import { MiniMusicPlayer } from "@/components/MiniMusicPlayer"
+import { MiniMusicPlayer } from "@/components/songs/MiniMusicPlayer"
 import { apiClient } from "@/lib/api-client"
-import { usePlayer } from "@/components/SongPlayerProvider"
-import { createMockPlayerContextValue, createMockSong } from "../../test/fixtures"
-import { renderWithProviders as render, screen, waitFor } from "../../test/render"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
+import { createMockPlayerContextValue, createMockSong } from "../../../test/fixtures"
+import { renderWithProviders as render, screen, waitFor } from "../../../test/render"
 
 vi.mock("next/navigation", () => ({ usePathname: vi.fn() }))
 vi.mock("@/lib/api-client", () => ({
   apiClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
 }))
-vi.mock("@/components/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
+vi.mock("@/components/songs/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -27,7 +27,10 @@ function mockGetForSong(song: ReturnType<typeof createMockSong>, albumArtUrl?: s
     if (path === "/api/songs/{id}/album-url") {
       return albumArtUrl === null
         ? (Promise.resolve({ data: undefined, error: { status: 500, message: "Server error" } }) as never)
-        : (Promise.resolve({ data: { url: albumArtUrl ?? "https://example.com/art.jpg" }, error: undefined }) as never)
+        : (Promise.resolve({
+            data: { url: albumArtUrl ?? "https://example.com/art.jpg" },
+            error: undefined,
+          }) as never)
     }
     throw new Error(`Unexpected path: ${path}`)
   })
@@ -80,7 +83,12 @@ describe("MiniMusicPlayer", () => {
   })
 
   it("renders the active song's title, artist, a Music icon fallback, and links to its detail page", async () => {
-    const song = createMockSong({ id: "song-1", title: "Amazing Grace", artist: "Traditional", hasAlbumArt: false })
+    const song = createMockSong({
+      id: "song-1",
+      title: "Amazing Grace",
+      artist: "Traditional",
+      hasAlbumArt: false,
+    })
     vi.mocked(usePathname).mockReturnValue("/dashboard")
     vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1" }))
     mockGetForSong(song)
@@ -131,7 +139,9 @@ describe("MiniMusicPlayer", () => {
     const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
     const playPrevious = vi.fn()
     vi.mocked(usePathname).mockReturnValue("/dashboard")
-    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", playPrevious }))
+    vi.mocked(usePlayer).mockReturnValue(
+      createMockPlayerContextValue({ activeSongId: "song-1", playPrevious })
+    )
     mockGetForSong(song)
 
     render(<MiniMusicPlayer />)
@@ -176,7 +186,9 @@ describe("MiniMusicPlayer", () => {
   it("shows a Pause button when the song is currently playing", async () => {
     const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
     vi.mocked(usePathname).mockReturnValue("/dashboard")
-    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: true }))
+    vi.mocked(usePlayer).mockReturnValue(
+      createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: true })
+    )
     mockGetForSong(song)
 
     render(<MiniMusicPlayer />)
@@ -267,7 +279,9 @@ describe("MiniMusicPlayer", () => {
   it("stays expanded on initial mount even when the song is paused", async () => {
     const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
     vi.mocked(usePathname).mockReturnValue("/dashboard")
-    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: false }))
+    vi.mocked(usePlayer).mockReturnValue(
+      createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: false })
+    )
     mockGetForSong(song)
 
     render(<MiniMusicPlayer />)
@@ -278,7 +292,9 @@ describe("MiniMusicPlayer", () => {
 
   it("minimizes on a route change while the song is paused", async () => {
     const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
-    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: false }))
+    vi.mocked(usePlayer).mockReturnValue(
+      createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: false })
+    )
     mockGetForSong(song)
     vi.mocked(usePathname).mockReturnValue("/dashboard")
 
@@ -295,7 +311,9 @@ describe("MiniMusicPlayer", () => {
   it("stays minimized on a route change while the song is playing, once explicitly minimized", async () => {
     const user = userEvent.setup()
     const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
-    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: true }))
+    vi.mocked(usePlayer).mockReturnValue(
+      createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: true })
+    )
     mockGetForSong(song)
     vi.mocked(usePathname).mockReturnValue("/dashboard")
 
@@ -314,7 +332,9 @@ describe("MiniMusicPlayer", () => {
   it("stays expanded on a route change while the song is paused, once explicitly expanded", async () => {
     const user = userEvent.setup()
     const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
-    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: false }))
+    vi.mocked(usePlayer).mockReturnValue(
+      createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: false })
+    )
     mockGetForSong(song)
     vi.mocked(usePathname).mockReturnValue("/dashboard")
 
@@ -337,7 +357,9 @@ describe("MiniMusicPlayer", () => {
     const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
     const stopIfActive = vi.fn()
     vi.mocked(usePathname).mockReturnValue("/dashboard")
-    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", stopIfActive }))
+    vi.mocked(usePlayer).mockReturnValue(
+      createMockPlayerContextValue({ activeSongId: "song-1", stopIfActive })
+    )
     mockGetForSong(song)
 
     render(<MiniMusicPlayer />)
@@ -354,7 +376,9 @@ describe("MiniMusicPlayer", () => {
     const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
     const stopIfActive = vi.fn()
     vi.mocked(usePathname).mockReturnValue("/dashboard")
-    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", stopIfActive }))
+    vi.mocked(usePlayer).mockReturnValue(
+      createMockPlayerContextValue({ activeSongId: "song-1", stopIfActive })
+    )
     mockGetForSong(song)
 
     render(<MiniMusicPlayer />)
@@ -368,7 +392,9 @@ describe("MiniMusicPlayer", () => {
     const user = userEvent.setup()
     const song = createMockSong({ id: "song-1", title: "Amazing Grace" })
     vi.mocked(usePathname).mockReturnValue("/dashboard")
-    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: false }))
+    vi.mocked(usePlayer).mockReturnValue(
+      createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: false })
+    )
     mockGetForSong(song)
 
     const { rerender } = render(<MiniMusicPlayer />)
@@ -376,7 +402,9 @@ describe("MiniMusicPlayer", () => {
     await user.click(screen.getByRole("button", { name: "Minimize mini player" }))
     expect(await screen.findByRole("button", { name: "Expand mini player" })).toBeInTheDocument()
 
-    vi.mocked(usePlayer).mockReturnValue(createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: true }))
+    vi.mocked(usePlayer).mockReturnValue(
+      createMockPlayerContextValue({ activeSongId: "song-1", isPlaying: true })
+    )
     rerender(<MiniMusicPlayer />)
 
     expect(screen.getByRole("button", { name: "Expand mini player" })).toBeInTheDocument()

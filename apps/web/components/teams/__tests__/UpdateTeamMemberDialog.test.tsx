@@ -2,11 +2,11 @@ import userEvent from "@testing-library/user-event"
 import { toast } from "@workspace/ui/components/Sonner"
 import { useState } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { UpdateTeamMemberDialog } from "@/components/UpdateTeamMemberDialog"
+import { UpdateTeamMemberDialog } from "@/components/teams/UpdateTeamMemberDialog"
 import { apiClient } from "@/lib/api-client"
-import { createMockTeamMember } from "../../test/fixtures"
-import { fireEvent, renderWithProviders as render, screen, waitFor } from "../../test/render"
-import type { Team } from "@/components/TeamList"
+import { createMockTeamMember } from "../../../test/fixtures"
+import { fireEvent, renderWithProviders as render, screen, waitFor } from "../../../test/render"
+import type { Team } from "@/components/teams/TeamList"
 
 vi.mock("@workspace/ui/components/Sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
@@ -19,12 +19,14 @@ vi.mock("@/lib/api-client", () => ({
 const MEMBER_A = createMockTeamMember({
   id: "tm-a",
   user: { id: "user-a", name: "Ava Lim", image: "https://example.com/ava.jpg" },
-  roles: ["bass"],
+  musicianId: "musician-a",
+  instruments: ["bass"],
 })
 const MEMBER_B = createMockTeamMember({
   id: "tm-b",
   user: { id: "user-b", name: "Ben Ortega", image: null },
-  roles: [],
+  musicianId: "musician-b",
+  instruments: [],
 })
 
 type TeamMember = Team["members"][number]
@@ -44,7 +46,6 @@ function Harness() {
         select-ben
       </button>
       <UpdateTeamMemberDialog
-        teamId="team-1"
         member={member}
         onOpenChange={(open) => {
           if (!open) setMember(null)
@@ -65,7 +66,7 @@ describe("UpdateTeamMemberDialog", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
 
-  it("opens with the selected member's name, avatar, and current roles", async () => {
+  it("opens with the selected member's name, avatar, and current instruments", async () => {
     const user = userEvent.setup()
     render(<Harness />)
 
@@ -77,15 +78,15 @@ describe("UpdateTeamMemberDialog", () => {
     expect(screen.getByRole("button", { name: "Drums", pressed: false })).toBeInTheDocument()
   })
 
-  it("re-seeds its role draft when a different member is opened", async () => {
+  it("re-seeds its instrument draft when a different member is opened", async () => {
     const user = userEvent.setup()
     render(<Harness />)
 
     await user.click(screen.getByRole("button", { name: "select-ava" }))
     expect(screen.getByRole("button", { name: "Bass", pressed: true })).toBeInTheDocument()
 
-    // Close (Cancel), then open Ben - who holds no roles - to confirm the
-    // draft reflects his roles, not Ava's leftover selection.
+    // Close (Cancel), then open Ben - who holds no instruments - to confirm
+    // the draft reflects his instruments, not Ava's leftover selection.
     await user.click(screen.getByRole("button", { name: "Cancel" }))
     await user.click(screen.getByRole("button", { name: "select-ben" }))
 
@@ -93,7 +94,7 @@ describe("UpdateTeamMemberDialog", () => {
     expect(screen.getByRole("button", { name: "Bass", pressed: false })).toBeInTheDocument()
   })
 
-  it("toggles a role on and off by clicking its badge", async () => {
+  it("toggles an instrument on and off by clicking its badge", async () => {
     const user = userEvent.setup()
     render(<Harness />)
 
@@ -105,7 +106,7 @@ describe("UpdateTeamMemberDialog", () => {
     expect(screen.getByRole("button", { name: "Drums", pressed: false })).toBeInTheDocument()
   })
 
-  it("toggles a role via the Enter and Space keys, and ignores other keys", async () => {
+  it("toggles an instrument via the Enter and Space keys, and ignores other keys", async () => {
     const user = userEvent.setup()
     render(<Harness />)
 
@@ -122,9 +123,8 @@ describe("UpdateTeamMemberDialog", () => {
     expect(screen.getByRole("button", { name: "Drums", pressed: false })).toBeInTheDocument()
   })
 
-  it("saves added and removed roles, shows a success toast, and closes", async () => {
-    vi.mocked(apiClient.POST).mockResolvedValue({ data: {}, error: undefined } as never)
-    vi.mocked(apiClient.DELETE).mockResolvedValue({ data: undefined, error: undefined } as never)
+  it("saves the full instrument set in one PATCH, shows a success toast, and closes", async () => {
+    vi.mocked(apiClient.PATCH).mockResolvedValue({ data: {}, error: undefined } as never)
     const user = userEvent.setup()
     render(<Harness />)
 
@@ -135,19 +135,17 @@ describe("UpdateTeamMemberDialog", () => {
     await user.click(screen.getByRole("button", { name: "Save" }))
 
     await waitFor(() => {
-      expect(vi.mocked(toast.success)).toHaveBeenCalledWith("Roles updated.", { position: "top-center" })
+      expect(vi.mocked(toast.success)).toHaveBeenCalledWith("Instruments updated.", { position: "top-center" })
     })
-    expect(apiClient.POST).toHaveBeenCalledWith("/api/teams/{id}/members/{memberId}/roles", {
-      params: { path: { id: "team-1", memberId: "tm-a" } },
-      body: { role: "drums" },
-    })
-    expect(apiClient.DELETE).toHaveBeenCalledWith("/api/teams/{id}/members/{memberId}/roles/{role}", {
-      params: { path: { id: "team-1", memberId: "tm-a", role: "bass" } },
+    expect(apiClient.PATCH).toHaveBeenCalledWith("/api/musicians/{id}", {
+      params: { path: { id: "musician-a" } },
+      body: { instruments: ["drums"] },
     })
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
 
-  it("saves without calling POST or DELETE when no roles changed", async () => {
+  it("saves an unchanged instrument set the same way", async () => {
+    vi.mocked(apiClient.PATCH).mockResolvedValue({ data: {}, error: undefined } as never)
     const user = userEvent.setup()
     render(<Harness />)
 
@@ -157,12 +155,14 @@ describe("UpdateTeamMemberDialog", () => {
     await waitFor(() => {
       expect(vi.mocked(toast.success)).toHaveBeenCalled()
     })
-    expect(apiClient.POST).not.toHaveBeenCalled()
-    expect(apiClient.DELETE).not.toHaveBeenCalled()
+    expect(apiClient.PATCH).toHaveBeenCalledWith("/api/musicians/{id}", {
+      params: { path: { id: "musician-b" } },
+      body: { instruments: [] },
+    })
   })
 
-  it("shows a toast error when assigning a role fails", async () => {
-    vi.mocked(apiClient.POST).mockResolvedValue({ data: undefined, error: { message: "bad" } } as never)
+  it("shows a toast error when saving fails", async () => {
+    vi.mocked(apiClient.PATCH).mockResolvedValue({ data: undefined, error: { message: "bad" } } as never)
     const user = userEvent.setup()
     render(<Harness />)
 
@@ -171,35 +171,19 @@ describe("UpdateTeamMemberDialog", () => {
     await user.click(screen.getByRole("button", { name: "Save" }))
 
     await waitFor(() => {
-      expect(vi.mocked(toast.error)).toHaveBeenCalledWith("Failed to assign a role.", {
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith("Failed to update instruments.", {
         position: "top-center",
       })
     })
     expect(screen.getByRole("dialog")).toBeInTheDocument()
   })
 
-  it("shows a toast error when removing a role fails", async () => {
-    vi.mocked(apiClient.DELETE).mockResolvedValue({ data: undefined, error: { message: "bad" } } as never)
-    const user = userEvent.setup()
-    render(<Harness />)
-
-    await user.click(screen.getByRole("button", { name: "select-ava" }))
-    await user.click(screen.getByRole("button", { name: "Bass", pressed: true }))
-    await user.click(screen.getByRole("button", { name: "Save" }))
-
-    await waitFor(() => {
-      expect(vi.mocked(toast.error)).toHaveBeenCalledWith("Failed to remove a role.", {
-        position: "top-center",
-      })
-    })
-  })
-
   it("disables the buttons and shows a pending label while saving", async () => {
-    let resolvePost!: (value: unknown) => void
+    let resolvePatch!: (value: unknown) => void
     const pending = new Promise((resolve) => {
-      resolvePost = resolve
+      resolvePatch = resolve
     })
-    vi.mocked(apiClient.POST).mockReturnValue(pending as never)
+    vi.mocked(apiClient.PATCH).mockReturnValue(pending as never)
     const user = userEvent.setup()
     render(<Harness />)
 
@@ -210,18 +194,18 @@ describe("UpdateTeamMemberDialog", () => {
     expect(await screen.findByRole("button", { name: "Saving..." })).toBeDisabled()
     expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled()
 
-    resolvePost({ data: {}, error: undefined })
+    resolvePatch({ data: {}, error: undefined })
     await waitFor(() => {
       expect(vi.mocked(toast.success)).toHaveBeenCalled()
     })
   })
 
   it("ignores an attempt to dismiss the dialog while a save is in flight", async () => {
-    let resolvePost!: (value: unknown) => void
+    let resolvePatch!: (value: unknown) => void
     const pending = new Promise((resolve) => {
-      resolvePost = resolve
+      resolvePatch = resolve
     })
-    vi.mocked(apiClient.POST).mockReturnValue(pending as never)
+    vi.mocked(apiClient.PATCH).mockReturnValue(pending as never)
     const user = userEvent.setup()
     render(<Harness />)
 
@@ -233,7 +217,7 @@ describe("UpdateTeamMemberDialog", () => {
     await user.keyboard("{Escape}")
     expect(screen.getByRole("dialog")).toBeInTheDocument()
 
-    resolvePost({ data: {}, error: undefined })
+    resolvePatch({ data: {}, error: undefined })
     await waitFor(() => {
       expect(vi.mocked(toast.success)).toHaveBeenCalled()
     })
@@ -248,7 +232,6 @@ describe("UpdateTeamMemberDialog", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }))
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
-    expect(apiClient.POST).not.toHaveBeenCalled()
-    expect(apiClient.DELETE).not.toHaveBeenCalled()
+    expect(apiClient.PATCH).not.toHaveBeenCalled()
   })
 })

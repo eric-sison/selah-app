@@ -1,16 +1,16 @@
 import userEvent from "@testing-library/user-event"
 import { useRouter } from "next/navigation"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { SongSearchCombobox } from "@/components/SongSearchCombobox"
+import { SongSearchCombobox } from "@/components/songs/SongSearchCombobox"
 import { apiClient } from "@/lib/api-client"
-import { usePlayer } from "@/components/SongPlayerProvider"
-import { createMockPlayerContextValue, createMockSong } from "../../test/fixtures"
-import { fireEvent, renderWithProviders as render, screen, waitFor } from "../../test/render"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
+import { createMockPlayerContextValue, createMockSong } from "../../../test/fixtures"
+import { fireEvent, renderWithProviders as render, screen, waitFor } from "../../../test/render"
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
 }))
-vi.mock("@/components/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
+vi.mock("@/components/songs/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
 vi.mock("next/navigation", () => ({ useRouter: vi.fn() }))
 
 describe("SongSearchCombobox", () => {

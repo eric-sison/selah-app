@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest"
-import { SongDetailsView } from "@/components/SongDetailsView"
+import { SongDetailsView } from "@/components/songs/SongDetailsView"
 import { apiClient } from "@/lib/api-client"
-import { usePlayer } from "@/components/SongPlayerProvider"
-import { createMockPlayerContextValue, createMockSong } from "../../test/fixtures"
-import { renderWithProviders, screen, waitFor } from "../../test/render"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
+import { createMockPlayerContextValue, createMockSong } from "../../../test/fixtures"
+import { renderWithProviders, screen, waitFor } from "../../../test/render"
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
 }))
-vi.mock("@/components/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
+vi.mock("@/components/songs/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
 
 function mockSongResponse(
   song: ReturnType<typeof createMockSong> | undefined,

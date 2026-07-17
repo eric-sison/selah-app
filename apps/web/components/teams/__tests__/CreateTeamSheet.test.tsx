@@ -1,10 +1,10 @@
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
-import { CreateTeamSheet } from "@/components/CreateTeamSheet"
-import { createMockSession } from "../../test/fixtures"
-import { renderWithProviders as render, screen } from "../../test/render"
+import { CreateTeamSheet } from "@/components/teams/CreateTeamSheet"
+import { createMockSession } from "../../../test/fixtures"
+import { renderWithProviders as render, screen } from "../../../test/render"
 
-vi.mock("@/components/CreateTeamForm", () => ({
+vi.mock("@/components/teams/CreateTeamForm", () => ({
   CreateTeamForm: ({ onSuccess }: { onSuccess?: () => void }) => (
     <button onClick={onSuccess}>mock-create-team-form-success</button>
   ),

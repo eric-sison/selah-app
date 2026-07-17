@@ -11,7 +11,7 @@ import {
 } from "date-fns"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
-import { ScheduleCalendar, type ScheduleCalendarEvent } from "@/components/ScheduleCalendar"
+import { ScheduleCalendar, type ScheduleCalendarEvent } from "@/components/schedules/ScheduleCalendar"
 import { render, screen } from "../../test/render"
 
 // Matches the day-number span's exact utility classes so it can be selected

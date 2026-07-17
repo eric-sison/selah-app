@@ -1,17 +1,17 @@
 import userEvent from "@testing-library/user-event"
 import { toast } from "@workspace/ui/components/Sonner"
 import { describe, expect, it, vi } from "vitest"
-import { EditChordProDialog } from "@/components/EditChordProDialog"
+import { EditChordProDialog } from "@/components/songs/EditChordProDialog"
 import { apiClient } from "@/lib/api-client"
-import { usePlayer } from "@/components/SongPlayerProvider"
-import { createMockPlayerContextValue, createMockSong } from "../../test/fixtures"
-import { renderWithProviders, screen, waitFor } from "../../test/render"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
+import { createMockPlayerContextValue, createMockSong } from "../../../test/fixtures"
+import { renderWithProviders, screen, waitFor } from "../../../test/render"
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
 }))
 
-vi.mock("@/components/SongPlayerProvider", () => ({
+vi.mock("@/components/songs/SongPlayerProvider", () => ({
   usePlayer: vi.fn(),
 }))
 

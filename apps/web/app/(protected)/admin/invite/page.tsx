@@ -1,5 +1,5 @@
 import { PageContent } from "@workspace/ui/components/Page"
-import { InviteForm } from "@/components/InviteForm"
+import { InviteForm } from "@/components/auth/InviteForm"
 
 export default function InvitePage() {
   return (

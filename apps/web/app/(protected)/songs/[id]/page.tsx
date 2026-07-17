@@ -1,6 +1,6 @@
 import { PageContent, PageFooter } from "@workspace/ui/components/Page"
-import { MusicPlayerBar } from "@/components/MusicPlayerBar"
-import { SongDetailsView } from "@/components/SongDetailsView"
+import { MusicPlayerBar } from "@/components/songs/MusicPlayerBar"
+import { SongDetailsView } from "@/components/songs/SongDetailsView"
 
 interface SongDetailPageProps {
   params: Promise<{ id: string }>

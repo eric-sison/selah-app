@@ -10,7 +10,7 @@ import { toast } from "@workspace/ui/components/Sonner"
 import { FunctionComponent, useState } from "react"
 import z from "zod"
 import { apiClient } from "@/lib/api-client"
-import { TeamMembershipFields, type TeamMemberDraft } from "@/components/TeamMembershipFields"
+import { TeamMembershipFields, type TeamMemberDraft } from "@/components/teams/TeamMembershipFields"
 
 const CreateTeamFormSchema = z.object({
   name: z.string().min(1, { error: "Name is required." }),
@@ -32,7 +32,7 @@ export const CreateTeamForm: FunctionComponent<CreateTeamFormProps> = ({ onSucce
         body: {
           name: values.name,
           teamLeaderId: teamLeaderId ?? undefined,
-          members: members.map((member) => ({ userId: member.user.id, roles: member.roles })),
+          members: members.map((member) => ({ userId: member.user.id })),
         },
       })
 

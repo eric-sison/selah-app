@@ -8,7 +8,7 @@ import { Music } from "lucide-react"
 import Image from "next/image"
 import { FunctionComponent } from "react"
 import { apiClient } from "@/lib/api-client"
-import { usePlayer } from "@/components/SongPlayerProvider"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
 import type { operations } from "@/types/api"
 
 export type Song = operations["listSongs"]["responses"][200]["content"]["application/json"]["items"][number]

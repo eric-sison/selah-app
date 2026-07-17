@@ -42,12 +42,12 @@ import Image from "next/image"
 import Link from "next/link"
 import { FunctionComponent, MouseEvent, useEffect, useMemo, useRef, useState } from "react"
 import { apiClient } from "@/lib/api-client"
-import { NowPlayingCard } from "@/components/NowPlayingCard"
+import { NowPlayingCard } from "@/components/songs/NowPlayingCard"
 import { useSession } from "@/components/SessionProvider"
-import { SongDetailsSheet } from "@/components/SongDetailsSheet"
-import { usePlayer } from "@/components/SongPlayerProvider"
-import { UploadSongDialog } from "@/components/UploadSongDialog"
-import type { Song } from "@/components/NowPlayingCard"
+import { SongDetailsSheet } from "@/components/songs/SongDetailsSheet"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
+import { UploadSongDialog } from "@/components/songs/UploadSongDialog"
+import type { Song } from "@/components/songs/NowPlayingCard"
 
 interface SongRowProps {
   song: Song

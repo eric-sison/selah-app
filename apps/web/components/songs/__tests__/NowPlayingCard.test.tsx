@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest"
-import { NowPlayingCard } from "@/components/NowPlayingCard"
+import { NowPlayingCard } from "@/components/songs/NowPlayingCard"
 import { apiClient } from "@/lib/api-client"
-import { usePlayer } from "@/components/SongPlayerProvider"
-import { createMockPlayerContextValue, createMockSong } from "../../test/fixtures"
-import { renderWithProviders as render, screen, waitFor } from "../../test/render"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
+import { createMockPlayerContextValue, createMockSong } from "../../../test/fixtures"
+import { renderWithProviders as render, screen, waitFor } from "../../../test/render"
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
 }))
-vi.mock("@/components/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
+vi.mock("@/components/songs/SongPlayerProvider", () => ({ usePlayer: vi.fn() }))
 
 function deferred<T>() {
   let resolve!: (value: T) => void

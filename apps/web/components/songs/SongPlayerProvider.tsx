@@ -13,7 +13,7 @@ import {
   useState,
 } from "react"
 import { apiClient } from "@/lib/api-client"
-import type { Song } from "@/components/NowPlayingCard"
+import type { Song } from "@/components/songs/NowPlayingCard"
 import { shuffleArray } from "@/utils/shuffle"
 
 export interface LoopSection {
@@ -68,9 +68,11 @@ interface PlayerContextValue {
   skip: (seconds: number) => void
   seek: (time: number) => void
   // Stops playback and clears the active song, but only if `songId` is the
-  // one currently loaded - a no-op otherwise. Called after deleting a song
-  // (see SongList.tsx's handleDelete) so a deleted-but-still-playing track
-  // doesn't keep playing with its now-stale data on screen.
+  // one currently loaded - otherwise just suppresses the error toast from
+  // any `loadSong` request still in flight for it. Called after deleting a
+  // song (see SongList.tsx's handleDelete) so a deleted-but-still-playing
+  // track doesn't keep playing with its now-stale data on screen, and a
+  // pending load that 404s as a result doesn't surface a misleading error.
   stopIfActive: (songId: string) => void
 }
 
@@ -116,6 +118,13 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
   const playbackOrderRef = useRef<Song[]>([])
   const queueRef = useRef<Song[]>([])
   const activeSongIdRef = useRef<string | null>(null)
+  // Song ids `stopIfActive` has been called for - a `loadSong` request can
+  // still be in flight for one of these (e.g. the auto-select-first-song
+  // effect below, or a play click right before the row's deleted), and by
+  // the time it resolves the API 404s since the row is gone. Without this,
+  // that surfaces as a misleading "Failed to load song" toast even though
+  // the delete itself succeeded - see `loadSong`'s catch block.
+  const cancelledLoadIdsRef = useRef<Set<string>>(new Set())
   // The `timeupdate` listener is registered once on mount, so it needs a ref
   // (not the `loopSection` state directly) to always read the latest value
   // instead of a stale closure.
@@ -236,7 +245,9 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
         setIsPlaying(false)
       }
     } catch {
-      toast.error("Failed to load song.", { position: "top-center" })
+      if (!cancelledLoadIdsRef.current.has(song.id)) {
+        toast.error("Failed to load song.", { position: "top-center" })
+      }
     } finally {
       setLoadingSongId(null)
     }
@@ -399,6 +410,8 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
   }
 
   const stopIfActive = (songId: string) => {
+    cancelledLoadIdsRef.current.add(songId)
+
     if (activeSongIdRef.current !== songId) return
 
     const audio = audioRef.current

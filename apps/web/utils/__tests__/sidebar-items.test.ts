@@ -20,6 +20,7 @@ describe("SIDEBAR_CONTENT_ITEMS", () => {
       "/songs",
       "/line-ups",
       "/teams",
+      "/musicians",
       "/schedules",
       "/settings",
     ])

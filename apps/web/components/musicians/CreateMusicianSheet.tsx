@@ -12,13 +12,13 @@ import {
 import { Plus } from "lucide-react"
 import { FunctionComponent, useState } from "react"
 import { useSession } from "@/components/SessionProvider"
-import { CreateTeamForm } from "@/components/CreateTeamForm"
+import { CreateMusicianForm } from "@/components/musicians/CreateMusicianForm"
 
-// Team creation is admin-only at the API level (see createTeamRoute in
-// apps/api/src/routes/teams.ts) - self-gated here so both places this
-// renders (the page header and TeamList's empty state) don't have to
+// Musician creation is admin-only at the API level (see createMusicianRoute
+// in apps/api/src/routes/musicians.ts) - self-gated here so both places this
+// renders (the page header and MusicianList's empty state) don't have to
 // duplicate the role check.
-export const CreateTeamSheet: FunctionComponent = () => {
+export const CreateMusicianSheet: FunctionComponent = () => {
   const session = useSession()
   const [open, setOpen] = useState(false)
 
@@ -30,19 +30,19 @@ export const CreateTeamSheet: FunctionComponent = () => {
         render={
           <Button>
             <Plus />
-            <span>Create a team</span>
+            <span>Add musician</span>
           </Button>
         }
       />
       <SheetContent side="right" className="flex flex-col gap-0 data-[side=right]:lg:max-w-xl">
         <SheetHeader>
-          <SheetTitle>Create a team</SheetTitle>
+          <SheetTitle>Add a musician</SheetTitle>
           <SheetDescription>
-            Give the team a name to get started - you can assign a leader and musicians right away, or add
-            them later.
+            Pick a user and their instruments - once created, they&apos;ll show up in any team&apos;s member
+            picker.
           </SheetDescription>
         </SheetHeader>
-        <CreateTeamForm onSuccess={() => setOpen(false)} />
+        <CreateMusicianForm onSuccess={() => setOpen(false)} />
       </SheetContent>
     </Sheet>
   )

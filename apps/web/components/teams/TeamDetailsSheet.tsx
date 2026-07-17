@@ -8,11 +8,11 @@ import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@work
 import { cn } from "@workspace/ui/lib/utils"
 import { HeadphoneOff, Plus } from "lucide-react"
 import { FunctionComponent, useState } from "react"
-import { EditTeamForm } from "@/components/EditTeamForm"
+import { EditTeamForm } from "@/components/teams/EditTeamForm"
 import { useSession } from "@/components/SessionProvider"
-import { UpdateTeamMemberDialog } from "@/components/UpdateTeamMemberDialog"
-import { formatTeamRole } from "@/utils/team-roles"
-import type { Team } from "@/components/TeamList"
+import { UpdateTeamMemberDialog } from "@/components/teams/UpdateTeamMemberDialog"
+import { formatInstrument } from "@/utils/instruments"
+import type { Team } from "@/components/teams/TeamList"
 
 interface TeamDetailsSheetProps {
   team: Team
@@ -121,11 +121,11 @@ export const TeamDetailsSheet: FunctionComponent<TeamDetailsSheetProps> = ({
                           <AvatarFallback>{member.user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <p className="min-w-0 flex-1 truncate text-sm">{member.user.name}</p>
-                        {member.roles.length > 0 && (
+                        {member.instruments.length > 0 && (
                           <div className="flex max-w-[55%] flex-wrap justify-end gap-1">
-                            {member.roles.map((role) => (
-                              <Badge key={role} variant="outline">
-                                {formatTeamRole(role)}
+                            {member.instruments.map((instrument) => (
+                              <Badge key={instrument} variant="outline">
+                                {formatInstrument(instrument)}
                               </Badge>
                             ))}
                           </div>
@@ -176,7 +176,6 @@ export const TeamDetailsSheet: FunctionComponent<TeamDetailsSheetProps> = ({
       </Sheet>
 
       <UpdateTeamMemberDialog
-        teamId={team.id}
         member={selectedMember}
         onOpenChange={(next) => {
           if (!next) setSelectedMemberId(null)

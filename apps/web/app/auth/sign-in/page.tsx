@@ -1,4 +1,4 @@
-import { SignInForm } from "@/components/SignInForm"
+import { SignInForm } from "@/components/auth/SignInForm"
 import { isSafeRedirectTarget } from "@/utils/is-safe-redirect"
 
 interface SignInPageProps {

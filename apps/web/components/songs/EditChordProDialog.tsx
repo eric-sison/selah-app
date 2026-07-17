@@ -19,10 +19,10 @@ import { Textarea } from "@workspace/ui/components/Textarea"
 import { Pause, Play, Redo2, Undo2 } from "lucide-react"
 import { FunctionComponent } from "react"
 import { apiClient } from "@/lib/api-client"
-import { ChordProView } from "@/components/ChordProView"
-import { usePlayer } from "@/components/SongPlayerProvider"
+import { ChordProView } from "@/components/songs/ChordProView"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
 import { formatTime } from "@/utils/format-time"
-import type { Song } from "@/components/NowPlayingCard"
+import type { Song } from "@/components/songs/NowPlayingCard"
 
 interface EditChordProDialogProps {
   song: Song

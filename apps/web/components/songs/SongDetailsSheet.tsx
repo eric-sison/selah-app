@@ -4,8 +4,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@workspace/ui/comp
 import { Music } from "lucide-react"
 import Image from "next/image"
 import { FunctionComponent } from "react"
-import { SongDetailInfo } from "@/components/SongDetailInfo"
-import type { Song } from "@/components/NowPlayingCard"
+import { SongDetailInfo } from "@/components/songs/SongDetailInfo"
+import type { Song } from "@/components/songs/NowPlayingCard"
 
 interface SongDetailsSheetProps {
   song: Song

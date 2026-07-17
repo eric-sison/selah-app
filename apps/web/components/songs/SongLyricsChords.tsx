@@ -3,8 +3,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@workspace
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/Tabs"
 import { FileMusic, Minus, Plus } from "lucide-react"
 import { FunctionComponent, useMemo, useState } from "react"
-import { ChordProView } from "@/components/ChordProView"
-import type { Song } from "@/components/NowPlayingCard"
+import { ChordProView } from "@/components/songs/ChordProView"
+import type { Song } from "@/components/songs/NowPlayingCard"
 import { getDeclaredCapo, getDeclaredTranspose, parseChordPro } from "@/utils/chordpro"
 
 interface SongLyricsChordsProps {

@@ -2,9 +2,9 @@ import { Dialog } from "@workspace/ui/components/Dialog"
 import { toast } from "@workspace/ui/components/Sonner"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import userEvent from "@testing-library/user-event"
-import { SongUploadForm } from "@/components/SongUploadForm"
+import { SongUploadForm } from "@/components/songs/SongUploadForm"
 import { apiClient } from "@/lib/api-client"
-import { fireEvent, renderWithProviders, screen, waitFor } from "../../test/render"
+import { fireEvent, renderWithProviders, screen, waitFor } from "../../../test/render"
 
 // SongUploadForm renders <DialogClose> (from its DialogFooter), which reads
 // base-ui's dialog root context - it's only ever mounted inside a <Dialog>
@@ -89,9 +89,10 @@ describe("SongUploadForm", () => {
       expect(apiClient.POST).toHaveBeenCalled()
     })
 
-    const [path, options] = vi.mocked(apiClient.POST).mock.calls[0]!
+    const postCalls = vi.mocked(apiClient.POST).mock.calls as Array<[string, { body: FormData }]>
+    const [path, options] = postCalls[0]!
     expect(path).toBe("/api/songs")
-    const formData = options.body as unknown as FormData
+    const formData = options.body
     expect(formData.get("title")).toBe("Amazing Grace")
     expect((formData.get("file") as File).name).toBe("song.mp3")
     expect(formData.has("artist")).toBe(false)
@@ -123,8 +124,9 @@ describe("SongUploadForm", () => {
       expect(apiClient.POST).toHaveBeenCalled()
     })
 
-    const [, options] = vi.mocked(apiClient.POST).mock.calls[0]!
-    const formData = options.body as unknown as FormData
+    const postCalls = vi.mocked(apiClient.POST).mock.calls as Array<[string, { body: FormData }]>
+    const [, options] = postCalls[0]!
+    const formData = options.body
     expect(formData.get("title")).toBe("Amazing Grace")
     expect(formData.get("artist")).toBe("Traditional")
     expect(formData.get("musicalKey")).toBe("G")

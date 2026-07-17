@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@workspace/ui/components/DropdownMenu"
 import { authClient } from "@/lib/auth-client"
-import { SongSearchCombobox } from "./SongSearchCombobox"
+import { SongSearchCombobox } from "./songs/SongSearchCombobox"
 
 // The layout that renders this is a Server Component - it only runs once
 // per full page load, so a pathname read there via headers() goes stale on

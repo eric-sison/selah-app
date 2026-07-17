@@ -12,7 +12,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { FunctionComponent, useEffect, useRef } from "react"
 import { apiClient } from "@/lib/api-client"
-import { usePlayer } from "@/components/SongPlayerProvider"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
 import type { components } from "@/types/api"
 import { Empty, EmptyDescription, EmptyIcon, EmptyTitle } from "@workspace/ui/components/Empty"
 

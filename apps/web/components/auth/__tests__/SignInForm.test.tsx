@@ -2,9 +2,9 @@ import { useRouter } from "next/navigation"
 import { toast } from "@workspace/ui/components/Sonner"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import userEvent from "@testing-library/user-event"
-import { SignInForm } from "@/components/SignInForm"
+import { SignInForm } from "@/components/auth/SignInForm"
 import { authClient } from "@/lib/auth-client"
-import { renderWithProviders, screen, waitFor } from "../../test/render"
+import { renderWithProviders, screen, waitFor } from "../../../test/render"
 
 vi.mock("@workspace/ui/components/Sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },

@@ -1,9 +1,9 @@
 import { format } from "date-fns"
 import { describe, expect, it } from "vitest"
-import { SongDetailInfo } from "@/components/SongDetailInfo"
+import { SongDetailInfo } from "@/components/songs/SongDetailInfo"
 import { formatFileSize } from "@/utils/format-file-size"
-import { createMockSong } from "../../test/fixtures"
-import { render, screen } from "../../test/render"
+import { createMockSong } from "../../../test/fixtures"
+import { render, screen } from "../../../test/render"
 
 describe("SongDetailInfo", () => {
   it("renders all fields when every optional value is present", () => {

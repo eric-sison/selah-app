@@ -4,6 +4,7 @@ import {
   LayoutGrid,
   LibraryBig,
   type LucideIcon,
+  Mic2,
   Music,
   Settings,
   Users,
@@ -60,6 +61,13 @@ export const SIDEBAR_CONTENT_ITEMS = (): SidebarItem[] => [
         title: "Teams",
         path: "/teams",
         icon: Users,
+        subItems: [],
+      },
+      {
+        id: "general-musicians",
+        title: "Musicians",
+        path: "/musicians",
+        icon: Mic2,
         subItems: [],
       },
       {

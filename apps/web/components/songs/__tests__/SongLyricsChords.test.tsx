@@ -1,8 +1,8 @@
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
-import { SongLyricsChords } from "@/components/SongLyricsChords"
-import { createMockSong } from "../../test/fixtures"
-import { render, screen, within } from "../../test/render"
+import { SongLyricsChords } from "@/components/songs/SongLyricsChords"
+import { createMockSong } from "../../../test/fixtures"
+import { render, screen, within } from "../../../test/render"
 
 async function openCapoTransposeTab() {
   const user = userEvent.setup()

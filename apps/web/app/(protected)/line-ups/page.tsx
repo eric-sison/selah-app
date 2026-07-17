@@ -1,5 +1,5 @@
-import { LineupList } from "@/components/LineupList"
-import { Button } from "@workspace/ui/components/Button"
+import { CreateLineupSheet } from "@/components/line-ups/CreateLineupSheet"
+import { LineupList } from "@/components/line-ups/LineupList"
 import {
   PageAction,
   PageContent,
@@ -7,7 +7,6 @@ import {
   PageHeader,
   PageTitle,
 } from "@workspace/ui/components/Page"
-import { Plus } from "lucide-react"
 
 export default function LineUps() {
   return (
@@ -17,10 +16,7 @@ export default function LineUps() {
           <PageTitle>Line Ups</PageTitle>
           <PageDescription>Build and manage the set list for each upcoming service.</PageDescription>
           <PageAction>
-            <Button>
-              <Plus />
-              Add a line up
-            </Button>
+            <CreateLineupSheet />
           </PageAction>
         </PageHeader>
         <LineupList />

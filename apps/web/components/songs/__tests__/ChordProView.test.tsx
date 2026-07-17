@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { ChordProView } from "@/components/ChordProView"
-import { render, screen } from "../../test/render"
+import { ChordProView } from "@/components/songs/ChordProView"
+import { render, screen } from "../../../test/render"
 
 describe("ChordProView", () => {
   it("renders chord-over-text pairs for a lyric line with inline chords", () => {

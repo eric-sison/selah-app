@@ -1,6 +1,6 @@
 import { PageContent } from "@workspace/ui/components/Page"
 import { addDays, startOfMonth } from "date-fns"
-import { ScheduleCalendar, type ScheduleCalendarEvent } from "@/components/ScheduleCalendar"
+import { ScheduleCalendar, type ScheduleCalendarEvent } from "@/components/schedules/ScheduleCalendar"
 
 // Placeholder data until schedules/events have a real API-backed model -
 // scattered across the current month so the grid is visually verifiable

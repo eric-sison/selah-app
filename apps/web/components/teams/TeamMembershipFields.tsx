@@ -1,6 +1,6 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/Avatar"
 import { Badge } from "@workspace/ui/components/Badge"
 import { Button } from "@workspace/ui/components/Button"
@@ -17,27 +17,25 @@ import { Empty, EmptyDescription, EmptyIcon, EmptyTitle } from "@workspace/ui/co
 import { Field, FieldLabel } from "@workspace/ui/components/Field"
 import { InputGroupAddon } from "@workspace/ui/components/InputGroup"
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/Popover"
+import { toast } from "@workspace/ui/components/Sonner"
 import { HeadphoneOff, Search, UserRoundSearch, X } from "lucide-react"
 import { FunctionComponent, useEffect, useRef, useState } from "react"
 import { apiClient } from "@/lib/api-client"
-import { formatTeamRole, TEAM_ROLES, type TeamRole } from "@/utils/team-roles"
+import { formatInstrument, INSTRUMENTS, type Instrument } from "@/utils/instruments"
+import type { Musician } from "@/components/musicians/MusicianList"
 import type { operations } from "@/types/api"
 
 export type User = operations["listUsers"]["responses"][200]["content"]["application/json"][number]
 
-// Deliberately smaller than `User` - a draft's `user` can come from either
-// the full users list (create flow) or a team's already-embedded member
-// (edit flow, see TeamMemberResponseSchema in apps/api/src/routes/teams.ts),
-// which only ever carries id/name/image, not email.
-export interface TeamMemberUser {
-  id: string
-  name: string
-  image: string | null
-}
-
+// Deliberately smaller than `Musician` - a draft's `user` can come from
+// either the musicians list (create flow) or a team's already-embedded
+// member (edit flow, see TeamMemberResponseSchema in
+// apps/api/src/routes/teams.ts), which only ever carries id/name/image, not
+// email.
 export interface TeamMemberDraft {
-  user: TeamMemberUser
-  roles: TeamRole[]
+  musicianId: string
+  user: { id: string; name: string; image: string | null }
+  instruments: Instrument[]
 }
 
 interface UserComboboxItemProps {
@@ -53,6 +51,23 @@ const UserComboboxItem: FunctionComponent<UserComboboxItemProps> = ({ user }) =>
     <div className="flex min-w-0 flex-col">
       <span className="truncate">{user.name}</span>
       <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+    </div>
+  </ComboboxItem>
+)
+
+interface MusicianComboboxItemProps {
+  musician: Musician
+}
+
+const MusicianComboboxItem: FunctionComponent<MusicianComboboxItemProps> = ({ musician }) => (
+  <ComboboxItem value={musician}>
+    <Avatar size="sm">
+      <AvatarImage src={musician.user.image ?? undefined} alt={musician.user.name} />
+      <AvatarFallback>{musician.user.name.charAt(0)}</AvatarFallback>
+    </Avatar>
+    <div className="flex min-w-0 flex-col">
+      <span className="truncate">{musician.user.name}</span>
+      <span className="truncate text-xs text-muted-foreground">{musician.user.email}</span>
     </div>
   </ComboboxItem>
 )
@@ -79,6 +94,8 @@ export const TeamMembershipFields: FunctionComponent<TeamMembershipFieldsProps> 
   onMembersChange,
   autoFocusMembers,
 }) => {
+  const queryClient = useQueryClient()
+
   const users = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
@@ -88,39 +105,56 @@ export const TeamMembershipFields: FunctionComponent<TeamMembershipFieldsProps> 
     },
   })
 
+  // A team member has to already be a musician - see the Musicians page for
+  // creating a new profile. This only lists existing ones to add from.
+  const musicians = useQuery({
+    queryKey: ["musicians"],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/api/musicians")
+      if (error) throw new Error("Failed to load musicians.")
+      return data
+    },
+  })
+
+  const updateInstruments = useMutation({
+    mutationFn: async ({ musicianId, instruments }: { musicianId: string; instruments: Instrument[] }) => {
+      const { error } = await apiClient.PATCH("/api/musicians/{id}", {
+        params: { path: { id: musicianId } },
+        body: { instruments },
+      })
+      if (error) throw new Error("Failed to update instruments.")
+    },
+    onSuccess: (_data, { musicianId, instruments }) => {
+      onMembersChange(
+        members.map((member) => (member.musicianId === musicianId ? { ...member, instruments } : member))
+      )
+      queryClient.invalidateQueries({ queryKey: ["musicians"] })
+    },
+    onError: (error) => {
+      toast.error(error.message, { position: "top-center" })
+    },
+  })
+
   const [leaderInputValue, setLeaderInputValue] = useState(initialLeaderName ?? "")
   const [memberInputValue, setMemberInputValue] = useState("")
 
-  // The musicians input is `disabled` (see below) until `users` resolves, so
-  // focusing on plain mount would silently no-op on a disabled element -
+  // The musicians input is `disabled` (see below) until `musicians` resolves,
+  // so focusing on plain mount would silently no-op on a disabled element -
   // this waits for loading to finish, and `hasAutoFocusedRef` keeps it from
   // re-focusing on a later refetch once that's happened.
   const hasAutoFocusedRef = useRef(false)
   useEffect(() => {
-    if (!autoFocusMembers || users.isLoading || hasAutoFocusedRef.current) return
+    if (!autoFocusMembers || musicians.isLoading || hasAutoFocusedRef.current) return
     hasAutoFocusedRef.current = true
     document.getElementById("team-members")?.focus()
-  }, [autoFocusMembers, users.isLoading])
+  }, [autoFocusMembers, musicians.isLoading])
 
-  const availableMembers = (users.data ?? []).filter((user) => !members.some((m) => m.user.id === user.id))
+  const availableMusicians = (musicians.data ?? []).filter(
+    (musician) => !members.some((m) => m.musicianId === musician.id)
+  )
 
-  const toggleMemberRole = (userId: string, role: TeamRole) => {
-    onMembersChange(
-      members.map((member) =>
-        member.user.id === userId
-          ? {
-              ...member,
-              roles: member.roles.includes(role)
-                ? member.roles.filter((r) => r !== role)
-                : [...member.roles, role],
-            }
-          : member
-      )
-    )
-  }
-
-  const removeMember = (userId: string) => {
-    onMembersChange(members.filter((member) => member.user.id !== userId))
+  const removeMember = (musicianId: string) => {
+    onMembersChange(members.filter((member) => member.musicianId !== musicianId))
   }
 
   return (
@@ -157,35 +191,40 @@ export const TeamMembershipFields: FunctionComponent<TeamMembershipFieldsProps> 
       <Field>
         <FieldLabel htmlFor="team-members">Musicians</FieldLabel>
         <Combobox
-          items={availableMembers}
+          items={availableMusicians}
           inputValue={memberInputValue}
           onInputValueChange={setMemberInputValue}
-          itemToStringLabel={(user: User) => user.name}
-          onValueChange={(user: User | null) => {
+          itemToStringLabel={(musician: Musician) => musician.user.name}
+          onValueChange={(musician: Musician | null) => {
             // Unlike the leader combobox, this one has no `showClear` -
             // there's no UI affordance that clears an in-progress selection,
             // so `onValueChange` is never actually invoked with null here.
             /* v8 ignore next */
-            if (!user) return
-            onMembersChange([...members, { user, roles: [] }])
+            if (!musician) return
+            onMembersChange([
+              ...members,
+              { musicianId: musician.id, user: musician.user, instruments: musician.instruments },
+            ])
             setMemberInputValue("")
           }}
         >
-          <ComboboxInput id="team-members" placeholder="Search users to add..." disabled={users.isLoading}>
+          <ComboboxInput id="team-members" placeholder="Search musicians to add..." disabled={musicians.isLoading}>
             <InputGroupAddon align="inline-start">
               <Search />
             </InputGroupAddon>
           </ComboboxInput>
           <ComboboxContent className="min-w-(--anchor-width) bg-popover">
-            <ComboboxEmpty>No users found.</ComboboxEmpty>
-            <ComboboxList>{(user: User) => <UserComboboxItem key={user.id} user={user} />}</ComboboxList>
+            <ComboboxEmpty>No musicians found.</ComboboxEmpty>
+            <ComboboxList>
+              {(musician: Musician) => <MusicianComboboxItem key={musician.id} musician={musician} />}
+            </ComboboxList>
           </ComboboxContent>
         </Combobox>
 
         {members.length > 0 ? (
           <ul className="mt-5 flex flex-col gap-4 rounded-2xl">
             {members.map((member) => (
-              <li key={member.user.id}>
+              <li key={member.musicianId}>
                 <Card size="sm">
                   <CardHeader>
                     <div className="flex min-w-0 items-center gap-2">
@@ -201,7 +240,7 @@ export const TeamMembershipFields: FunctionComponent<TeamMembershipFieldsProps> 
                         variant="ghost"
                         size="icon-sm"
                         aria-label={`Remove ${member.user.name}`}
-                        onClick={() => removeMember(member.user.id)}
+                        onClick={() => removeMember(member.musicianId)}
                       >
                         <X className="size-4" />
                       </Button>
@@ -215,37 +254,43 @@ export const TeamMembershipFields: FunctionComponent<TeamMembershipFieldsProps> 
                             type="button"
                             className="flex w-full flex-wrap items-center gap-1 rounded-md border border-dashed border-input p-1.5 text-left transition-colors hover:bg-accent/50"
                           >
-                            {member.roles.length > 0 ? (
-                              member.roles.map((role) => (
-                                <Badge key={role} variant="secondary">
-                                  {formatTeamRole(role)}
+                            {member.instruments.length > 0 ? (
+                              member.instruments.map((instrument) => (
+                                <Badge key={instrument} variant="secondary">
+                                  {formatInstrument(instrument)}
                                 </Badge>
                               ))
                             ) : (
-                              <span className="px-1 text-xs text-muted-foreground">Add roles</span>
+                              <span className="px-1 text-xs text-muted-foreground">Add instruments</span>
                             )}
                           </button>
                         }
                       />
                       <PopoverContent align="start" className="w-56 flex-row flex-wrap gap-1.5">
-                        {TEAM_ROLES.map((role) => {
-                          const isSelected = member.roles.includes(role)
+                        {INSTRUMENTS.map((instrument) => {
+                          const isSelected = member.instruments.includes(instrument)
+                          const toggle = () => {
+                            const next = isSelected
+                              ? member.instruments.filter((i) => i !== instrument)
+                              : [...member.instruments, instrument]
+                            updateInstruments.mutate({ musicianId: member.musicianId, instruments: next })
+                          }
                           return (
                             <Badge
-                              key={role}
+                              key={instrument}
                               variant={isSelected ? "default" : "outline"}
                               role="button"
                               tabIndex={0}
                               aria-pressed={isSelected}
-                              onClick={() => toggleMemberRole(member.user.id, role)}
+                              onClick={toggle}
                               onKeyDown={(e) => {
                                 if (e.key !== "Enter" && e.key !== " ") return
                                 e.preventDefault()
-                                toggleMemberRole(member.user.id, role)
+                                toggle()
                               }}
                               className="cursor-pointer select-none"
                             >
-                              {formatTeamRole(role)}
+                              {formatInstrument(instrument)}
                             </Badge>
                           )
                         })}

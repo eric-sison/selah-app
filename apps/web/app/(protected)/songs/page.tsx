@@ -6,10 +6,9 @@ import {
   PageHeader,
   PageTitle,
 } from "@workspace/ui/components/Page"
-import { MusicPlayerBar } from "@/components/MusicPlayerBar"
-import { SongList } from "@/components/SongList"
-import { SongSearchCombobox } from "@/components/SongSearchCombobox"
-import { UploadSongDialog } from "@/components/UploadSongDialog"
+import { MusicPlayerBar } from "@/components/songs/MusicPlayerBar"
+import { SongList } from "@/components/songs/SongList"
+import { UploadSongDialog } from "@/components/songs/UploadSongDialog"
 
 export default function SongBank() {
   return (
@@ -22,7 +21,6 @@ export default function SongBank() {
               Every track uploaded for worship services — key, tempo, and album art at a glance.
             </PageDescription>
             <PageAction className="flex items-center gap-2">
-              {/* <SongSearchCombobox /> */}
               <UploadSongDialog />
             </PageAction>
           </PageHeader>

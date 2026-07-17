@@ -1,10 +1,10 @@
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
-import { SongDetailsSheet } from "@/components/SongDetailsSheet"
-import { createMockSong } from "../../test/fixtures"
-import { render, screen } from "../../test/render"
+import { SongDetailsSheet } from "@/components/songs/SongDetailsSheet"
+import { createMockSong } from "../../../test/fixtures"
+import { render, screen } from "../../../test/render"
 
-vi.mock("@/components/SongDetailInfo", () => ({
+vi.mock("@/components/songs/SongDetailInfo", () => ({
   SongDetailInfo: () => <div data-testid="mock-song-detail-info" />,
 }))
 

@@ -1,8 +1,8 @@
 import { toast } from "@workspace/ui/components/Sonner"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import userEvent from "@testing-library/user-event"
-import { InviteForm } from "@/components/InviteForm"
-import { renderWithProviders, screen, waitFor } from "../../test/render"
+import { InviteForm } from "@/components/auth/InviteForm"
+import { renderWithProviders, screen, waitFor } from "../../../test/render"
 
 vi.mock("@workspace/ui/components/Sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },

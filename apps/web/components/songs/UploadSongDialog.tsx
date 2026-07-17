@@ -11,7 +11,7 @@ import {
 } from "@workspace/ui/components/Dialog"
 import { Plus } from "lucide-react"
 import { FunctionComponent, useState } from "react"
-import { SongUploadForm } from "@/components/SongUploadForm"
+import { SongUploadForm } from "@/components/songs/SongUploadForm"
 
 export const UploadSongDialog: FunctionComponent = () => {
   const [open, setOpen] = useState(false)

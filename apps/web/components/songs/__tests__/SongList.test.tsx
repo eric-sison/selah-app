@@ -2,19 +2,19 @@ import userEvent from "@testing-library/user-event"
 import { toast } from "@workspace/ui/components/Sonner"
 import type { ReactNode } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { SongList } from "@/components/SongList"
+import { SongList } from "@/components/songs/SongList"
 import { apiClient } from "@/lib/api-client"
 import { useSession } from "@/components/SessionProvider"
-import { usePlayer } from "@/components/SongPlayerProvider"
-import type { Song } from "@/components/NowPlayingCard"
-import { createMockPlayerContextValue, createMockSession, createMockSong } from "../../test/fixtures"
-import { renderWithProviders, screen, waitFor, within } from "../../test/render"
+import { usePlayer } from "@/components/songs/SongPlayerProvider"
+import type { Song } from "@/components/songs/NowPlayingCard"
+import { createMockPlayerContextValue, createMockSession, createMockSong } from "../../../test/fixtures"
+import { renderWithProviders, screen, waitFor, within } from "../../../test/render"
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
 }))
 
-vi.mock("@/components/SongPlayerProvider", () => ({
+vi.mock("@/components/songs/SongPlayerProvider", () => ({
   usePlayer: vi.fn(),
 }))
 
@@ -31,7 +31,7 @@ vi.mock("@workspace/ui/components/Sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
-vi.mock("@/components/SongDetailsSheet", () => ({
+vi.mock("@/components/songs/SongDetailsSheet", () => ({
   SongDetailsSheet: ({ open, song }: { open: boolean; song: Song }) =>
     open ? <div data-testid="mock-details-sheet">{song.title}</div> : null,
 }))
@@ -41,7 +41,7 @@ vi.mock("@/components/SongDetailsSheet", () => ({
 // doesn't race with, or coincidentally collide in text with, the list's own
 // assertions below (its "no songs" fallback also happens to read "No songs
 // yet", identical to SongList's own empty state).
-vi.mock("@/components/NowPlayingCard", () => ({ NowPlayingCard: () => null }))
+vi.mock("@/components/songs/NowPlayingCard", () => ({ NowPlayingCard: () => null }))
 
 interface SongsPage {
   items: Song[]

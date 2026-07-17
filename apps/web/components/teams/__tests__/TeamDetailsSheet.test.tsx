@@ -1,17 +1,17 @@
 import userEvent from "@testing-library/user-event"
 import { useState } from "react"
 import { describe, expect, it, vi } from "vitest"
-import { TeamDetailsSheet } from "@/components/TeamDetailsSheet"
-import { createMockSession, createMockTeam, createMockTeamMember } from "../../test/fixtures"
-import { fireEvent, renderWithProviders as render, screen, within } from "../../test/render"
-import type { Team } from "@/components/TeamList"
+import { TeamDetailsSheet } from "@/components/teams/TeamDetailsSheet"
+import { createMockSession, createMockTeam, createMockTeamMember } from "../../../test/fixtures"
+import { fireEvent, renderWithProviders as render, screen, within } from "../../../test/render"
+import type { Team } from "@/components/teams/TeamList"
 
 // Isolates TeamDetailsSheet's own logic (mode switching, admin gating,
 // musician-row click handling, empty state) from EditTeamForm's and
 // UpdateTeamMemberDialog's own behavior, which each have a dedicated test
 // file. `type="button"` matters here in case these ever render inside a
 // surrounding <form> down the line.
-vi.mock("@/components/EditTeamForm", () => ({
+vi.mock("@/components/teams/EditTeamForm", () => ({
   EditTeamForm: ({
     team,
     autoFocusMusicians,
@@ -37,7 +37,7 @@ vi.mock("@/components/EditTeamForm", () => ({
   ),
 }))
 
-vi.mock("@/components/UpdateTeamMemberDialog", () => ({
+vi.mock("@/components/teams/UpdateTeamMemberDialog", () => ({
   UpdateTeamMemberDialog: ({
     member,
     onOpenChange,
@@ -122,18 +122,18 @@ describe("TeamDetailsSheet", () => {
     expect(screen.queryByRole("button", { name: "Add member" })).not.toBeInTheDocument()
   })
 
-  it("lists musicians with their roles, and without a role badge when they have none", () => {
-    const withRoles = createMockTeamMember({
+  it("lists musicians with their instruments, and without an instrument badge when they have none", () => {
+    const withInstruments = createMockTeamMember({
       id: "tm-a",
       user: { id: "user-a", name: "Ava Lim", image: null },
-      roles: ["bass", "singer"],
+      instruments: ["bass", "singer"],
     })
-    const withoutRoles = createMockTeamMember({
+    const withoutInstruments = createMockTeamMember({
       id: "tm-b",
       user: { id: "user-b", name: "Ben Ortega", image: null },
-      roles: [],
+      instruments: [],
     })
-    renderAsAdmin(createMockTeam({ members: [withRoles, withoutRoles] }))
+    renderAsAdmin(createMockTeam({ members: [withInstruments, withoutInstruments] }))
 
     expect(screen.getByText("Musicians · 2")).toBeInTheDocument()
     expect(screen.getByText("Ava Lim")).toBeInTheDocument()

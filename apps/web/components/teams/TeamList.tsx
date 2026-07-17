@@ -42,9 +42,9 @@ import { Spinner } from "@workspace/ui/components/Spinner"
 import { EllipsisVertical, Trash, User, UserRoundX } from "lucide-react"
 import { FunctionComponent, MouseEvent, useState } from "react"
 import { apiClient } from "@/lib/api-client"
-import { CreateTeamSheet } from "@/components/CreateTeamSheet"
+import { CreateTeamSheet } from "./CreateTeamSheet"
 import { useSession } from "@/components/SessionProvider"
-import { TeamDetailsSheet } from "@/components/TeamDetailsSheet"
+import { TeamDetailsSheet } from "./TeamDetailsSheet"
 import type { operations } from "@/types/api"
 
 export type Team = operations["listTeams"]["responses"][200]["content"]["application/json"][number]
