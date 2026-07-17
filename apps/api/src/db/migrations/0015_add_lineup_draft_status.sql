@@ -1,0 +1,1 @@
+ALTER TYPE "public"."lineup_status" ADD VALUE 'draft' BEFORE 'pending';

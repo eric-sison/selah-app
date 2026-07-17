@@ -92,6 +92,62 @@
       "when": 1784234743548,
       "tag": "0012_add_lineups_and_schedules",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1784235312501,
+      "tag": "0013_add_lineup_discussion",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1784237521693,
+      "tag": "0014_lineup_service_type_and_dates",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1784238997898,
+      "tag": "0015_add_lineup_draft_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1784239018451,
+      "tag": "0016_lineup_default_status_draft",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1784241478390,
+      "tag": "0017_lineup_word_text_nullable",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1784242601454,
+      "tag": "0018_lineup_member_role_removed",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1784250116546,
+      "tag": "0019_spooky_dark_phoenix",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1784250137360,
+      "tag": "0020_serious_vin_gonzales",
+      "breakpoints": true
     }
   ]
 }

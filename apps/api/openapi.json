@@ -259,6 +259,2896 @@
         }
       }
     },
+    "/api/lineups": {
+      "post": {
+        "operationId": "createLineup",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Create a lineup",
+        "description": "Admin-only. Creates a new lineup, optionally with an initial set list and roster, all in one transaction.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "serviceType": {
+                    "type": "string",
+                    "enum": [
+                      "sunday_service",
+                      "youth_service",
+                      "necrological_service",
+                      "prayer_meeting_service",
+                      "victory_day",
+                      "other"
+                    ]
+                  },
+                  "serviceDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "rehearsalDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "teamId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "seriesName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "topic": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "wordReference": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "wordText": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "direction": {
+                    "type": "string"
+                  },
+                  "devoLeaderId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "songIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "members": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "serviceType",
+                  "serviceDate",
+                  "teamId",
+                  "seriesName",
+                  "topic",
+                  "wordReference"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Lineup created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "pending",
+                        "approved"
+                      ]
+                    },
+                    "serviceType": {
+                      "type": "string",
+                      "enum": [
+                        "sunday_service",
+                        "youth_service",
+                        "necrological_service",
+                        "prayer_meeting_service",
+                        "victory_day",
+                        "other"
+                      ]
+                    },
+                    "serviceDate": {
+                      "type": "string"
+                    },
+                    "rehearsalDate": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "team": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "seriesName": {
+                      "type": "string"
+                    },
+                    "topic": {
+                      "type": "string"
+                    },
+                    "wordReference": {
+                      "type": "string"
+                    },
+                    "wordText": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "direction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "devoLeader": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "image"
+                      ]
+                    },
+                    "songs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "position": {
+                            "type": "number"
+                          },
+                          "song": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "artist": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "musicalKey": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "tempo": {
+                                "type": "number",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "artist",
+                              "musicalKey",
+                              "tempo"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "position",
+                          "song"
+                        ]
+                      }
+                    },
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "instruments": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "bass",
+                                "drums",
+                                "singer",
+                                "electric_guitar",
+                                "acoustic_guitar",
+                                "keyboard"
+                              ]
+                            }
+                          },
+                          "isAvailable": {
+                            "type": "boolean"
+                          },
+                          "user": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "instruments",
+                          "isAvailable",
+                          "user"
+                        ]
+                      }
+                    },
+                    "approvedBy": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "serviceType",
+                    "serviceDate",
+                    "rehearsalDate",
+                    "team",
+                    "seriesName",
+                    "topic",
+                    "wordReference",
+                    "wordText",
+                    "direction",
+                    "devoLeader",
+                    "songs",
+                    "members",
+                    "approvedBy",
+                    "approvedAt",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listLineups",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "List lineups",
+        "description": "Any authenticated user can list every lineup, newest first, each with its team, devo leader, set list, and roster.",
+        "responses": {
+          "200": {
+            "description": "Lineups.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "draft",
+                          "pending",
+                          "approved"
+                        ]
+                      },
+                      "serviceType": {
+                        "type": "string",
+                        "enum": [
+                          "sunday_service",
+                          "youth_service",
+                          "necrological_service",
+                          "prayer_meeting_service",
+                          "victory_day",
+                          "other"
+                        ]
+                      },
+                      "serviceDate": {
+                        "type": "string"
+                      },
+                      "rehearsalDate": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "team": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      "seriesName": {
+                        "type": "string"
+                      },
+                      "topic": {
+                        "type": "string"
+                      },
+                      "wordReference": {
+                        "type": "string"
+                      },
+                      "wordText": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "direction": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "devoLeader": {
+                        "type": "object",
+                        "nullable": true,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "image": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "image"
+                        ]
+                      },
+                      "songs": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "position": {
+                              "type": "number"
+                            },
+                            "song": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "artist": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "musicalKey": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "tempo": {
+                                  "type": "number",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "title",
+                                "artist",
+                                "musicalKey",
+                                "tempo"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "position",
+                            "song"
+                          ]
+                        }
+                      },
+                      "members": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "instruments": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "bass",
+                                  "drums",
+                                  "singer",
+                                  "electric_guitar",
+                                  "acoustic_guitar",
+                                  "keyboard"
+                                ]
+                              }
+                            },
+                            "isAvailable": {
+                              "type": "boolean"
+                            },
+                            "user": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "image": {
+                                  "type": "string",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "image"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "instruments",
+                            "isAvailable",
+                            "user"
+                          ]
+                        }
+                      },
+                      "approvedBy": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "approvedAt": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "updatedAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "status",
+                      "serviceType",
+                      "serviceDate",
+                      "rehearsalDate",
+                      "team",
+                      "seriesName",
+                      "topic",
+                      "wordReference",
+                      "wordText",
+                      "direction",
+                      "devoLeader",
+                      "songs",
+                      "members",
+                      "approvedBy",
+                      "approvedAt",
+                      "createdAt",
+                      "updatedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lineups/{id}": {
+      "get": {
+        "operationId": "getLineup",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Get a lineup by id",
+        "description": "Any authenticated user can fetch a single lineup, with its team, devo leader, set list, and roster.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lineup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "pending",
+                        "approved"
+                      ]
+                    },
+                    "serviceType": {
+                      "type": "string",
+                      "enum": [
+                        "sunday_service",
+                        "youth_service",
+                        "necrological_service",
+                        "prayer_meeting_service",
+                        "victory_day",
+                        "other"
+                      ]
+                    },
+                    "serviceDate": {
+                      "type": "string"
+                    },
+                    "rehearsalDate": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "team": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "seriesName": {
+                      "type": "string"
+                    },
+                    "topic": {
+                      "type": "string"
+                    },
+                    "wordReference": {
+                      "type": "string"
+                    },
+                    "wordText": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "direction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "devoLeader": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "image"
+                      ]
+                    },
+                    "songs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "position": {
+                            "type": "number"
+                          },
+                          "song": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "artist": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "musicalKey": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "tempo": {
+                                "type": "number",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "artist",
+                              "musicalKey",
+                              "tempo"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "position",
+                          "song"
+                        ]
+                      }
+                    },
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "instruments": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "bass",
+                                "drums",
+                                "singer",
+                                "electric_guitar",
+                                "acoustic_guitar",
+                                "keyboard"
+                              ]
+                            }
+                          },
+                          "isAvailable": {
+                            "type": "boolean"
+                          },
+                          "user": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "instruments",
+                          "isAvailable",
+                          "user"
+                        ]
+                      }
+                    },
+                    "approvedBy": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "serviceType",
+                    "serviceDate",
+                    "rehearsalDate",
+                    "team",
+                    "seriesName",
+                    "topic",
+                    "wordReference",
+                    "wordText",
+                    "direction",
+                    "devoLeader",
+                    "songs",
+                    "members",
+                    "approvedBy",
+                    "approvedAt",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateLineup",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Update a lineup",
+        "description": "Admin-only. Updates a lineup's team assignment, series/topic, word, and/or direction. Use the songs/members endpoints to change the set list or roster.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "serviceType": {
+                    "type": "string",
+                    "enum": [
+                      "sunday_service",
+                      "youth_service",
+                      "necrological_service",
+                      "prayer_meeting_service",
+                      "victory_day",
+                      "other"
+                    ]
+                  },
+                  "serviceDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "rehearsalDate": {
+                    "type": "string",
+                    "nullable": true,
+                    "format": "date-time"
+                  },
+                  "teamId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "seriesName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "topic": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "wordReference": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "wordText": {
+                    "type": "string",
+                    "nullable": true,
+                    "minLength": 1
+                  },
+                  "direction": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "devoLeaderId": {
+                    "type": "string",
+                    "nullable": true,
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lineup updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "pending",
+                        "approved"
+                      ]
+                    },
+                    "serviceType": {
+                      "type": "string",
+                      "enum": [
+                        "sunday_service",
+                        "youth_service",
+                        "necrological_service",
+                        "prayer_meeting_service",
+                        "victory_day",
+                        "other"
+                      ]
+                    },
+                    "serviceDate": {
+                      "type": "string"
+                    },
+                    "rehearsalDate": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "team": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "seriesName": {
+                      "type": "string"
+                    },
+                    "topic": {
+                      "type": "string"
+                    },
+                    "wordReference": {
+                      "type": "string"
+                    },
+                    "wordText": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "direction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "devoLeader": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "image"
+                      ]
+                    },
+                    "songs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "position": {
+                            "type": "number"
+                          },
+                          "song": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "artist": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "musicalKey": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "tempo": {
+                                "type": "number",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "artist",
+                              "musicalKey",
+                              "tempo"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "position",
+                          "song"
+                        ]
+                      }
+                    },
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "instruments": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "bass",
+                                "drums",
+                                "singer",
+                                "electric_guitar",
+                                "acoustic_guitar",
+                                "keyboard"
+                              ]
+                            }
+                          },
+                          "isAvailable": {
+                            "type": "boolean"
+                          },
+                          "user": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "instruments",
+                          "isAvailable",
+                          "user"
+                        ]
+                      }
+                    },
+                    "approvedBy": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "serviceType",
+                    "serviceDate",
+                    "rehearsalDate",
+                    "team",
+                    "seriesName",
+                    "topic",
+                    "wordReference",
+                    "wordText",
+                    "direction",
+                    "devoLeader",
+                    "songs",
+                    "members",
+                    "approvedBy",
+                    "approvedAt",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteLineup",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Delete a lineup",
+        "description": "Admin-only. Deletes a lineup along with its set list, roster, schedule slots, and discussion.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Lineup deleted."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lineups/{id}/songs": {
+      "post": {
+        "operationId": "addLineupSong",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Add a song to a lineup",
+        "description": "Admin-only. Appends a song to the lineup's set list. Idempotent - adding a song already in the set list is a no-op. Returns the full, updated lineup.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "songId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "songId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Song added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "pending",
+                        "approved"
+                      ]
+                    },
+                    "serviceType": {
+                      "type": "string",
+                      "enum": [
+                        "sunday_service",
+                        "youth_service",
+                        "necrological_service",
+                        "prayer_meeting_service",
+                        "victory_day",
+                        "other"
+                      ]
+                    },
+                    "serviceDate": {
+                      "type": "string"
+                    },
+                    "rehearsalDate": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "team": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "seriesName": {
+                      "type": "string"
+                    },
+                    "topic": {
+                      "type": "string"
+                    },
+                    "wordReference": {
+                      "type": "string"
+                    },
+                    "wordText": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "direction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "devoLeader": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "image"
+                      ]
+                    },
+                    "songs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "position": {
+                            "type": "number"
+                          },
+                          "song": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "artist": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "musicalKey": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "tempo": {
+                                "type": "number",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "artist",
+                              "musicalKey",
+                              "tempo"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "position",
+                          "song"
+                        ]
+                      }
+                    },
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "instruments": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "bass",
+                                "drums",
+                                "singer",
+                                "electric_guitar",
+                                "acoustic_guitar",
+                                "keyboard"
+                              ]
+                            }
+                          },
+                          "isAvailable": {
+                            "type": "boolean"
+                          },
+                          "user": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "instruments",
+                          "isAvailable",
+                          "user"
+                        ]
+                      }
+                    },
+                    "approvedBy": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "serviceType",
+                    "serviceDate",
+                    "rehearsalDate",
+                    "team",
+                    "seriesName",
+                    "topic",
+                    "wordReference",
+                    "wordText",
+                    "direction",
+                    "devoLeader",
+                    "songs",
+                    "members",
+                    "approvedBy",
+                    "approvedAt",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lineups/{id}/songs/{songId}": {
+      "delete": {
+        "operationId": "removeLineupSong",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Remove a song from a lineup",
+        "description": "Admin-only. Removes a song from the lineup's set list.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "songId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Song removed."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lineups/{id}/members": {
+      "post": {
+        "operationId": "addLineupMember",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Add a user to a lineup's roster",
+        "description": "Admin-only. Adds a user to the lineup's roster - independent of team membership, and either from the assigned team or from outside it. Their displayed instruments are resolved from their global musician profile, not set here. Idempotent - adding a user already on the roster is a no-op. Returns the full, updated lineup.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "userId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Member added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "pending",
+                        "approved"
+                      ]
+                    },
+                    "serviceType": {
+                      "type": "string",
+                      "enum": [
+                        "sunday_service",
+                        "youth_service",
+                        "necrological_service",
+                        "prayer_meeting_service",
+                        "victory_day",
+                        "other"
+                      ]
+                    },
+                    "serviceDate": {
+                      "type": "string"
+                    },
+                    "rehearsalDate": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "team": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "seriesName": {
+                      "type": "string"
+                    },
+                    "topic": {
+                      "type": "string"
+                    },
+                    "wordReference": {
+                      "type": "string"
+                    },
+                    "wordText": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "direction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "devoLeader": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "image"
+                      ]
+                    },
+                    "songs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "position": {
+                            "type": "number"
+                          },
+                          "song": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "artist": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "musicalKey": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "tempo": {
+                                "type": "number",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "artist",
+                              "musicalKey",
+                              "tempo"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "position",
+                          "song"
+                        ]
+                      }
+                    },
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "instruments": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "bass",
+                                "drums",
+                                "singer",
+                                "electric_guitar",
+                                "acoustic_guitar",
+                                "keyboard"
+                              ]
+                            }
+                          },
+                          "isAvailable": {
+                            "type": "boolean"
+                          },
+                          "user": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "instruments",
+                          "isAvailable",
+                          "user"
+                        ]
+                      }
+                    },
+                    "approvedBy": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "serviceType",
+                    "serviceDate",
+                    "rehearsalDate",
+                    "team",
+                    "seriesName",
+                    "topic",
+                    "wordReference",
+                    "wordText",
+                    "direction",
+                    "devoLeader",
+                    "songs",
+                    "members",
+                    "approvedBy",
+                    "approvedAt",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lineups/{id}/members/{memberId}": {
+      "delete": {
+        "operationId": "removeLineupMember",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Remove a user from a lineup's roster",
+        "description": "Admin-only. Removes a single roster assignment.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "memberId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Member removed."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/musicians": {
+      "post": {
+        "operationId": "createMusician",
+        "tags": [
+          "Musicians"
+        ],
+        "summary": "Create a musician profile",
+        "description": "Admin-only. Creates a global musician profile for a user, with an optional initial set of instruments. A user can only have one profile.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "instruments": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "bass",
+                        "drums",
+                        "singer",
+                        "electric_guitar",
+                        "acoustic_guitar",
+                        "keyboard"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "userId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Musician profile created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email",
+                        "image"
+                      ]
+                    },
+                    "instruments": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "bass",
+                          "drums",
+                          "singer",
+                          "electric_guitar",
+                          "acoustic_guitar",
+                          "keyboard"
+                        ]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "user",
+                    "instruments",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict. Resource already exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 409,
+                  "message": "Conflict. Resource already exists."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listMusicians",
+        "tags": [
+          "Musicians"
+        ],
+        "summary": "List musicians",
+        "description": "Any authenticated user can list every musician profile, alphabetically by name - used to populate the team member picker, among other places.",
+        "responses": {
+          "200": {
+            "description": "Musicians.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "user": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          },
+                          "image": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "email",
+                          "image"
+                        ]
+                      },
+                      "instruments": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "bass",
+                            "drums",
+                            "singer",
+                            "electric_guitar",
+                            "acoustic_guitar",
+                            "keyboard"
+                          ]
+                        }
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "updatedAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "user",
+                      "instruments",
+                      "createdAt",
+                      "updatedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/musicians/{id}": {
+      "get": {
+        "operationId": "getMusician",
+        "tags": [
+          "Musicians"
+        ],
+        "summary": "Get a musician profile by id",
+        "description": "Any authenticated user can fetch a single musician profile.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Musician.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email",
+                        "image"
+                      ]
+                    },
+                    "instruments": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "bass",
+                          "drums",
+                          "singer",
+                          "electric_guitar",
+                          "acoustic_guitar",
+                          "keyboard"
+                        ]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "user",
+                    "instruments",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateMusician",
+        "tags": [
+          "Musicians"
+        ],
+        "summary": "Update a musician's instruments",
+        "description": "Admin-only. Replaces a musician's full set of instruments.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "instruments": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "bass",
+                        "drums",
+                        "singer",
+                        "electric_guitar",
+                        "acoustic_guitar",
+                        "keyboard"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "instruments"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Musician updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email",
+                        "image"
+                      ]
+                    },
+                    "instruments": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "bass",
+                          "drums",
+                          "singer",
+                          "electric_guitar",
+                          "acoustic_guitar",
+                          "keyboard"
+                        ]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "user",
+                    "instruments",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteMusician",
+        "tags": [
+          "Musicians"
+        ],
+        "summary": "Delete a musician profile",
+        "description": "Admin-only. Deletes a musician's profile - refused (409) while they're still a member of any team, since team membership requires a musician profile; remove them from every team first.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Musician profile deleted."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict. Resource already exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 409,
+                  "message": "Conflict. Resource already exists."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/schedules": {
+      "get": {
+        "operationId": "listSchedules",
+        "tags": [
+          "Schedules"
+        ],
+        "summary": "List schedules",
+        "description": "Any authenticated user can list every schedule entry, ordered by when it happens, each joined with its lineup (if any).",
+        "responses": {
+          "200": {
+            "description": "Schedules.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "sunday_service",
+                          "youth_service",
+                          "necrological_service",
+                          "rehearsal",
+                          "prayer_meeting_service",
+                          "victory_day",
+                          "other"
+                        ]
+                      },
+                      "lineupRole": {
+                        "type": "string",
+                        "nullable": true,
+                        "enum": [
+                          "service",
+                          "practice",
+                          null
+                        ]
+                      },
+                      "title": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "startAt": {
+                        "type": "string"
+                      },
+                      "lineup": {
+                        "type": "object",
+                        "nullable": true,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "seriesName": {
+                            "type": "string"
+                          },
+                          "topic": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "seriesName",
+                          "topic"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "updatedAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "type",
+                      "lineupRole",
+                      "title",
+                      "startAt",
+                      "lineup",
+                      "createdAt",
+                      "updatedAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/songs": {
       "post": {
         "operationId": "createSong",
@@ -1218,7 +4108,7 @@
           "Teams"
         ],
         "summary": "Create a team",
-        "description": "Admin-only. Creates a new team, optionally with an initial roster and their role assignments, all in one transaction.",
+        "description": "Admin-only. Creates a new team, optionally with an initial roster, all in one transaction.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1242,20 +4132,6 @@
                         "userId": {
                           "type": "string",
                           "minLength": 1
-                        },
-                        "roles": {
-                          "type": "array",
-                          "items": {
-                            "type": "string",
-                            "enum": [
-                              "bass",
-                              "drums",
-                              "singer",
-                              "electric_guitar",
-                              "acoustic_guitar",
-                              "keyboard"
-                            ]
-                          }
                         }
                       },
                       "required": [
@@ -1334,7 +4210,10 @@
                               "image"
                             ]
                           },
-                          "roles": {
+                          "musicianId": {
+                            "type": "string"
+                          },
+                          "instruments": {
                             "type": "array",
                             "items": {
                               "type": "string",
@@ -1352,7 +4231,8 @@
                         "required": [
                           "id",
                           "user",
-                          "roles"
+                          "musicianId",
+                          "instruments"
                         ]
                       }
                     },
@@ -1425,7 +4305,7 @@
           "Teams"
         ],
         "summary": "List teams",
-        "description": "Any authenticated user can list every team, alphabetically by name, each with its members and their assigned roles.",
+        "description": "Any authenticated user can list every team, alphabetically by name, each with its members and their current instruments.",
         "responses": {
           "200": {
             "description": "Teams.",
@@ -1491,7 +4371,10 @@
                                 "image"
                               ]
                             },
-                            "roles": {
+                            "musicianId": {
+                              "type": "string"
+                            },
+                            "instruments": {
                               "type": "array",
                               "items": {
                                 "type": "string",
@@ -1509,7 +4392,8 @@
                           "required": [
                             "id",
                             "user",
-                            "roles"
+                            "musicianId",
+                            "instruments"
                           ]
                         }
                       },
@@ -1557,7 +4441,7 @@
           "Teams"
         ],
         "summary": "Get a team by id",
-        "description": "Any authenticated user can fetch a single team, with its members and their assigned roles.",
+        "description": "Any authenticated user can fetch a single team, with its members and their current instruments.",
         "parameters": [
           {
             "schema": {
@@ -1632,7 +4516,10 @@
                               "image"
                             ]
                           },
-                          "roles": {
+                          "musicianId": {
+                            "type": "string"
+                          },
+                          "instruments": {
                             "type": "array",
                             "items": {
                               "type": "string",
@@ -1650,7 +4537,8 @@
                         "required": [
                           "id",
                           "user",
-                          "roles"
+                          "musicianId",
+                          "instruments"
                         ]
                       }
                     },
@@ -1805,7 +4693,10 @@
                               "image"
                             ]
                           },
-                          "roles": {
+                          "musicianId": {
+                            "type": "string"
+                          },
+                          "instruments": {
                             "type": "array",
                             "items": {
                               "type": "string",
@@ -1823,7 +4714,8 @@
                         "required": [
                           "id",
                           "user",
-                          "roles"
+                          "musicianId",
+                          "instruments"
                         ]
                       }
                     },
@@ -1910,7 +4802,7 @@
           "Teams"
         ],
         "summary": "Delete a team",
-        "description": "Admin-only. Deletes a team along with its members and their role assignments.",
+        "description": "Admin-only. Deletes a team along with its membership rows.",
         "parameters": [
           {
             "schema": {
@@ -1978,7 +4870,7 @@
           "Teams"
         ],
         "summary": "Add a member to a team",
-        "description": "Admin-only. Adds a user to a team with no roles yet assigned. Idempotent - adding an existing member is a no-op. Returns the full, updated team.",
+        "description": "Admin-only. Adds an existing musician to a team. Idempotent - adding an existing member is a no-op. Returns the full, updated team.",
         "parameters": [
           {
             "schema": {
@@ -2072,7 +4964,10 @@
                               "image"
                             ]
                           },
-                          "roles": {
+                          "musicianId": {
+                            "type": "string"
+                          },
+                          "instruments": {
                             "type": "array",
                             "items": {
                               "type": "string",
@@ -2090,7 +4985,8 @@
                         "required": [
                           "id",
                           "user",
-                          "roles"
+                          "musicianId",
+                          "instruments"
                         ]
                       }
                     },
@@ -2179,7 +5075,7 @@
           "Teams"
         ],
         "summary": "Remove a member from a team",
-        "description": "Admin-only. Removes a member and their role assignments from a team.",
+        "description": "Admin-only. Removes a member from a team - their musician profile is untouched.",
         "parameters": [
           {
             "schema": {
@@ -2203,316 +5099,6 @@
         "responses": {
           "204": {
             "description": "Member removed."
-          },
-          "401": {
-            "description": "Unauthorized. Missing or invalid authentication.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "status": 401,
-                  "message": "Unauthorized. Missing or invalid authentication."
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden. Insufficient permissions.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "status": 403,
-                  "message": "Forbidden. Insufficient permissions."
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found. Resource does not exist.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "status": 404,
-                  "message": "Not found. Resource does not exist."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/teams/{id}/members/{memberId}/roles": {
-      "post": {
-        "operationId": "addTeamMemberRole",
-        "tags": [
-          "Teams"
-        ],
-        "summary": "Assign a role to a team member",
-        "description": "Admin-only. Assigns a role to a team member - a member can hold more than one. Idempotent - assigning an existing role is a no-op. Returns the full, updated team.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "memberId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "role": {
-                    "type": "string",
-                    "enum": [
-                      "bass",
-                      "drums",
-                      "singer",
-                      "electric_guitar",
-                      "acoustic_guitar",
-                      "keyboard"
-                    ]
-                  }
-                },
-                "required": [
-                  "role"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Role assigned.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "leader": {
-                      "type": "object",
-                      "nullable": true,
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "image": {
-                          "type": "string",
-                          "nullable": true
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "name",
-                        "image"
-                      ]
-                    },
-                    "members": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "user": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "name": {
-                                "type": "string"
-                              },
-                              "image": {
-                                "type": "string",
-                                "nullable": true
-                              }
-                            },
-                            "required": [
-                              "id",
-                              "name",
-                              "image"
-                            ]
-                          },
-                          "roles": {
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "enum": [
-                                "bass",
-                                "drums",
-                                "singer",
-                                "electric_guitar",
-                                "acoustic_guitar",
-                                "keyboard"
-                              ]
-                            }
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "user",
-                          "roles"
-                        ]
-                      }
-                    },
-                    "createdAt": {
-                      "type": "string"
-                    },
-                    "updatedAt": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "name",
-                    "leader",
-                    "members",
-                    "createdAt",
-                    "updatedAt"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized. Missing or invalid authentication.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "status": 401,
-                  "message": "Unauthorized. Missing or invalid authentication."
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden. Insufficient permissions.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "status": 403,
-                  "message": "Forbidden. Insufficient permissions."
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found. Resource does not exist.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "status": 404,
-                  "message": "Not found. Resource does not exist."
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unprocessable. Request body failed validation.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "status": 422,
-                  "message": "Unprocessable. Request body failed validation."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/teams/{id}/members/{memberId}/roles/{role}": {
-      "delete": {
-        "operationId": "removeTeamMemberRole",
-        "tags": [
-          "Teams"
-        ],
-        "summary": "Remove a role from a team member",
-        "description": "Admin-only. Removes a single role from a team member, leaving their membership intact.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "required": true,
-            "name": "memberId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "bass",
-                "drums",
-                "singer",
-                "electric_guitar",
-                "acoustic_guitar",
-                "keyboard"
-              ]
-            },
-            "required": true,
-            "name": "role",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Role removed."
           },
           "401": {
             "description": "Unauthorized. Missing or invalid authentication.",

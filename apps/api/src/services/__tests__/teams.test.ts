@@ -1,10 +1,10 @@
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const mockDb = {
   query: {
     team: { findFirst: vi.fn(), findMany: vi.fn() },
     teamMember: { findFirst: vi.fn() },
-    teamMemberRole: { findFirst: vi.fn() },
+    musician: { findMany: vi.fn() },
   },
   insert: vi.fn(),
   update: vi.fn(),
@@ -18,17 +18,8 @@ const mockDb = {
 
 vi.mock("../../db/index.js", () => ({ db: mockDb }))
 
-const {
-  addTeamMember,
-  addTeamMemberRole,
-  createTeam,
-  deleteTeam,
-  getTeam,
-  listTeams,
-  removeTeamMember,
-  removeTeamMemberRole,
-  updateTeam,
-} = await import("../teams.js")
+const { addTeamMember, createTeam, deleteTeam, getTeam, listTeams, removeTeamMember, TeamError, updateTeam } =
+  await import("../teams.js")
 
 function mockInsertReturning(row: unknown) {
   const returning = vi.fn().mockResolvedValue([row])
@@ -51,10 +42,10 @@ function mockDeleteWhere() {
   return { where }
 }
 
-// createTeam issues multiple sequential `insert` calls in member/role order
-// (team, then each member, then each member's roles) - this queues a
-// distinct `.values()` mock per call, in that order, so each insert's
-// arguments and return value can be asserted independently.
+// createTeam issues multiple sequential `insert` calls in team/member order
+// (team, then each member) - this queues a distinct `.values()` mock per
+// call, in that order, so each insert's arguments and return value can be
+// asserted independently.
 function mockSequentialInserts(behaviors: Array<{ returning: unknown[] } | { resolveValue?: unknown }>) {
   const valuesMocks: ReturnType<typeof vi.fn>[] = []
   let call = 0
@@ -73,6 +64,17 @@ function mockSequentialInserts(behaviors: Array<{ returning: unknown[] } | { res
   })
   return valuesMocks
 }
+
+beforeEach(() => {
+  // Every member used across these tests ("user-1", "user-2") has a
+  // musician profile by default - assertAreMusicians (createTeam,
+  // addTeamMember) and attachMemberInstruments (listTeams, getTeam) both
+  // query this.
+  mockDb.query.musician.findMany.mockResolvedValue([
+    { id: "musician-1", userId: "user-1", instruments: [] },
+    { id: "musician-2", userId: "user-2", instruments: [] },
+  ])
+})
 
 afterEach(() => {
   vi.clearAllMocks()
@@ -113,82 +115,71 @@ describe("createTeam", () => {
     expect(mockDb.transaction).toHaveBeenCalledTimes(1)
   })
 
-  it("creates a member with role assignments in the same transaction", async () => {
-    const createdTeam = { id: "team-1", name: "Sunday AM Team" }
-    const createdMember = { id: "tm-1", teamId: "team-1", userId: "user-1" }
-    const valuesMocks = mockSequentialInserts([
-      { returning: [createdTeam] },
-      { returning: [createdMember] },
-      { resolveValue: undefined },
-    ])
-
-    const result = await createTeam({
-      name: "Sunday AM Team",
-      members: [{ userId: "user-1", roles: ["bass", "singer"] }],
-    })
-    const [teamValues, memberValues, roleValues] = valuesMocks
-
-    expect(result).toBe(createdTeam)
-    expect(teamValues).toHaveBeenCalledWith({ name: "Sunday AM Team", teamLeaderId: undefined })
-    expect(memberValues).toHaveBeenCalledWith({ teamId: "team-1", userId: "user-1" })
-    expect(roleValues).toHaveBeenCalledWith([
-      { teamMemberId: "tm-1", role: "bass" },
-      { teamMemberId: "tm-1", role: "singer" },
-    ])
-  })
-
-  it("adds a member without inserting any roles when none are given", async () => {
-    const createdTeam = { id: "team-1", name: "Sunday AM Team" }
-    const createdMember = { id: "tm-1", teamId: "team-1", userId: "user-1" }
-    mockSequentialInserts([{ returning: [createdTeam] }, { returning: [createdMember] }])
-
-    await createTeam({ name: "Sunday AM Team", members: [{ userId: "user-1" }] })
-
-    expect(mockDb.insert).toHaveBeenCalledTimes(2)
-  })
-
-  it("de-dupes repeated roles for the same member before inserting", async () => {
-    const createdTeam = { id: "team-1", name: "Sunday AM Team" }
-    const createdMember = { id: "tm-1", teamId: "team-1", userId: "user-1" }
-    const valuesMocks = mockSequentialInserts([
-      { returning: [createdTeam] },
-      { returning: [createdMember] },
-      { resolveValue: undefined },
-    ])
-
-    await createTeam({
-      name: "Sunday AM Team",
-      members: [{ userId: "user-1", roles: ["bass", "bass"] }],
-    })
-
-    expect(valuesMocks[2]).toHaveBeenCalledWith([{ teamMemberId: "tm-1", role: "bass" }])
-  })
-
   it("creates a membership row for each member in the input", async () => {
     const createdTeam = { id: "team-1", name: "Sunday AM Team" }
     const createdMember1 = { id: "tm-1", teamId: "team-1", userId: "user-1" }
     const createdMember2 = { id: "tm-2", teamId: "team-1", userId: "user-2" }
-    mockSequentialInserts([
+    const valuesMocks = mockSequentialInserts([
       { returning: [createdTeam] },
       { returning: [createdMember1] },
       { returning: [createdMember2] },
     ])
 
-    await createTeam({
+    const result = await createTeam({
       name: "Sunday AM Team",
       members: [{ userId: "user-1" }, { userId: "user-2" }],
     })
+    const [teamValues, member1Values, member2Values] = valuesMocks
 
+    expect(result).toBe(createdTeam)
+    expect(teamValues).toHaveBeenCalledWith({ name: "Sunday AM Team", teamLeaderId: undefined })
+    expect(member1Values).toHaveBeenCalledWith({ teamId: "team-1", userId: "user-1" })
+    expect(member2Values).toHaveBeenCalledWith({ teamId: "team-1", userId: "user-2" })
     expect(mockDb.insert).toHaveBeenCalledTimes(3)
+  })
+
+  it("throws a TeamError without inserting when a member has no musician profile", async () => {
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await expect(createTeam({ name: "Sunday AM Team", members: [{ userId: "user-1" }] })).rejects.toThrow(
+      TeamError
+    )
+    expect(mockDb.insert).not.toHaveBeenCalled()
   })
 })
 
 describe("listTeams", () => {
-  it("returns every team joined with its leader, members, their user info, and roles", async () => {
-    const rows = [{ id: "team-1", name: "Sunday AM Team", leader: null, members: [] }]
+  it("returns every team joined with its leader and members, each with their current instruments", async () => {
+    const rows = [
+      {
+        id: "team-1",
+        name: "Sunday AM Team",
+        leader: null,
+        members: [{ id: "tm-1", user: { id: "user-1", name: "Ben", image: null } }],
+      },
+    ]
     mockDb.query.team.findMany.mockResolvedValue(rows)
+    mockDb.query.musician.findMany.mockResolvedValue([
+      { id: "musician-1", userId: "user-1", instruments: ["bass"] },
+    ])
 
-    expect(await listTeams()).toBe(rows)
+    const result = await listTeams()
+
+    expect(result).toEqual([
+      {
+        id: "team-1",
+        name: "Sunday AM Team",
+        leader: null,
+        members: [
+          {
+            id: "tm-1",
+            user: { id: "user-1", name: "Ben", image: null },
+            musicianId: "musician-1",
+            instruments: ["bass"],
+          },
+        ],
+      },
+    ])
     expect(mockDb.query.team.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         with: {
@@ -196,7 +187,6 @@ describe("listTeams", () => {
           members: {
             with: {
               user: { columns: { id: true, name: true, image: true } },
-              roles: true,
             },
           },
         },
@@ -206,11 +196,11 @@ describe("listTeams", () => {
 })
 
 describe("getTeam", () => {
-  it("returns the team with this id, joined with members", async () => {
+  it("returns the team with this id, joined with members and their current instruments", async () => {
     const row = { id: "team-1", name: "Sunday AM Team", members: [] }
     mockDb.query.team.findFirst.mockResolvedValue(row)
 
-    expect(await getTeam("team-1")).toBe(row)
+    expect(await getTeam("team-1")).toEqual({ ...row, members: [] })
   })
 
   it("returns undefined when no team has this id", async () => {
@@ -277,6 +267,14 @@ describe("addTeamMember", () => {
     expect(result).toBe(created)
     expect(values).toHaveBeenCalledWith({ teamId: "team-1", userId: "user-1" })
   })
+
+  it("throws a TeamError without inserting when the user has no musician profile", async () => {
+    mockDb.query.teamMember.findFirst.mockResolvedValue(undefined)
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await expect(addTeamMember("team-1", "user-1")).rejects.toThrow(TeamError)
+    expect(mockDb.insert).not.toHaveBeenCalled()
+  })
 })
 
 describe("removeTeamMember", () => {
@@ -292,46 +290,6 @@ describe("removeTeamMember", () => {
     const { where } = mockDeleteWhere()
 
     expect(await removeTeamMember("tm-1")).toBe(true)
-    expect(where).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe("addTeamMemberRole", () => {
-  it("returns the existing role assignment without inserting when already assigned", async () => {
-    const existing = { id: "tmr-1", teamMemberId: "tm-1", role: "bass" }
-    mockDb.query.teamMemberRole.findFirst.mockResolvedValue(existing)
-
-    const result = await addTeamMemberRole("tm-1", "bass")
-
-    expect(result).toBe(existing)
-    expect(mockDb.insert).not.toHaveBeenCalled()
-  })
-
-  it("inserts and returns a new role assignment when not already assigned", async () => {
-    mockDb.query.teamMemberRole.findFirst.mockResolvedValue(undefined)
-    const created = { id: "tmr-1", teamMemberId: "tm-1", role: "bass" }
-    const { values } = mockInsertReturning(created)
-
-    const result = await addTeamMemberRole("tm-1", "bass")
-
-    expect(result).toBe(created)
-    expect(values).toHaveBeenCalledWith({ teamMemberId: "tm-1", role: "bass" })
-  })
-})
-
-describe("removeTeamMemberRole", () => {
-  it("returns false without deleting when that (member, role) pair doesn't exist", async () => {
-    mockDb.query.teamMemberRole.findFirst.mockResolvedValue(undefined)
-
-    expect(await removeTeamMemberRole("tm-1", "bass")).toBe(false)
-    expect(mockDb.delete).not.toHaveBeenCalled()
-  })
-
-  it("deletes the role assignment and returns true when found", async () => {
-    mockDb.query.teamMemberRole.findFirst.mockResolvedValue({ id: "tmr-1" })
-    const { where } = mockDeleteWhere()
-
-    expect(await removeTeamMemberRole("tm-1", "bass")).toBe(true)
     expect(where).toHaveBeenCalledTimes(1)
   })
 })

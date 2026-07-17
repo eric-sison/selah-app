@@ -1,0 +1,1 @@
+ALTER TABLE "lineups" ALTER COLUMN "status" SET DEFAULT 'draft';

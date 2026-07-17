@@ -1,7 +1,9 @@
 import { eq } from "drizzle-orm"
 import { db } from "../db/index.js"
+import { instrument } from "../db/app-schema.js"
 import { users } from "../db/auth-schema.js"
 import { auth } from "../lib/auth.js"
+import { createMusician } from "../services/musicians.js"
 import { assertDatabaseIsReachable } from "./lib/db-reachable.js"
 
 // Local-only placeholder domain - never a real address, so nothing here can
@@ -52,6 +54,13 @@ function emailFor(name: string): string {
   return `${slug}@${SEED_EMAIL_DOMAIN}`
 }
 
+/** Picks 1-2 distinct instruments at random, so seeded musicians aren't all identical. */
+function randomInstruments(): (typeof instrument.enumValues)[number][] {
+  const shuffled = [...instrument.enumValues].sort(() => Math.random() - 0.5)
+  const count = Math.random() < 0.5 ? 1 : 2
+  return shuffled.slice(0, count)
+}
+
 async function seedMusicians() {
   await assertDatabaseIsReachable()
 
@@ -73,20 +82,20 @@ async function seedMusicians() {
     // `accounts` row (provider "credential", correctly hashed password),
     // not just the `users` row. emailVerified is set upfront so each
     // account isn't blocked by requireEmailVerification on first sign-in.
-    await auth.api.createUser({
+    const { user } = await auth.api.createUser({
       body: {
         email,
         password: SEED_PASSWORD,
         name,
-        // better-auth's admin() plugin (see lib/auth.ts) is configured
-        // without a custom `roles` map, so it accepts any string as a role
-        // at runtime - only its bundled TS types default to "admin" |
-        // "user". The cast is scoped to just this field rather than
-        // loosening the whole call.
-        role: "musician" as unknown as "admin" | "user",
+        role: "user",
         data: { emailVerified: true },
       },
     })
+
+    // Gives each seeded account a musician profile right away, so the seed
+    // data is immediately useful for exercising the Teams "add member"
+    // picker (which only offers existing musicians).
+    await createMusician({ userId: user.id, instruments: randomInstruments() })
     created++
   }
 

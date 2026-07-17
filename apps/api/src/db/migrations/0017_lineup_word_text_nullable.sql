@@ -1,0 +1,1 @@
+ALTER TABLE "lineups" ALTER COLUMN "word_text" DROP NOT NULL;

@@ -1,22 +1,21 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
-import { teamRole } from "../db/app-schema.js"
+import { instrument } from "../db/app-schema.js"
 import type { RequestContext } from "../types/request-context.js"
 import { requireAdmin } from "../middleware/require-admin.js"
 import { requireAuth } from "../middleware/require-auth.js"
 import { commonErrors, defaultHook, jsonBody, jsonResponse } from "../utils/error-reponses.js"
 import {
   addTeamMember,
-  addTeamMemberRole,
   createTeam,
   deleteTeam,
   getTeam,
   listTeams,
   removeTeamMember,
-  removeTeamMemberRole,
+  TeamError,
   updateTeam,
 } from "../services/teams.js"
 
-const TeamRoleSchema = z.enum(teamRole.enumValues)
+const InstrumentSchema = z.enum(instrument.enumValues)
 
 const TeamMemberResponseSchema = z.object({
   id: z.string(),
@@ -25,7 +24,10 @@ const TeamMemberResponseSchema = z.object({
     name: z.string(),
     image: z.string().nullable(),
   }),
-  roles: z.array(TeamRoleSchema),
+  // Every team member is picked from the musicians list, so this always
+  // resolves - see attachMemberInstruments in services/teams.ts.
+  musicianId: z.string(),
+  instruments: z.array(InstrumentSchema),
 })
 
 const TeamLeaderResponseSchema = z.object({
@@ -59,7 +61,8 @@ function mapTeam(t: TeamWithMembers) {
     members: t.members.map((m) => ({
       id: m.id,
       user: { id: m.user.id, name: m.user.name, image: m.user.image },
-      roles: m.roles.map((r) => r.role),
+      musicianId: m.musicianId,
+      instruments: m.instruments,
     })),
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
@@ -68,11 +71,9 @@ function mapTeam(t: TeamWithMembers) {
 
 const TeamIdParamSchema = z.object({ id: z.uuid() })
 const TeamMemberParamSchema = z.object({ id: z.uuid(), memberId: z.uuid() })
-const TeamMemberRoleParamSchema = z.object({ id: z.uuid(), memberId: z.uuid(), role: TeamRoleSchema })
 
 const TeamMemberInputSchema = z.object({
   userId: z.string().min(1),
-  roles: z.array(TeamRoleSchema).optional(),
 })
 
 const CreateTeamRequestSchema = z
@@ -95,8 +96,7 @@ const createTeamRoute = createRoute({
   operationId: "createTeam",
   tags: ["Teams"],
   summary: "Create a team",
-  description:
-    "Admin-only. Creates a new team, optionally with an initial roster and their role assignments, all in one transaction.",
+  description: "Admin-only. Creates a new team, optionally with an initial roster, all in one transaction.",
   middleware: [requireAdmin] as const,
   request: {
     ...jsonBody(CreateTeamRequestSchema),
@@ -116,7 +116,7 @@ const listTeamsRoute = createRoute({
   tags: ["Teams"],
   summary: "List teams",
   description:
-    "Any authenticated user can list every team, alphabetically by name, each with its members and their assigned roles.",
+    "Any authenticated user can list every team, alphabetically by name, each with its members and their current instruments.",
   middleware: [requireAuth] as const,
   responses: {
     200: jsonResponse(z.array(TeamResponseSchema), "Teams."),
@@ -130,7 +130,7 @@ const getTeamRoute = createRoute({
   operationId: "getTeam",
   tags: ["Teams"],
   summary: "Get a team by id",
-  description: "Any authenticated user can fetch a single team, with its members and their assigned roles.",
+  description: "Any authenticated user can fetch a single team, with its members and their current instruments.",
   middleware: [requireAuth] as const,
   request: {
     params: TeamIdParamSchema,
@@ -174,7 +174,7 @@ const deleteTeamRoute = createRoute({
   operationId: "deleteTeam",
   tags: ["Teams"],
   summary: "Delete a team",
-  description: "Admin-only. Deletes a team along with its members and their role assignments.",
+  description: "Admin-only. Deletes a team along with its membership rows.",
   middleware: [requireAdmin] as const,
   request: {
     params: TeamIdParamSchema,
@@ -198,7 +198,7 @@ const addTeamMemberRoute = createRoute({
   tags: ["Teams"],
   summary: "Add a member to a team",
   description:
-    "Admin-only. Adds a user to a team with no roles yet assigned. Idempotent - adding an existing member is a no-op. Returns the full, updated team.",
+    "Admin-only. Adds an existing musician to a team. Idempotent - adding an existing member is a no-op. Returns the full, updated team.",
   middleware: [requireAdmin] as const,
   request: {
     params: TeamIdParamSchema,
@@ -219,7 +219,7 @@ const removeTeamMemberRoute = createRoute({
   operationId: "removeTeamMember",
   tags: ["Teams"],
   summary: "Remove a member from a team",
-  description: "Admin-only. Removes a member and their role assignments from a team.",
+  description: "Admin-only. Removes a member from a team - their musician profile is untouched.",
   middleware: [requireAdmin] as const,
   request: {
     params: TeamMemberParamSchema,
@@ -232,62 +232,25 @@ const removeTeamMemberRoute = createRoute({
   },
 })
 
-const AddTeamMemberRoleRequestSchema = z.object({
-  role: TeamRoleSchema,
-})
-
-const addTeamMemberRoleRoute = createRoute({
-  method: "post",
-  path: "/teams/{id}/members/{memberId}/roles",
-  operationId: "addTeamMemberRole",
-  tags: ["Teams"],
-  summary: "Assign a role to a team member",
-  description:
-    "Admin-only. Assigns a role to a team member - a member can hold more than one. Idempotent - assigning an existing role is a no-op. Returns the full, updated team.",
-  middleware: [requireAdmin] as const,
-  request: {
-    params: TeamMemberParamSchema,
-    ...jsonBody(AddTeamMemberRoleRequestSchema),
-  },
-  responses: {
-    201: jsonResponse(TeamResponseSchema, "Role assigned."),
-    401: commonErrors[401],
-    403: commonErrors[403],
-    404: commonErrors[404],
-    422: commonErrors[422],
-  },
-})
-
-const removeTeamMemberRoleRoute = createRoute({
-  method: "delete",
-  path: "/teams/{id}/members/{memberId}/roles/{role}",
-  operationId: "removeTeamMemberRole",
-  tags: ["Teams"],
-  summary: "Remove a role from a team member",
-  description: "Admin-only. Removes a single role from a team member, leaving their membership intact.",
-  middleware: [requireAdmin] as const,
-  request: {
-    params: TeamMemberRoleParamSchema,
-  },
-  responses: {
-    204: { description: "Role removed." },
-    401: commonErrors[401],
-    403: commonErrors[403],
-    404: commonErrors[404],
-  },
-})
-
 export const teamsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
   .openapi(createTeamRoute, async (c) => {
     const { name, teamLeaderId, members } = c.req.valid("json")
-    const created = await createTeam({ name, teamLeaderId, members })
 
-    // The plain `.returning()` row has no `leader` join - re-fetch through
-    // getTeam so the response shape matches every other team endpoint.
-    const withJoins = await getTeam(created.id)
-    // createTeam just inserted this row a moment ago, so it's guaranteed to
-    // still be there for this immediate follow-up fetch.
-    return c.json(mapTeam(withJoins!), 201)
+    try {
+      const created = await createTeam({ name, teamLeaderId, members })
+
+      // The plain `.returning()` row has no `leader` join - re-fetch through
+      // getTeam so the response shape matches every other team endpoint.
+      const withJoins = await getTeam(created.id)
+      // createTeam just inserted this row a moment ago, so it's guaranteed
+      // to still be there for this immediate follow-up fetch.
+      return c.json(mapTeam(withJoins!), 201)
+    } catch (err) {
+      if (err instanceof TeamError && err.code === "MEMBER_NOT_A_MUSICIAN") {
+        return c.json({ status: 422, message: err.message }, 422)
+      }
+      throw err
+    }
   })
   .openapi(listTeamsRoute, async (c) => {
     const teams = await listTeams()
@@ -342,7 +305,14 @@ export const teamsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
       return c.json({ status: 404, message: "Team not found." }, 404)
     }
 
-    await addTeamMember(id, userId)
+    try {
+      await addTeamMember(id, userId)
+    } catch (err) {
+      if (err instanceof TeamError && err.code === "MEMBER_NOT_A_MUSICIAN") {
+        return c.json({ status: 422, message: err.message }, 422)
+      }
+      throw err
+    }
 
     const updated = await getTeam(id)
     // existingTeam just confirmed this team exists, so it can't have
@@ -362,40 +332,5 @@ export const teamsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
     }
 
     await removeTeamMember(memberId)
-    return c.body(null, 204)
-  })
-  .openapi(addTeamMemberRoleRoute, async (c) => {
-    const { id, memberId } = c.req.valid("param")
-    const { role } = c.req.valid("json")
-
-    const existingTeam = await getTeam(id)
-    if (!existingTeam) {
-      return c.json({ status: 404, message: "Team not found." }, 404)
-    }
-    const member = existingTeam.members.find((m) => m.id === memberId)
-    if (!member) {
-      return c.json({ status: 404, message: "Team member not found." }, 404)
-    }
-
-    await addTeamMemberRole(memberId, role)
-
-    const updated = await getTeam(id)
-    // existingTeam just confirmed this team exists, so it can't have
-    // vanished by the time this second query runs a moment later.
-    return c.json(mapTeam(updated!), 201)
-  })
-  .openapi(removeTeamMemberRoleRoute, async (c) => {
-    const { id, memberId, role } = c.req.valid("param")
-
-    const existingTeam = await getTeam(id)
-    if (!existingTeam) {
-      return c.json({ status: 404, message: "Team not found." }, 404)
-    }
-    const member = existingTeam.members.find((m) => m.id === memberId)
-    if (!member) {
-      return c.json({ status: 404, message: "Team member not found." }, 404)
-    }
-
-    await removeTeamMemberRole(memberId, role)
     return c.body(null, 204)
   })
