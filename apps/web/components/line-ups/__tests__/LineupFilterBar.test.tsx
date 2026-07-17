@@ -43,7 +43,7 @@ describe("LineupFilterBar", () => {
 
     render(<LineupFilterBar />)
 
-    expect(screen.getByPlaceholderText("Search by series...")).toBeInTheDocument()
+    expect(screen.getByPlaceholderText("Search by series or topic...")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Date range" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Status" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /Reset filters/ })).not.toBeInTheDocument()
@@ -113,7 +113,7 @@ describe("LineupFilterBar", () => {
     const replace = mockNavigation()
 
     render(<LineupFilterBar />)
-    const input = screen.getByPlaceholderText("Search by series...")
+    const input = screen.getByPlaceholderText("Search by series or topic...")
 
     fireEvent.input(input, { target: { value: "g" } })
     fireEvent.input(input, { target: { value: "gr" } })
@@ -135,7 +135,7 @@ describe("LineupFilterBar", () => {
     const replace = mockNavigation("q=rooted")
 
     render(<LineupFilterBar />)
-    const input = screen.getByPlaceholderText("Search by series...")
+    const input = screen.getByPlaceholderText("Search by series or topic...")
 
     fireEvent.input(input, { target: { value: "" } })
 
@@ -262,7 +262,7 @@ describe("LineupFilterBar", () => {
     const user = userEvent.setup()
 
     render(<LineupFilterBar />)
-    const input = screen.getByPlaceholderText("Search by series...") as HTMLInputElement
+    const input = screen.getByPlaceholderText("Search by series or topic...") as HTMLInputElement
     expect(input.value).toBe("rooted")
 
     await user.click(screen.getByRole("button", { name: /Reset filters/ }))

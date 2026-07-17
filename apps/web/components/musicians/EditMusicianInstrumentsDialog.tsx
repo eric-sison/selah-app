@@ -46,7 +46,9 @@ export const EditMusicianInstrumentsDialog: FunctionComponent<EditMusicianInstru
   }
 
   const toggleInstrument = (instrument: Instrument) => {
-    setInstruments((prev) => (prev.includes(instrument) ? prev.filter((i) => i !== instrument) : [...prev, instrument]))
+    setInstruments((prev) =>
+      prev.includes(instrument) ? prev.filter((i) => i !== instrument) : [...prev, instrument]
+    )
   }
 
   const updateInstruments = useMutation({

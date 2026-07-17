@@ -208,7 +208,11 @@ export const TeamMembershipFields: FunctionComponent<TeamMembershipFieldsProps> 
             setMemberInputValue("")
           }}
         >
-          <ComboboxInput id="team-members" placeholder="Search musicians to add..." disabled={musicians.isLoading}>
+          <ComboboxInput
+            id="team-members"
+            placeholder="Search musicians to add..."
+            disabled={musicians.isLoading}
+          >
             <InputGroupAddon align="inline-start">
               <Search />
             </InputGroupAddon>

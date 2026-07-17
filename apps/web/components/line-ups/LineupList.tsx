@@ -1,6 +1,6 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   Avatar,
   AvatarFallback,
@@ -8,7 +8,18 @@ import {
   AvatarGroupCount,
   AvatarImage,
 } from "@workspace/ui/components/Avatar"
-import { Badge } from "@workspace/ui/components/Badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@workspace/ui/components/AlertDialog"
+import { Button } from "@workspace/ui/components/Button"
 import {
   Card,
   CardAction,
@@ -17,15 +28,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/Card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/DropdownMenu"
 import { Empty, EmptyAction, EmptyDescription, EmptyIcon, EmptyTitle } from "@workspace/ui/components/Empty"
 import { Skeleton } from "@workspace/ui/components/Skeleton"
+import { Spinner } from "@workspace/ui/components/Spinner"
+import { toast } from "@workspace/ui/components/Sonner"
 import { format } from "date-fns"
-import { Check, Clock, FileMusic, ListMusic, MessageCircle, SearchX, Users } from "lucide-react"
-import { useSearchParams } from "next/navigation"
-import { FunctionComponent, type ReactNode } from "react"
+import { EllipsisVertical, FileMusic, ListMusic, MessageCircle, SearchX, Trash, Users } from "lucide-react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
+import { FunctionComponent, type MouseEvent, useState } from "react"
 import { apiClient } from "@/lib/api-client"
 import { CreateLineupSheet } from "@/components/line-ups/CreateLineupSheet"
-import { LINEUP_STATUS_LABELS, type LineupStatus } from "@/utils/lineup-status"
+import { EditLineupSheet } from "@/components/line-ups/EditLineupSheet"
+import { LineupStatusBadge } from "@/components/line-ups/LineupStatusBadge"
+import { useSession } from "@/components/SessionProvider"
 import type { operations } from "@/types/api"
 
 export type Lineup = operations["listLineups"]["responses"][200]["content"]["application/json"][number]
@@ -34,19 +57,6 @@ export type Lineup = operations["listLineups"]["responses"][200]["content"]["app
 // mirroring TeamList's AvatarGroup/AvatarGroupCount usage.
 const MAX_VISIBLE_MEMBER_AVATARS = 5
 const SKELETON_CARD_COUNT = 6
-
-const STATUS_BADGE_CLASSES: Record<LineupStatus, string> = {
-  draft: "",
-  pending: "border-transparent bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400",
-  approved:
-    "border-transparent bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
-}
-
-const STATUS_ICONS: Record<LineupStatus, ReactNode> = {
-  draft: null,
-  pending: <Clock />,
-  approved: <Check />,
-}
 
 const LineupCardSkeleton: FunctionComponent = () => (
   <Card>
@@ -83,79 +93,236 @@ interface LineupCardProps {
   lineup: Lineup
 }
 
+// Whether an admin can still freely change a lineup's set list/roster/own
+// fields through Update/Delete - once it's been submitted (pending) or
+// signed off (approved), those are locked from this menu; "Convert to
+// draft" (pending-only) is the escape hatch back to an editable state.
+const EDITABLE_STATUSES: ReadonlySet<Lineup["status"]> = new Set(["draft"])
+
 // Mirrors the "Line Ups" list-card design (big date block, a colored status
 // pill, series/topic hierarchy, then a team+roster row and a song/discussion
 // count footer) - service type, word reference, and rehearsal date are
 // deliberately left for the detail view rather than crowding this card.
 const LineupCard: FunctionComponent<LineupCardProps> = ({ lineup }) => {
+  const router = useRouter()
+  const session = useSession()
+  const queryClient = useQueryClient()
+  const isAdmin = session?.user.role === "admin"
+
+  const [updateSheetOpen, setUpdateSheetOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+
   const serviceDate = new Date(lineup.serviceDate)
+  const isEditable = EDITABLE_STATUSES.has(lineup.status)
+
+  // Menu items open in portals, which still bubble React synthetic events up
+  // through the component tree (not the DOM tree) to the card's wrapping
+  // <Link>. stopPropagation alone isn't enough here (unlike SongList.tsx's
+  // `stop`, whose row is a plain div) - Next's Link navigates via its own
+  // onClick, but a click's default action (the actual navigation) fires
+  // based on the event reaching the anchor natively, independent of
+  // stopPropagation; only preventDefault reliably suppresses it.
+  const stop = (e: MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const convertToDraft = useMutation({
+    mutationFn: async () => {
+      const { error } = await apiClient.PATCH("/api/lineups/{id}", {
+        params: { path: { id: lineup.id } },
+        body: { status: "draft" },
+      })
+      if (error) throw new Error("Failed to convert line up to draft.")
+    },
+    onSuccess: () => {
+      toast.success("Line up converted to draft.", { position: "top-center" })
+      queryClient.invalidateQueries({ queryKey: ["lineups"] })
+      queryClient.invalidateQueries({ queryKey: ["lineup", lineup.id] })
+    },
+    onError: (error) => {
+      toast.error(error.message, { position: "top-center" })
+    },
+  })
+
+  const deleteLineup = useMutation({
+    mutationFn: async () => {
+      const { error } = await apiClient.DELETE("/api/lineups/{id}", {
+        params: { path: { id: lineup.id } },
+      })
+      if (error) throw new Error("Failed to delete line up.")
+    },
+    onSuccess: () => {
+      toast.success("Line up deleted.", { position: "top-center" })
+      queryClient.invalidateQueries({ queryKey: ["lineups"] })
+      queryClient.invalidateQueries({ queryKey: ["schedules"] })
+      queryClient.invalidateQueries({ queryKey: ["lineup", lineup.id] })
+      setDeleteDialogOpen(false)
+    },
+    onError: (error) => {
+      toast.error(error.message, { position: "top-center" })
+    },
+  })
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-baseline gap-1.5">
-          <span className="font-mono text-xl leading-none font-bold tracking-tight">
-            {format(serviceDate, "dd")}
-          </span>
-          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            {format(serviceDate, "MMM")}
-          </span>
-        </div>
-        <CardAction>
-          <Badge
-            variant={lineup.status === "draft" ? "outline" : "secondary"}
-            className={STATUS_BADGE_CLASSES[lineup.status]}
-          >
-            {STATUS_ICONS[lineup.status]}
-            {LINEUP_STATUS_LABELS[lineup.status]}
-          </Badge>
-        </CardAction>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-bold tracking-wide text-sidebar-primary uppercase">
-            {lineup.seriesName}
-          </p>
-          <CardTitle className="min-w-0 truncate">{lineup.topic}</CardTitle>
-        </div>
-
-        <div className="flex items-center justify-between gap-2">
-          {lineup.members.length > 0 ? (
-            <AvatarGroup>
-              {lineup.members.slice(0, MAX_VISIBLE_MEMBER_AVATARS).map((member) => (
-                <Avatar key={member.id}>
-                  <AvatarImage src={member.user.image ?? undefined} alt={member.user.name} />
-                  <AvatarFallback>{member.user.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-              ))}
-              {lineup.members.length > MAX_VISIBLE_MEMBER_AVATARS && (
-                <AvatarGroupCount>+{lineup.members.length - MAX_VISIBLE_MEMBER_AVATARS}</AvatarGroupCount>
-              )}
-            </AvatarGroup>
-          ) : (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Users className="size-3.5" />
-              No roster yet
+    <>
+      <Link
+        href={`/line-ups/${lineup.id}`}
+        className="rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+      >
+        <Card className="transition-shadow hover:shadow-md">
+          <CardHeader>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-xl leading-none font-bold tracking-tight">
+                {format(serviceDate, "dd")}
+              </span>
+              <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                {format(serviceDate, "MMM")}
+              </span>
             </div>
-          )}
-          <span className="min-w-0 truncate text-xs text-muted-foreground">{lineup.team.name}</span>
-        </div>
-      </CardContent>
-      <CardFooter className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <ListMusic className="size-3.5 shrink-0" />
-          <span className="truncate">
-            {lineup.songs.length === 0
-              ? "No songs yet"
-              : `${lineup.songs.length} song${lineup.songs.length === 1 ? "" : "s"}`}
-          </span>
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <MessageCircle className="size-3.5" />
-          <span>{lineup.commentCount}</span>
-        </div>
-      </CardFooter>
-    </Card>
+            <CardAction className="flex items-center gap-1.5">
+              <LineupStatusBadge status={lineup.status} />
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="rounded-full"
+                      aria-label="Line up actions"
+                      onClick={stop}
+                    />
+                  }
+                >
+                  <EllipsisVertical />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onClick={stop}>
+                  {isAdmin && lineup.status === "pending" && (
+                    <>
+                      <DropdownMenuItem
+                        disabled={convertToDraft.isPending}
+                        onClick={() => convertToDraft.mutate()}
+                      >
+                        {convertToDraft.isPending && <Spinner />}
+                        Convert to draft
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem onClick={() => router.push(`/line-ups/${lineup.id}`)}>
+                    View Details
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuItem disabled={!isEditable} onClick={() => setUpdateSheetOpen(true)}>
+                        Update
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        variant="destructive"
+                        disabled={!isEditable}
+                        onClick={() => setDeleteDialogOpen(true)}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <div className="min-w-0">
+              {lineup.seriesName && (
+                <p className="truncate text-[11px] font-bold tracking-wide text-sidebar-primary uppercase">
+                  {lineup.seriesName}
+                </p>
+              )}
+              <CardTitle className="min-w-0 truncate">{lineup.topic ?? "Untitled"}</CardTitle>
+            </div>
+
+            <div className="flex items-center justify-between gap-2">
+              {lineup.members.length > 0 ? (
+                <AvatarGroup>
+                  {lineup.members.slice(0, MAX_VISIBLE_MEMBER_AVATARS).map((member) => (
+                    <Avatar key={member.id}>
+                      <AvatarImage src={member.user.image ?? undefined} alt={member.user.name} />
+                      <AvatarFallback>{member.user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {lineup.members.length > MAX_VISIBLE_MEMBER_AVATARS && (
+                    <AvatarGroupCount>+{lineup.members.length - MAX_VISIBLE_MEMBER_AVATARS}</AvatarGroupCount>
+                  )}
+                </AvatarGroup>
+              ) : (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Users className="size-3.5" />
+                  No roster yet
+                </div>
+              )}
+              <span className="min-w-0 truncate text-muted-foreground">{lineup.team.name}</span>
+            </div>
+          </CardContent>
+          <CardFooter className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <ListMusic className="size-3.5 shrink-0" />
+              <span className="truncate">
+                {lineup.songs.length === 0
+                  ? "No songs yet"
+                  : `${lineup.songs.length} song${lineup.songs.length === 1 ? "" : "s"}`}
+              </span>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <MessageCircle className="size-3.5" />
+              <span>{lineup.commentCount}</span>
+            </div>
+          </CardFooter>
+        </Card>
+      </Link>
+
+      {/* Rendered as a sibling of the Link, not nested inside it - these
+          portal their content, but React still bubbles clicks up through
+          the *component* tree regardless of where the DOM node ends up, so
+          keeping them out of the Link's subtree entirely means interacting
+          with the sheet/dialog (typing, submitting, canceling) can never
+          also trigger the card's navigation. */}
+      {isAdmin && (
+        <>
+          <EditLineupSheet lineup={lineup} open={updateSheetOpen} onOpenChange={setUpdateSheetOpen} />
+
+          <AlertDialog
+            open={deleteDialogOpen}
+            onOpenChange={(open) => {
+              if (!deleteLineup.isPending) setDeleteDialogOpen(open)
+            }}
+          >
+            <AlertDialogContent size="sm">
+              <AlertDialogHeader>
+                <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+                  <Trash />
+                </AlertDialogMedia>
+                <AlertDialogTitle>Delete this line up?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently deletes the line up, its set list, roster, schedule slots, and discussion.
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleteLineup.isPending}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  disabled={deleteLineup.isPending}
+                  onClick={() => deleteLineup.mutate()}
+                >
+                  {deleteLineup.isPending && <Spinner />}
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
+    </>
   )
 }
 

@@ -160,7 +160,7 @@ export const LineupFilterBar: FunctionComponent = () => {
           <Search />
         </InputGroupAddon>
         <InputGroupInput
-          placeholder="Search by series..."
+          placeholder="Search by series or topic..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />

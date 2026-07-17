@@ -2,6 +2,7 @@ import userEvent from "@testing-library/user-event"
 import { useState } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { LineupSongsField, type LineupSongDraft } from "@/components/line-ups/LineupSongsField"
+import type { LineupMemberDraft } from "@/components/line-ups/LineupRosterFields"
 import { apiClient } from "@/lib/api-client"
 import { renderWithProviders as render, screen, waitFor } from "../../../test/render"
 
@@ -13,28 +14,36 @@ interface SongResult {
   id: string
   title: string
   artist: string | null
+  hasAlbumArt: boolean
 }
 
-const AMAZING_GRACE: SongResult = { id: "song-1", title: "Amazing Grace", artist: "Traditional" }
-const HOW_GREAT: SongResult = { id: "song-2", title: "How Great Thou Art", artist: null }
+const AMAZING_GRACE: SongResult = {
+  id: "song-1",
+  title: "Amazing Grace",
+  artist: "Traditional",
+  hasAlbumArt: false,
+}
+const HOW_GREAT: SongResult = { id: "song-2", title: "How Great Thou Art", artist: null, hasAlbumArt: false }
 
 function mockSearchResults(items: SongResult[]) {
   vi.mocked(apiClient.GET).mockImplementation((path: string) => {
     if (path === "/api/songs") return Promise.resolve({ data: { items }, error: undefined }) as never
+    if (path === "/api/musicians") return Promise.resolve({ data: [], error: undefined }) as never
     throw new Error(`Unexpected path: ${path}`)
   })
 }
 
 interface HarnessProps {
   initialSongs?: LineupSongDraft[]
+  singers?: LineupMemberDraft[]
 }
 
 // LineupSongsField is fully controlled (it owns no `songs` state itself) -
 // this harness supplies the useState a real parent (CreateLineupForm) would,
 // so add/remove interactions actually round-trip.
-function Harness({ initialSongs = [] }: HarnessProps) {
+function Harness({ initialSongs = [], singers = [] }: HarnessProps) {
   const [songs, setSongs] = useState<LineupSongDraft[]>(initialSongs)
-  return <LineupSongsField songs={songs} onSongsChange={setSongs} />
+  return <LineupSongsField songs={songs} onSongsChange={setSongs} singers={singers} />
 }
 
 describe("LineupSongsField", () => {
@@ -57,7 +66,7 @@ describe("LineupSongsField", () => {
     await user.click(screen.getByPlaceholderText("Search songs to add..."))
 
     expect(await screen.findByText("Start typing to search.")).toBeInTheDocument()
-    expect(apiClient.GET).not.toHaveBeenCalled()
+    expect(apiClient.GET).not.toHaveBeenCalledWith("/api/songs", expect.anything())
   })
 
   it("shows 'Searching...' while a search is in flight, then the result", async () => {
@@ -68,6 +77,7 @@ describe("LineupSongsField", () => {
     })
     vi.mocked(apiClient.GET).mockImplementation((path: string) => {
       if (path === "/api/songs") return pending as never
+      if (path === "/api/musicians") return Promise.resolve({ data: [], error: undefined }) as never
       throw new Error(`Unexpected path: ${path}`)
     })
     render(<Harness />)
@@ -101,6 +111,7 @@ describe("LineupSongsField", () => {
       if (path === "/api/songs") {
         return Promise.resolve({ data: undefined, error: { status: 500, message: "Server error" } }) as never
       }
+      if (path === "/api/musicians") return Promise.resolve({ data: [], error: undefined }) as never
       throw new Error(`Unexpected path: ${path}`)
     })
     render(<Harness />)
@@ -129,11 +140,7 @@ describe("LineupSongsField", () => {
   it("excludes an already-added song from the combobox's candidate list", async () => {
     const user = userEvent.setup()
     mockSearchResults([AMAZING_GRACE, HOW_GREAT])
-    render(
-      <Harness
-        initialSongs={[{ id: AMAZING_GRACE.id, title: AMAZING_GRACE.title, artist: AMAZING_GRACE.artist }]}
-      />
-    )
+    render(<Harness initialSongs={[{ ...AMAZING_GRACE }]} />)
 
     const input = screen.getByPlaceholderText("Search songs to add...")
     await user.click(input)
@@ -147,17 +154,10 @@ describe("LineupSongsField", () => {
     expect(screen.getAllByText("Amazing Grace")).toHaveLength(1)
   })
 
-  it("removes a song and keeps the remaining songs' position numbers in order", async () => {
+  it("removes a song and leaves the rest of the set list in place", async () => {
     const user = userEvent.setup()
     mockSearchResults([])
-    render(
-      <Harness
-        initialSongs={[
-          { id: AMAZING_GRACE.id, title: AMAZING_GRACE.title, artist: AMAZING_GRACE.artist },
-          { id: HOW_GREAT.id, title: HOW_GREAT.title, artist: HOW_GREAT.artist },
-        ]}
-      />
-    )
+    render(<Harness initialSongs={[{ ...AMAZING_GRACE }, { ...HOW_GREAT }]} />)
 
     expect(screen.getByText("Amazing Grace")).toBeInTheDocument()
     expect(screen.getByText("How Great Thou Art")).toBeInTheDocument()
@@ -166,6 +166,5 @@ describe("LineupSongsField", () => {
 
     expect(screen.queryByText("Amazing Grace")).not.toBeInTheDocument()
     expect(screen.getByText("How Great Thou Art")).toBeInTheDocument()
-    expect(screen.getByText("1")).toBeInTheDocument()
   })
 })

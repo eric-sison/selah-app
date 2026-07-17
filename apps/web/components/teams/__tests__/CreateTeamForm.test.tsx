@@ -47,7 +47,11 @@ vi.mock("@/components/teams/TeamMembershipFields", () => ({
         type="button"
         onClick={() =>
           onMembersChange([
-            { musicianId: "musician-2", user: { id: "user-2", name: "Ben Ortega", image: null }, instruments: ["bass"] },
+            {
+              musicianId: "musician-2",
+              user: { id: "user-2", name: "Ben Ortega", image: null },
+              instruments: ["bass"],
+            },
           ])
         }
       >

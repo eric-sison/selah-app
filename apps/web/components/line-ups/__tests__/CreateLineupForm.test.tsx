@@ -1,13 +1,13 @@
 import userEvent from "@testing-library/user-event"
 import { Sheet } from "@workspace/ui/components/Sheet"
 import { toast } from "@workspace/ui/components/Sonner"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { CreateLineupForm } from "@/components/line-ups/CreateLineupForm"
 import { apiClient } from "@/lib/api-client"
 import type { Team } from "@/components/teams/TeamList"
 import type { User } from "@/components/teams/TeamMembershipFields"
 import { createMockTeam, createMockTeamMember } from "../../../test/fixtures"
-import { renderWithProviders, screen, waitFor } from "../../../test/render"
+import { fireEvent, renderWithProviders, screen, waitFor } from "../../../test/render"
 
 type SetupUserEvent = ReturnType<typeof userEvent.setup>
 
@@ -90,13 +90,28 @@ function mockQueries({ teams = [TEAM], users = [DEVO_USER] }: { teams?: Team[]; 
   })
 }
 
+// Matches CalendarDayButton's own `data-day` computation
+// (day.date.toLocaleDateString()) - same targeting approach as
+// LineupFilterBar.test.tsx.
+function dayCell(date: Date) {
+  return document.querySelector(`[data-day="${date.toLocaleDateString()}"]`) as HTMLElement
+}
+
+// Drives one DateTimePicker end to end: open by its labeled trigger, click a
+// day, optionally set the time, then close so the next interaction doesn't
+// collide with the still-open popover.
+async function pickDateTime(user: SetupUserEvent, triggerName: string, date: Date, time?: string) {
+  await user.click(screen.getByRole("button", { name: triggerName }))
+  await waitFor(() => expect(screen.getByRole("grid")).toBeInTheDocument())
+  await user.click(dayCell(date))
+  if (time) fireEvent.change(screen.getByLabelText("Time"), { target: { value: time } })
+  await user.keyboard("{Escape}")
+}
+
 async function fillRequiredFields(user: SetupUserEvent) {
   await user.click(screen.getByRole("button", { name: "Service type" }))
   await user.click(await screen.findByRole("menuitemradio", { name: "Sunday Service" }))
-  await user.type(screen.getByLabelText("Service date & time"), "2026-08-02T10:00")
-  await user.type(screen.getByLabelText("Series name"), "Renewed")
-  await user.type(screen.getByLabelText("Topic"), "Walking in Grace")
-  await user.type(screen.getByLabelText("Word reference"), "John 3:16")
+  await pickDateTime(user, "Service date", new Date("2026-08-02T00:00:00"))
 }
 
 async function selectTeam(user: SetupUserEvent, team: Team) {
@@ -106,11 +121,18 @@ async function selectTeam(user: SetupUserEvent, team: Team) {
 }
 
 describe("CreateLineupForm", () => {
-  afterEach(() => {
-    vi.clearAllMocks()
+  // The empty pickers' calendars open on the current month - pinning "today"
+  // lets every test target August 2026 day cells deterministically.
+  beforeEach(() => {
+    vi.setSystemTime(new Date("2026-08-15T09:00:00"))
   })
 
-  it("shows inline validation errors for all required fields and blocks submission", async () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+    vi.useRealTimers()
+  })
+
+  it("shows inline validation errors for the required fields and blocks submission", async () => {
     mockQueries()
     const user = userEvent.setup()
     renderForm()
@@ -119,13 +141,13 @@ describe("CreateLineupForm", () => {
 
     expect(await screen.findByText("Service type is required.")).toBeInTheDocument()
     expect(screen.getByText("Service date is required.")).toBeInTheDocument()
-    expect(screen.getByText("Series name is required.")).toBeInTheDocument()
-    expect(screen.getByText("Topic is required.")).toBeInTheDocument()
-    expect(screen.getByText("Reference is required.")).toBeInTheDocument()
+    expect(screen.getByText("Team is required.")).toBeInTheDocument()
+    // Series name, topic, and word reference are optional - no errors for them.
+    expect(screen.queryAllByText(/is required/)).toHaveLength(3)
     expect(apiClient.POST).not.toHaveBeenCalled()
   })
 
-  it("shows a toast error when submitting without selecting a team", async () => {
+  it("shows an inline validation error when submitting without selecting a team", async () => {
     mockQueries()
     const user = userEvent.setup()
     renderForm()
@@ -133,9 +155,7 @@ describe("CreateLineupForm", () => {
     await fillRequiredFields(user)
     await user.click(screen.getByRole("button", { name: "Create line up" }))
 
-    await waitFor(() => {
-      expect(vi.mocked(toast.error)).toHaveBeenCalledWith("Please select a team.", { position: "top-center" })
-    })
+    expect(await screen.findByText("Team is required.")).toBeInTheDocument()
     expect(apiClient.POST).not.toHaveBeenCalled()
   })
 
@@ -147,7 +167,10 @@ describe("CreateLineupForm", () => {
     renderForm({ onSuccess })
 
     await fillRequiredFields(user)
-    await user.type(screen.getByLabelText("Rehearsal date & time"), "2026-07-30T18:00")
+    await pickDateTime(user, "Rehearsal date & time", new Date("2026-08-30T00:00:00"), "18:00")
+    await user.type(screen.getByLabelText("Series name"), "Renewed")
+    await user.type(screen.getByLabelText("Topic"), "Walking in Grace")
+    await user.type(screen.getByLabelText("Word reference"), "John 3:16")
     await user.type(screen.getByLabelText("Direction"), "Keep it upbeat")
 
     const devoLeaderInput = screen.getByPlaceholderText("Optional - search users...")
@@ -168,8 +191,8 @@ describe("CreateLineupForm", () => {
 
     await user.click(screen.getByRole("button", { name: "Create line up" }))
 
-    const expectedServiceDate = new Date("2026-08-02T10:00").toISOString()
-    const expectedRehearsalDate = new Date("2026-07-30T18:00").toISOString()
+    const expectedServiceDate = new Date("2026-08-02T00:00").toISOString()
+    const expectedRehearsalDate = new Date("2026-08-30T18:00").toISOString()
 
     await waitFor(() => {
       expect(apiClient.POST).toHaveBeenCalledWith("/api/lineups", {
@@ -183,7 +206,7 @@ describe("CreateLineupForm", () => {
           wordReference: "John 3:16",
           direction: "Keep it upbeat",
           devoLeaderId: DEVO_USER.id,
-          songIds: ["song-1"],
+          songs: [{ songId: "song-1", singerId: undefined }],
           members: ["user-2", "user-9"],
         },
       })
@@ -196,12 +219,87 @@ describe("CreateLineupForm", () => {
 
     await user.click(screen.getByRole("tab", { name: "Information" }))
     expect(screen.getByText("Select a service type")).toBeInTheDocument()
+    expect(screen.getByText("Pick a date")).toBeInTheDocument()
+    expect(screen.getByText("Optional")).toBeInTheDocument()
     expect(screen.getByPlaceholderText("Search teams...")).toHaveValue("")
     expect(screen.getByPlaceholderText("Optional - search users...")).toHaveValue("")
     expect(screen.getByLabelText("Series name")).toHaveValue("")
   })
 
-  it("sends rehearsalDate and direction as undefined when left blank", async () => {
+  it("clears a picked date by re-clicking the same day", async () => {
+    mockQueries()
+    const user = userEvent.setup()
+    renderForm()
+
+    const day = new Date("2026-08-20T00:00:00")
+    await user.click(screen.getByRole("button", { name: "Rehearsal date & time" }))
+    await waitFor(() => expect(screen.getByRole("grid")).toBeInTheDocument())
+    await user.click(dayCell(day))
+    expect(screen.getByText("Aug 20, 2026 at 12:00 AM")).toBeInTheDocument()
+
+    await user.click(dayCell(day))
+
+    expect(screen.getByText("Optional")).toBeInTheDocument()
+    expect(screen.queryByText("Aug 20, 2026 at 12:00 AM")).not.toBeInTheDocument()
+  })
+
+  it("anchors a time picked before any date to today", async () => {
+    mockQueries()
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.click(screen.getByRole("button", { name: "Rehearsal date & time" }))
+    await waitFor(() => expect(screen.getByRole("grid")).toBeInTheDocument())
+    fireEvent.change(screen.getByLabelText("Time"), { target: { value: "09:30" } })
+
+    expect(screen.getByText("Aug 15, 2026 at 9:30 AM")).toBeInTheDocument()
+  })
+
+  it("keeps the picked time when changing the day, and falls back to midnight when the time is cleared", async () => {
+    mockQueries()
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.click(screen.getByRole("button", { name: "Rehearsal date & time" }))
+    await waitFor(() => expect(screen.getByRole("grid")).toBeInTheDocument())
+    await user.click(dayCell(new Date("2026-08-02T00:00:00")))
+    fireEvent.change(screen.getByLabelText("Time"), { target: { value: "10:00" } })
+
+    await user.click(dayCell(new Date("2026-08-05T00:00:00")))
+    expect(screen.getByText("Aug 5, 2026 at 10:00 AM")).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText("Time"), { target: { value: "" } })
+    expect(screen.getByText("Aug 5, 2026 at 12:00 AM")).toBeInTheDocument()
+  })
+
+  it("closes the service type menu as soon as an option is selected", async () => {
+    mockQueries()
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.click(screen.getByRole("button", { name: "Service type" }))
+    await user.click(await screen.findByRole("menuitemradio", { name: "Youth Service" }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole("menuitemradio", { name: "Youth Service" })).not.toBeInTheDocument()
+    })
+    expect(screen.getByText("Youth Service")).toBeInTheDocument()
+  })
+
+  it("shows a date-only label for the service date and offers no time input", async () => {
+    mockQueries()
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.click(screen.getByRole("button", { name: "Service date" }))
+    await waitFor(() => expect(screen.getByRole("grid")).toBeInTheDocument())
+    await user.click(dayCell(new Date("2026-08-02T00:00:00")))
+
+    expect(screen.getByText("Aug 2, 2026")).toBeInTheDocument()
+    expect(screen.queryByLabelText("Time")).not.toBeInTheDocument()
+  })
+
+  it("sends every optional field as undefined when left blank", async () => {
     mockQueries()
     vi.mocked(apiClient.POST).mockResolvedValue({ data: {}, error: undefined } as never)
     const user = userEvent.setup()
@@ -217,6 +315,9 @@ describe("CreateLineupForm", () => {
         expect.objectContaining({
           body: expect.objectContaining({
             rehearsalDate: undefined,
+            seriesName: undefined,
+            topic: undefined,
+            wordReference: undefined,
             direction: undefined,
             devoLeaderId: undefined,
           }),

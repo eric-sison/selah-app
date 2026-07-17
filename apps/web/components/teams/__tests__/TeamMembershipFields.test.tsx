@@ -2,7 +2,11 @@ import userEvent from "@testing-library/user-event"
 import { toast } from "@workspace/ui/components/Sonner"
 import { useState } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { TeamMembershipFields, type TeamMemberDraft, type User } from "@/components/teams/TeamMembershipFields"
+import {
+  TeamMembershipFields,
+  type TeamMemberDraft,
+  type User,
+} from "@/components/teams/TeamMembershipFields"
 import type { Musician } from "@/components/musicians/MusicianList"
 import { apiClient } from "@/lib/api-client"
 import { fireEvent, renderWithProviders as render, screen, waitFor } from "../../../test/render"
@@ -109,7 +113,9 @@ describe("TeamMembershipFields", () => {
   it("excludes already-added musicians from the combobox's candidate list", async () => {
     const user = userEvent.setup()
     mockData()
-    render(<Harness initialMembers={[{ musicianId: AVA.id, user: AVA.user, instruments: AVA.instruments }]} />)
+    render(
+      <Harness initialMembers={[{ musicianId: AVA.id, user: AVA.user, instruments: AVA.instruments }]} />
+    )
 
     const input = screen.getByPlaceholderText("Search musicians to add...")
     await user.click(input)
@@ -160,7 +166,8 @@ describe("TeamMembershipFields", () => {
   it("shows no candidates when the musicians query errors", async () => {
     const user = userEvent.setup()
     vi.mocked(apiClient.GET).mockImplementation((path: string) => {
-      if (path === "/api/users") return Promise.resolve({ data: [AVA_USER, BEN_USER], error: undefined }) as never
+      if (path === "/api/users")
+        return Promise.resolve({ data: [AVA_USER, BEN_USER], error: undefined }) as never
       if (path === "/api/musicians") {
         return Promise.resolve({ data: undefined, error: { status: 500, message: "Server error" } }) as never
       }

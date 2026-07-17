@@ -1,15 +1,15 @@
-import { useSearchParams } from "next/navigation"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { useRouter, useSearchParams } from "next/navigation"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { LineupList, type Lineup } from "@/components/line-ups/LineupList"
 import { apiClient } from "@/lib/api-client"
 import { createMockSession } from "../../../test/fixtures"
 import { renderWithProviders as render, screen } from "../../../test/render"
 
 vi.mock("@/lib/api-client", () => ({
-  apiClient: { GET: vi.fn() },
+  apiClient: { GET: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
 }))
 
-vi.mock("next/navigation", () => ({ useSearchParams: vi.fn() }))
+vi.mock("next/navigation", () => ({ useSearchParams: vi.fn(), useRouter: vi.fn() }))
 
 function mockSearchParams(query = "") {
   vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams(query) as never)
@@ -60,6 +60,10 @@ function createMockLineupMember(
 }
 
 describe("LineupList", () => {
+  beforeEach(() => {
+    vi.mocked(useRouter).mockReturnValue({ push: vi.fn() } as never)
+  })
+
   afterEach(() => {
     vi.clearAllMocks()
   })
@@ -158,6 +162,15 @@ describe("LineupList", () => {
     expect(screen.getByText("0")).toBeInTheDocument()
   })
 
+  it("hides the series line and falls back to 'Untitled' when seriesName and topic are null", async () => {
+    mockSearchParams()
+    mockLineups([createMockLineup({ seriesName: null, topic: null, wordReference: null })])
+    render(<LineupList />, { session: createMockSession() })
+
+    expect(await screen.findByText("Untitled")).toBeInTheDocument()
+    expect(screen.queryByText("When We Gather")).not.toBeInTheDocument()
+  })
+
   it("renders a pending lineup with a singular song count and a small roster", async () => {
     mockSearchParams()
     mockLineups([
@@ -168,6 +181,7 @@ describe("LineupList", () => {
             id: "ls-1",
             position: 0,
             song: { id: "song-1", title: "Amazing Grace", artist: null, musicalKey: null, tempo: null },
+            singer: null,
           },
         ],
         members: [createMockLineupMember()],
@@ -191,15 +205,20 @@ describe("LineupList", () => {
             id: "ls-1",
             position: 0,
             song: { id: "song-1", title: "Amazing Grace", artist: null, musicalKey: null, tempo: null },
+            singer: null,
           },
           {
             id: "ls-2",
             position: 1,
             song: { id: "song-2", title: "How Great Thou Art", artist: null, musicalKey: null, tempo: null },
+            singer: null,
           },
         ],
         members: Array.from({ length: 7 }, (_, i) =>
-          createMockLineupMember({ id: `lm-${i}`, user: { id: `user-${i}`, name: `Member ${i}`, image: null } })
+          createMockLineupMember({
+            id: `lm-${i}`,
+            user: { id: `user-${i}`, name: `Member ${i}`, image: null },
+          })
         ),
       }),
     ])

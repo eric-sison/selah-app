@@ -135,7 +135,9 @@ describe("UpdateTeamMemberDialog", () => {
     await user.click(screen.getByRole("button", { name: "Save" }))
 
     await waitFor(() => {
-      expect(vi.mocked(toast.success)).toHaveBeenCalledWith("Instruments updated.", { position: "top-center" })
+      expect(vi.mocked(toast.success)).toHaveBeenCalledWith("Instruments updated.", {
+        position: "top-center",
+      })
     })
     expect(apiClient.PATCH).toHaveBeenCalledWith("/api/musicians/{id}", {
       params: { path: { id: "musician-a" } },
