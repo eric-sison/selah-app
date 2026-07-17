@@ -79,6 +79,10 @@ const withJoins = {
       user: { columns: { id: true, name: true, image: true } },
     },
   },
+  // Only the id is needed - comments (which include replies, since both
+  // share the same lineupId, see app-schema.ts) are just counted for the
+  // list/detail views, not otherwise rendered through this join.
+  comments: { columns: { id: true } },
 } as const
 
 export interface CreateLineupInput {

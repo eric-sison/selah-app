@@ -540,6 +540,9 @@
                         ]
                       }
                     },
+                    "commentCount": {
+                      "type": "number"
+                    },
                     "approvedBy": {
                       "type": "string",
                       "nullable": true
@@ -570,6 +573,7 @@
                     "devoLeader",
                     "songs",
                     "members",
+                    "commentCount",
                     "approvedBy",
                     "approvedAt",
                     "createdAt",
@@ -825,6 +829,9 @@
                           ]
                         }
                       },
+                      "commentCount": {
+                        "type": "number"
+                      },
                       "approvedBy": {
                         "type": "string",
                         "nullable": true
@@ -855,6 +862,7 @@
                       "devoLeader",
                       "songs",
                       "members",
+                      "commentCount",
                       "approvedBy",
                       "approvedAt",
                       "createdAt",
@@ -1094,6 +1102,9 @@
                         ]
                       }
                     },
+                    "commentCount": {
+                      "type": "number"
+                    },
                     "approvedBy": {
                       "type": "string",
                       "nullable": true
@@ -1124,6 +1135,7 @@
                     "devoLeader",
                     "songs",
                     "members",
+                    "commentCount",
                     "approvedBy",
                     "approvedAt",
                     "createdAt",
@@ -1436,6 +1448,9 @@
                         ]
                       }
                     },
+                    "commentCount": {
+                      "type": "number"
+                    },
                     "approvedBy": {
                       "type": "string",
                       "nullable": true
@@ -1466,6 +1481,7 @@
                     "devoLeader",
                     "songs",
                     "members",
+                    "commentCount",
                     "approvedBy",
                     "approvedAt",
                     "createdAt",
@@ -1831,6 +1847,9 @@
                         ]
                       }
                     },
+                    "commentCount": {
+                      "type": "number"
+                    },
                     "approvedBy": {
                       "type": "string",
                       "nullable": true
@@ -1861,6 +1880,7 @@
                     "devoLeader",
                     "songs",
                     "members",
+                    "commentCount",
                     "approvedBy",
                     "approvedAt",
                     "createdAt",
@@ -2237,6 +2257,9 @@
                         ]
                       }
                     },
+                    "commentCount": {
+                      "type": "number"
+                    },
                     "approvedBy": {
                       "type": "string",
                       "nullable": true
@@ -2267,6 +2290,7 @@
                     "devoLeader",
                     "songs",
                     "members",
+                    "commentCount",
                     "approvedBy",
                     "approvedAt",
                     "createdAt",

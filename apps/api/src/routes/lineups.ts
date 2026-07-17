@@ -61,6 +61,10 @@ const LineupResponseSchema = z.object({
   devoLeader: z.object({ id: z.string(), name: z.string(), image: z.string().nullable() }).nullable(),
   songs: z.array(LineupSongResponseSchema),
   members: z.array(LineupMemberResponseSchema),
+  // Total discussion count (top-level comments and replies alike, since
+  // both share the same lineupId - see app-schema.ts). The comments
+  // themselves aren't exposed through this endpoint, only their count.
+  commentCount: z.number(),
   approvedBy: z.string().nullable(),
   approvedAt: z.string().nullable(),
   createdAt: z.string(),
@@ -105,6 +109,7 @@ function mapLineup(l: LineupWithJoins) {
       isAvailable: m.isAvailable,
       user: { id: m.user.id, name: m.user.name, image: m.user.image },
     })),
+    commentCount: l.comments.length,
     approvedBy: l.approvedBy,
     approvedAt: l.approvedAt ? l.approvedAt.toISOString() : null,
     createdAt: l.createdAt.toISOString(),
