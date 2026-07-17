@@ -20,7 +20,8 @@ import {
 import { Empty, EmptyAction, EmptyDescription, EmptyIcon, EmptyTitle } from "@workspace/ui/components/Empty"
 import { Skeleton } from "@workspace/ui/components/Skeleton"
 import { format } from "date-fns"
-import { Check, Clock, FileMusic, ListMusic, MessageCircle, Users } from "lucide-react"
+import { Check, Clock, FileMusic, ListMusic, MessageCircle, SearchX, Users } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 import { FunctionComponent, type ReactNode } from "react"
 import { apiClient } from "@/lib/api-client"
 import { CreateLineupSheet } from "@/components/line-ups/CreateLineupSheet"
@@ -159,10 +160,26 @@ const LineupCard: FunctionComponent<LineupCardProps> = ({ lineup }) => {
 }
 
 export const LineupList: FunctionComponent = () => {
+  const searchParams = useSearchParams()
+  const q = searchParams.get("q") ?? ""
+  const from = searchParams.get("from") ?? ""
+  const to = searchParams.get("to") ?? ""
+  const status = searchParams.get("status") ?? ""
+  const hasActiveFilters = q.length > 0 || from.length > 0 || to.length > 0 || status.length > 0
+
   const lineups = useQuery({
-    queryKey: ["lineups"],
+    queryKey: ["lineups", { q, from, to, status }],
     queryFn: async () => {
-      const { data, error } = await apiClient.GET("/api/lineups")
+      const { data, error } = await apiClient.GET("/api/lineups", {
+        params: {
+          query: {
+            q: q || undefined,
+            from: from || undefined,
+            to: to || undefined,
+            status: status || undefined,
+          },
+        },
+      })
       if (error) throw new Error("Failed to load line ups.")
       return data
     },
@@ -170,7 +187,7 @@ export const LineupList: FunctionComponent = () => {
 
   if (lineups.isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-4 pt-10 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 pt-5 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
           <LineupCardSkeleton key={index} />
         ))}
@@ -179,6 +196,18 @@ export const LineupList: FunctionComponent = () => {
   }
 
   if (!lineups.data?.length) {
+    if (hasActiveFilters) {
+      return (
+        <Empty className="min-h-0">
+          <EmptyIcon>
+            <SearchX />
+          </EmptyIcon>
+          <EmptyTitle>No line ups match your filters</EmptyTitle>
+          <EmptyDescription>Try a different search or clear the filters above.</EmptyDescription>
+        </Empty>
+      )
+    }
+
     return (
       <Empty className="min-h-0">
         <EmptyIcon>
@@ -194,7 +223,7 @@ export const LineupList: FunctionComponent = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 pt-10 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 pt-5 sm:grid-cols-2 lg:grid-cols-3">
       {lineups.data.map((lineup) => (
         <LineupCard key={lineup.id} lineup={lineup} />
       ))}

@@ -201,7 +201,7 @@ export const MusicianList: FunctionComponent = () => {
 
   if (musicians.isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-4 pt-10 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 pt-5 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
           <MusicianCardSkeleton key={index} />
         ))}
@@ -225,7 +225,7 @@ export const MusicianList: FunctionComponent = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 pt-10 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 pt-5 sm:grid-cols-2 lg:grid-cols-3">
       {musicians.data.map((musician) => (
         <MusicianCard key={musician.id} musician={musician} />
       ))}

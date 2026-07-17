@@ -73,7 +73,7 @@ export interface paths {
         };
         /**
          * List lineups
-         * @description Any authenticated user can list every lineup, newest first, each with its team, devo leader, set list, and roster.
+         * @description Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name, a `from`/`to` service-date range, and/or `status` (comma-separated).
          */
         get: operations["listLineups"];
         put?: never;
@@ -700,7 +700,16 @@ export interface operations {
     };
     listLineups: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Spelling-tolerant search over the series name. */
+                q?: string;
+                /** @description Only lineups on/after this service date (YYYY-MM-DD), inclusive. Given without `to`, filters to every lineup from this date on. */
+                from?: string;
+                /** @description Only lineups on/before this service date (YYYY-MM-DD), inclusive. */
+                to?: string;
+                /** @description Comma-separated statuses (draft, pending, approved) - only lineups in one of these. */
+                status?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -774,6 +783,21 @@ export interface operations {
                      * @example {
                      *       "status": 401,
                      *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];

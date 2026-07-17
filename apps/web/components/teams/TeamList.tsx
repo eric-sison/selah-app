@@ -245,7 +245,7 @@ export const TeamList: FunctionComponent = () => {
 
   if (teams.isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-4 pt-10 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 pt-5 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
           <TeamCardSkeleton key={index} />
         ))}
@@ -269,7 +269,7 @@ export const TeamList: FunctionComponent = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 pt-10 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 pt-5 sm:grid-cols-2 lg:grid-cols-3">
       {teams.data.map((team) => (
         <TeamCard key={team.id} team={team} />
       ))}

@@ -1,4 +1,5 @@
 import { CreateLineupSheet } from "@/components/line-ups/CreateLineupSheet"
+import { LineupFilterBar } from "@/components/line-ups/LineupFilterBar"
 import { LineupList } from "@/components/line-ups/LineupList"
 import {
   PageAction,
@@ -19,6 +20,7 @@ export default function LineUps() {
             <CreateLineupSheet />
           </PageAction>
         </PageHeader>
+        <LineupFilterBar />
         <LineupList />
       </div>
     </PageContent>
