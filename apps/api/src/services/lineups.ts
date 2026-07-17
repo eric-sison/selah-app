@@ -191,6 +191,8 @@ export interface ListLineupsOptions {
   dateTo?: Date
   /** Only lineups in one of these statuses - omit to skip filtering by status. */
   statuses?: LineupStatus[]
+  /** Order by `serviceDate` ascending or descending - omit to keep the default (newest-created first, or search-relevance order when `query` is given). */
+  sort?: "asc" | "desc"
 }
 
 /**
@@ -199,9 +201,11 @@ export interface ListLineupsOptions {
  * directly from this without per-lineup follow-up fetches.
  *
  * The search, date-range, and status filters combine with AND - omit any of
- * them to skip that filter entirely.
+ * them to skip that filter entirely. `sort`, when given, overrides the
+ * default ordering (including search relevance) with a plain service-date
+ * sort.
  */
-export async function listLineups({ query, dateFrom, dateTo, statuses }: ListLineupsOptions = {}) {
+export async function listLineups({ query, dateFrom, dateTo, statuses, sort }: ListLineupsOptions = {}) {
   // Trigram similarity (via the lineup_series_name_trgm_idx GIN index)
   // tolerates misspellings; ILIKE is kept alongside it so a correctly-
   // spelled partial match is never excluded by the similarity floor - same
@@ -223,9 +227,17 @@ export async function listLineups({ query, dateFrom, dateTo, statuses }: ListLin
     statuses && statuses.length > 0 ? inArray(lineup.status, statuses) : undefined
   )
 
+  const orderBy = sort
+    ? sort === "asc"
+      ? asc(lineup.serviceDate)
+      : desc(lineup.serviceDate)
+    : query
+      ? [desc(similarity!), desc(lineup.createdAt)]
+      : desc(lineup.createdAt)
+
   const lineups = await db.query.lineup.findMany({
     where,
-    orderBy: query ? [desc(similarity!), desc(lineup.createdAt)] : desc(lineup.createdAt),
+    orderBy,
     with: withJoins,
   })
   return Promise.all(lineups.map(async (l) => ({ ...l, members: await attachMemberInstruments(l.members) })))

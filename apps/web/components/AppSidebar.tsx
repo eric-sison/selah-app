@@ -96,7 +96,11 @@ export const AppSidebar: FunctionComponent<ComponentPropsWithoutRef<typeof Sideb
     // kept for the helper's generic `string | undefined` signature.
     /* v8 ignore next */
     if (!path) return false
-    return pathname === path || pathname.startsWith(`${path}/`)
+    // Items like Line Ups carry a default `?from=&to=` query string in their
+    // path, but usePathname() never includes the query string, so compare
+    // against the path's route segment only.
+    const [route] = path.split("?")
+    return pathname === route || pathname.startsWith(`${route}/`)
   }
 
   return (

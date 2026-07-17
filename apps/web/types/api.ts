@@ -73,7 +73,7 @@ export interface paths {
         };
         /**
          * List lineups
-         * @description Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name, a `from`/`to` service-date range, and/or `status` (comma-separated).
+         * @description Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name, a `from`/`to` service-date range, and/or `status` (comma-separated). Pass `sort` (`asc`/`desc`) to order by service date instead.
          */
         get: operations["listLineups"];
         put?: never;
@@ -709,6 +709,8 @@ export interface operations {
                 to?: string;
                 /** @description Comma-separated statuses (draft, pending, approved) - only lineups in one of these. */
                 status?: string;
+                /** @description Order by service date: `asc` (soonest first) or `desc` (latest first). Omit to keep the default order (newest-created first, or search-relevance order when `q` is given). */
+                sort?: "asc" | "desc";
             };
             header?: never;
             path?: never;

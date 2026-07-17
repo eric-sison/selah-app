@@ -1,4 +1,6 @@
+import { asc, desc } from "drizzle-orm"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { lineup } from "../../db/app-schema.js"
 
 const mockDb = {
   query: {
@@ -52,6 +54,15 @@ function mockDeleteWhere() {
   const where = vi.fn().mockResolvedValue(undefined)
   mockDb.delete.mockReturnValue({ where })
   return { where }
+}
+
+// syncLineupSchedules updates a schedule row directly (no `.returning()`),
+// unlike mockUpdateReturning's shape below.
+function mockScheduleUpdate() {
+  const where = vi.fn().mockResolvedValue(undefined)
+  const set = vi.fn().mockReturnValue({ where })
+  mockDb.update.mockReturnValue({ set })
+  return { set, where }
 }
 
 // addLineupSong computes the next position via a separate `select` query
@@ -241,6 +252,81 @@ describe("createLineup", () => {
   })
 })
 
+describe("syncLineupSchedules (exercised via createLineup)", () => {
+  const baseInput = {
+    serviceType: "sunday_service" as const,
+    serviceDate: new Date("2026-07-26T09:00:00.000Z"),
+    teamId: "team-1",
+    seriesName: "Rooted",
+    topic: "Abiding in the Vine",
+    wordReference: "John 15:5-8",
+    createdBy: "user-1",
+  }
+
+  it("updates an existing service schedule row instead of inserting a new one", async () => {
+    mockDb.query.schedule.findFirst
+      .mockResolvedValueOnce({ id: "schedule-service-1" })
+      .mockResolvedValueOnce(undefined)
+    mockInsertReturning({ id: "lineup-1", ...baseInput, rehearsalDate: null })
+    const { set, where } = mockScheduleUpdate()
+
+    await createLineup(baseInput)
+
+    expect(set).toHaveBeenCalledWith({ type: baseInput.serviceType, startAt: baseInput.serviceDate })
+    expect(where).toHaveBeenCalledTimes(1)
+    expect(mockDb.insert).toHaveBeenCalledTimes(1)
+  })
+
+  it("inserts a new practice schedule row when rehearsalDate is set and none exists yet", async () => {
+    const rehearsalDate = new Date("2026-07-24T18:00:00.000Z")
+    mockDb.query.schedule.findFirst.mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined)
+    const valuesMocks = mockSequentialInserts([
+      { returning: [{ id: "lineup-1", ...baseInput, rehearsalDate }] },
+      { resolveValue: undefined }, // service schedule sync
+      { resolveValue: undefined }, // practice schedule sync
+    ])
+
+    await createLineup({ ...baseInput, rehearsalDate })
+    const [, , practiceValues] = valuesMocks
+
+    expect(practiceValues).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "rehearsal", lineupRole: "practice", startAt: rehearsalDate })
+    )
+  })
+
+  it("updates an existing practice schedule row when rehearsalDate changes", async () => {
+    const rehearsalDate = new Date("2026-07-24T18:00:00.000Z")
+    mockDb.query.schedule.findFirst
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({ id: "schedule-practice-1" })
+    mockSequentialInserts([
+      { returning: [{ id: "lineup-1", ...baseInput, rehearsalDate }] },
+      { resolveValue: undefined }, // service schedule sync
+    ])
+    const { set, where } = mockScheduleUpdate()
+
+    await createLineup({ ...baseInput, rehearsalDate })
+
+    expect(set).toHaveBeenCalledWith({ startAt: rehearsalDate })
+    expect(where).toHaveBeenCalledTimes(1)
+  })
+
+  it("deletes a stray practice schedule row when rehearsalDate is cleared", async () => {
+    mockDb.query.schedule.findFirst
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({ id: "schedule-practice-1" })
+    mockSequentialInserts([
+      { returning: [{ id: "lineup-1", ...baseInput, rehearsalDate: null }] },
+      { resolveValue: undefined }, // service schedule sync
+    ])
+    const { where } = mockDeleteWhere()
+
+    await createLineup({ ...baseInput, rehearsalDate: null })
+
+    expect(where).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe("listLineups", () => {
   it("returns every lineup joined with team, devo leader, songs, and members with their instruments", async () => {
     const rows = [
@@ -273,6 +359,17 @@ describe("listLineups", () => {
     // No `query`, so this stays the plain newest-first order, not the
     // similarity-ranked one.
     expect(call.orderBy).not.toBeInstanceOf(Array)
+  })
+
+  it("defaults a member's instruments to an empty array when they have no musician profile", async () => {
+    mockDb.query.lineup.findMany.mockResolvedValue([
+      { id: "lineup-1", seriesName: "Rooted", members: [{ id: "lm-1", userId: "user-1" }] },
+    ])
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    const result = await listLineups()
+
+    expect(result[0]!.members).toEqual([{ id: "lm-1", userId: "user-1", instruments: [] }])
   })
 
   it("filters by a spelling-tolerant series search and orders by similarity when `query` is given", async () => {
@@ -371,6 +468,36 @@ describe("listLineups", () => {
     const call = mockDb.query.lineup.findMany.mock.calls[0][0]
     expect(call.where).toBeDefined()
     expect(call.orderBy).toBeInstanceOf(Array)
+  })
+
+  it("orders by serviceDate ascending when sort is 'asc'", async () => {
+    mockDb.query.lineup.findMany.mockResolvedValue([])
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await listLineups({ sort: "asc" })
+
+    const call = mockDb.query.lineup.findMany.mock.calls[0][0]
+    expect(call.orderBy).toEqual(asc(lineup.serviceDate))
+  })
+
+  it("orders by serviceDate descending when sort is 'desc'", async () => {
+    mockDb.query.lineup.findMany.mockResolvedValue([])
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await listLineups({ sort: "desc" })
+
+    const call = mockDb.query.lineup.findMany.mock.calls[0][0]
+    expect(call.orderBy).toEqual(desc(lineup.serviceDate))
+  })
+
+  it("sort overrides the similarity ordering when both `query` and `sort` are given", async () => {
+    mockDb.query.lineup.findMany.mockResolvedValue([])
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await listLineups({ query: "Rooted", sort: "asc" })
+
+    const call = mockDb.query.lineup.findMany.mock.calls[0][0]
+    expect(call.orderBy).toEqual(asc(lineup.serviceDate))
   })
 })
 

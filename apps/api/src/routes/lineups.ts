@@ -19,6 +19,7 @@ import {
 const LineupStatusSchema = z.enum(lineupStatus.enumValues)
 const InstrumentSchema = z.enum(instrument.enumValues)
 const LineupServiceTypeSchema = z.enum(lineupServiceType.enumValues)
+const LineupSortSchema = z.enum(["asc", "desc"])
 
 const LineupSongResponseSchema = z.object({
   id: z.string(),
@@ -180,6 +181,10 @@ const ListLineupsQuerySchema = z.object({
       type: "string",
       description: "Comma-separated statuses (draft, pending, approved) - only lineups in one of these.",
     }),
+  sort: LineupSortSchema.optional().openapi({
+    description:
+      "Order by service date: `asc` (soonest first) or `desc` (latest first). Omit to keep the default order (newest-created first, or search-relevance order when `q` is given).",
+  }),
 })
 
 const listLineupsRoute = createRoute({
@@ -189,7 +194,7 @@ const listLineupsRoute = createRoute({
   tags: ["Lineups"],
   summary: "List lineups",
   description:
-    "Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name, a `from`/`to` service-date range, and/or `status` (comma-separated).",
+    "Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name, a `from`/`to` service-date range, and/or `status` (comma-separated). Pass `sort` (`asc`/`desc`) to order by service date instead.",
   middleware: [requireAuth] as const,
   request: {
     query: ListLineupsQuerySchema,
@@ -410,12 +415,13 @@ export const lineupsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
     return c.json(mapLineup(withJoins!), 201)
   })
   .openapi(listLineupsRoute, async (c) => {
-    const { q, from, to, status } = c.req.valid("query")
+    const { q, from, to, status, sort } = c.req.valid("query")
     const lineups = await listLineups({
       query: q,
       dateFrom: from ? new Date(from) : undefined,
       dateTo: to ? new Date(to) : undefined,
       statuses: status,
+      sort,
     })
     return c.json(
       lineups.map((l) => mapLineup(l)),

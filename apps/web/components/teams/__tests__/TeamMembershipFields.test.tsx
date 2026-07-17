@@ -1,10 +1,15 @@
 import userEvent from "@testing-library/user-event"
+import { toast } from "@workspace/ui/components/Sonner"
 import { useState } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { TeamMembershipFields, type TeamMemberDraft, type User } from "@/components/teams/TeamMembershipFields"
 import type { Musician } from "@/components/musicians/MusicianList"
 import { apiClient } from "@/lib/api-client"
 import { fireEvent, renderWithProviders as render, screen, waitFor } from "../../../test/render"
+
+vi.mock("@workspace/ui/components/Sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}))
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
@@ -169,6 +174,23 @@ describe("TeamMembershipFields", () => {
     expect(await screen.findByText("No musicians found.")).toBeInTheDocument()
   })
 
+  it("shows no team-leader candidates when the users query errors", async () => {
+    const user = userEvent.setup()
+    vi.mocked(apiClient.GET).mockImplementation((path: string) => {
+      if (path === "/api/users") {
+        return Promise.resolve({ data: undefined, error: { status: 500, message: "Server error" } }) as never
+      }
+      if (path === "/api/musicians") return Promise.resolve({ data: [AVA, BEN], error: undefined }) as never
+      throw new Error(`Unexpected path: ${path}`)
+    })
+    render(<Harness />)
+
+    const input = screen.getByPlaceholderText("Optional - search users...")
+    await user.click(input)
+
+    expect(screen.queryByText("Ava Lim")).not.toBeInTheDocument()
+  })
+
   it("toggles an instrument on for a musician via the instruments popover", async () => {
     const user = userEvent.setup()
     mockData()
@@ -232,6 +254,25 @@ describe("TeamMembershipFields", () => {
 
     expect(screen.getByRole("button", { name: "Bass", pressed: false })).toBeInTheDocument()
     expect(apiClient.PATCH).not.toHaveBeenCalled()
+  })
+
+  it("shows a toast error when updating a musician's instruments fails", async () => {
+    const user = userEvent.setup()
+    mockData()
+    vi.mocked(apiClient.PATCH).mockResolvedValue({
+      data: undefined,
+      error: { status: 500, message: "Server error" },
+    } as never)
+    render(<Harness initialMembers={[{ musicianId: AVA.id, user: AVA.user, instruments: [] }]} />)
+
+    await user.click(await screen.findByText("Add instruments"))
+    await user.click(screen.getByRole("button", { name: "Bass", pressed: false }))
+
+    await waitFor(() =>
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith("Failed to update instruments.", {
+        position: "top-center",
+      })
+    )
   })
 
   it("selects a team leader from the combobox", async () => {

@@ -115,6 +115,10 @@ export const LineupRosterFields: FunctionComponent<LineupRosterFieldsProps> = ({
         onInputValueChange={setInputValue}
         itemToStringLabel={(user: User) => user.name}
         onValueChange={(user: User | null) => {
+          // No `showClear` on this input, so there's no UI affordance that
+          // clears an in-progress selection - `onValueChange` is never
+          // actually invoked with null here.
+          /* v8 ignore next */
           if (!user) return
           onMembersChange([...members, { user }])
           setInputValue("")

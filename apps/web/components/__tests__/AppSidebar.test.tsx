@@ -33,6 +33,13 @@ vi.mock("@/utils/sidebar-items", () => ({
           ],
         },
         { id: "i2", title: "Plain", path: "/plain", icon: Music, subItems: [] },
+        {
+          id: "i3",
+          title: "With Query",
+          path: "/with-query?from=2026-07-01&to=2026-07-31",
+          icon: Music,
+          subItems: [],
+        },
       ],
     },
   ],
@@ -77,6 +84,14 @@ describe("AppSidebar", () => {
 
     const link = screen.getByRole("link", { name: "Plain" })
     expect(link).not.toHaveAttribute("data-active")
+  })
+
+  it("marks a content item active when pathname matches the route ignoring the item's query string", () => {
+    renderSidebar({ pathname: "/with-query" })
+
+    const link = screen.getByRole("link", { name: "With Query" })
+    expect(link).toHaveAttribute("href", "/with-query?from=2026-07-01&to=2026-07-31")
+    expect(link).toHaveAttribute("data-active", "")
   })
 
   it("calls router.push('/') when the Selah header button is clicked", async () => {

@@ -123,7 +123,7 @@ const LineupCard: FunctionComponent<LineupCardProps> = ({ lineup }) => {
           {lineup.members.length > 0 ? (
             <AvatarGroup>
               {lineup.members.slice(0, MAX_VISIBLE_MEMBER_AVATARS).map((member) => (
-                <Avatar key={member.id} size="sm">
+                <Avatar key={member.id}>
                   <AvatarImage src={member.user.image ?? undefined} alt={member.user.name} />
                   <AvatarFallback>{member.user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
@@ -165,10 +165,11 @@ export const LineupList: FunctionComponent = () => {
   const from = searchParams.get("from") ?? ""
   const to = searchParams.get("to") ?? ""
   const status = searchParams.get("status") ?? ""
+  const sort = searchParams.get("sort") === "desc" ? "desc" : "asc"
   const hasActiveFilters = q.length > 0 || from.length > 0 || to.length > 0 || status.length > 0
 
   const lineups = useQuery({
-    queryKey: ["lineups", { q, from, to, status }],
+    queryKey: ["lineups", { q, from, to, status, sort }],
     queryFn: async () => {
       const { data, error } = await apiClient.GET("/api/lineups", {
         params: {
@@ -177,6 +178,7 @@ export const LineupList: FunctionComponent = () => {
             from: from || undefined,
             to: to || undefined,
             status: status || undefined,
+            sort,
           },
         },
       })

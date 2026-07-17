@@ -1,8 +1,10 @@
 import { vi } from "vitest"
+import type { Musician } from "@/components/musicians/MusicianList"
 import type { Song } from "@/components/songs/NowPlayingCard"
 import type { Session } from "@/lib/session"
 import type { LoopSection } from "@/components/songs/SongPlayerProvider"
 import type { Team } from "@/components/teams/TeamList"
+import type { operations } from "@/types/api"
 
 // SongPlayerProvider's own PlayerContextValue interface isn't exported -
 // this is a structural duplicate kept in sync by hand. Components under
@@ -91,6 +93,29 @@ export function createMockTeam(overrides: Partial<Team> = {}): Team {
     name: "Sunday AM Team",
     leader: null,
     members: [],
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    ...overrides,
+  }
+}
+
+type MusicianUser = operations["listUsers"]["responses"][200]["content"]["application/json"][number]
+
+export function createMockUser(overrides: Partial<MusicianUser> = {}): MusicianUser {
+  return {
+    id: "user-3",
+    name: "Cara Diaz",
+    email: "cara@example.com",
+    image: null,
+    ...overrides,
+  }
+}
+
+export function createMockMusician(overrides: Partial<Musician> = {}): Musician {
+  return {
+    id: "musician-1",
+    user: { id: "user-2", name: "Ben Ortega", email: "ben@example.com", image: null },
+    instruments: [],
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
     ...overrides,

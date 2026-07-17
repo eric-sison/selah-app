@@ -80,6 +80,10 @@ export const LineupSongsField: FunctionComponent<LineupSongsFieldProps> = ({ son
         onInputValueChange={setInputValue}
         itemToStringLabel={(song: Song) => song.title}
         onValueChange={(song: Song | null) => {
+          // No `showClear` on this input, so there's no UI affordance that
+          // clears an in-progress selection - `onValueChange` is never
+          // actually invoked with null here.
+          /* v8 ignore next */
           if (!song) return
           onSongsChange([...songs, { id: song.id, title: song.title, artist: song.artist }])
           setInputValue("")

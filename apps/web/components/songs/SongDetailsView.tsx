@@ -13,14 +13,11 @@ import Link from "next/link"
 import { FunctionComponent, useEffect, useRef } from "react"
 import { apiClient } from "@/lib/api-client"
 import { usePlayer } from "@/components/songs/SongPlayerProvider"
-import type { components } from "@/types/api"
 import { Empty, EmptyDescription, EmptyIcon, EmptyTitle } from "@workspace/ui/components/Empty"
 
 interface SongDetailsViewProps {
   songId: string
 }
-
-type ApiErrorResponse = components["schemas"]["ErrorResponse"]
 
 export const SongDetailsView: FunctionComponent<SongDetailsViewProps> = ({ songId }) => {
   const { activeSongId, isPlaying, isLoadingSongId, analyserNode, selectSong } = usePlayer()
@@ -61,8 +58,6 @@ export const SongDetailsView: FunctionComponent<SongDetailsViewProps> = ({ songI
     },
     enabled: !!song?.hasAlbumArt,
   })
-
-  const error = songQuery.error as ApiErrorResponse | null
 
   const isCurrentlyPlaying = song ? activeSongId === song.id && isPlaying : false
   const isLoading = song ? isLoadingSongId === song.id : false

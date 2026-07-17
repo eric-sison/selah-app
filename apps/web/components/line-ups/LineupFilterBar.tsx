@@ -1,13 +1,23 @@
 "use client"
 
 import { Button } from "@workspace/ui/components/Button"
+import { ButtonGroup } from "@workspace/ui/components/ButtonGroup"
 import { Calendar } from "@workspace/ui/components/Calendar"
 import { Checkbox } from "@workspace/ui/components/Checkbox"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@workspace/ui/components/InputGroup"
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/Popover"
 import { cn } from "@workspace/ui/lib/utils"
-import { format } from "date-fns"
-import { CalendarIcon, ChevronDown, Search, X } from "lucide-react"
+import { addMonths, endOfMonth, format, startOfMonth, subMonths } from "date-fns"
+import {
+  CalendarArrowDown,
+  CalendarArrowUp,
+  CalendarIcon,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCcw,
+  Search,
+} from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { FunctionComponent, useEffect, useState } from "react"
 import type { DateRange } from "react-day-picker"
@@ -46,6 +56,7 @@ export const LineupFilterBar: FunctionComponent = () => {
   const from = parseUrlDate(searchParams.get("from"))
   const to = parseUrlDate(searchParams.get("to"))
   const statuses = searchParams.get("status")?.split(",").filter(Boolean) ?? []
+  const sort = searchParams.get("sort") === "desc" ? "desc" : "asc"
 
   const [searchInput, setSearchInput] = useState(q)
   const debouncedSearch = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS)
@@ -59,8 +70,10 @@ export const LineupFilterBar: FunctionComponent = () => {
     const params = new URLSearchParams(searchParams.toString())
     if (debouncedSearch) params.set("q", debouncedSearch)
     else params.delete("q")
+
     const next = params.toString()
     if (next === searchParams.toString()) return
+
     router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false })
   }, [debouncedSearch, pathname, router, searchParams])
 
@@ -72,19 +85,40 @@ export const LineupFilterBar: FunctionComponent = () => {
     // the first click always means "from this date on" rather than "only
     // this exact date".
     const isSingleDayClick = range?.from && range?.to && range.from.getTime() === range.to.getTime()
-    if (range?.from) params.set("from", format(range.from, URL_DATE_FORMAT))
     // react-day-picker's range mode only ever calls onSelect with `undefined`
     // when a same-day complete range (`{from: X, to: X}`) is clicked again -
     // this component never persists that shape back into the URL (a
     // same-day pair always collapses to `to: undefined` above), so the
-    // Calendar never receives it back as `selected` and this branch is
+    // Calendar never receives it back as `selected` and this else branch is
     // unreachable through the actual UI.
-    /* v8 ignore next */
-    else params.delete("from")
+    /* v8 ignore else */
+    if (range?.from) {
+      params.set("from", format(range.from, URL_DATE_FORMAT))
+    } else {
+      params.delete("from")
+    }
     if (range?.to && !isSingleDayClick) params.set("to", format(range.to, URL_DATE_FORMAT))
     else params.delete("to")
-    const next = params.toString()
-    router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false })
+    // `from` is always set above, so `next` is never empty here - unlike the
+    // debounced search effect below, there's no "clear back to no params" case.
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
+
+  const setMonthRange = (date: Date) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("from", format(startOfMonth(date), URL_DATE_FORMAT))
+    params.set("to", format(endOfMonth(date), URL_DATE_FORMAT))
+    // Both `from` and `to` are always set above, so the query string is never empty.
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
+
+  const goToPreviousMonth = () => setMonthRange(subMonths(from ?? new Date(), 1))
+  const goToNextMonth = () => setMonthRange(addMonths(from ?? new Date(), 1))
+
+  const toggleSort = () => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("sort", sort === "asc" ? "desc" : "asc")
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
   const setStatuses = (next: string[]) => {
@@ -99,7 +133,11 @@ export const LineupFilterBar: FunctionComponent = () => {
 
   const clearFilters = () => {
     setSearchInput("")
-    router.replace(pathname, { scroll: false })
+    const now = new Date()
+    const params = new URLSearchParams()
+    params.set("from", format(startOfMonth(now), URL_DATE_FORMAT))
+    params.set("to", format(endOfMonth(now), URL_DATE_FORMAT))
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
   const dateRangeLabel = from
@@ -128,23 +166,36 @@ export const LineupFilterBar: FunctionComponent = () => {
         />
       </InputGroup>
 
-      <Popover>
-        <PopoverTrigger
-          render={<Button variant="outline" className={cn((from || to) && "border-primary")} />}
-        >
-          <CalendarIcon />
-          {dateRangeLabel}
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-auto p-0">
-          <Calendar
-            mode="range"
-            selected={{ from, to }}
-            onSelect={setDateRange}
-            defaultMonth={from}
-            numberOfMonths={2}
-          />
-        </PopoverContent>
-      </Popover>
+      <ButtonGroup>
+        <Button variant="outline" size="icon" aria-label="Previous month" onClick={goToPreviousMonth}>
+          <ChevronLeft />
+        </Button>
+        <Popover>
+          <PopoverTrigger
+            render={<Button variant="outline" className={cn((from || to) && "border-primary")} />}
+          >
+            <CalendarIcon />
+            {dateRangeLabel}
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-auto p-0">
+            <Calendar
+              mode="range"
+              selected={{ from, to }}
+              onSelect={setDateRange}
+              defaultMonth={from}
+              numberOfMonths={2}
+            />
+          </PopoverContent>
+        </Popover>
+        <Button variant="outline" size="icon" aria-label="Next month" onClick={goToNextMonth}>
+          <ChevronRight />
+        </Button>
+      </ButtonGroup>
+
+      <Button variant="outline" onClick={toggleSort}>
+        {sort === "asc" ? <CalendarArrowUp /> : <CalendarArrowDown />}
+        {sort === "asc" ? "Asc" : "Desc"}
+      </Button>
 
       <Popover>
         <PopoverTrigger
@@ -170,9 +221,9 @@ export const LineupFilterBar: FunctionComponent = () => {
       </Popover>
 
       {hasActiveFilters && (
-        <Button variant="ghost" size="sm" onClick={clearFilters}>
-          <X />
-          Clear filters
+        <Button variant="outline" onClick={clearFilters}>
+          <RefreshCcw />
+          Reset filters
         </Button>
       )}
     </div>

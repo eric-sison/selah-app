@@ -46,14 +46,14 @@ describe("LineupFilterBar", () => {
     expect(screen.getByPlaceholderText("Search by series...")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Date range" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Status" })).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /Clear filters/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Reset filters/ })).not.toBeInTheDocument()
   })
 
   it("shows the selected status's label, or a count once more than one is selected", () => {
     mockNavigation("status=pending")
     const { unmount } = render(<LineupFilterBar />)
     expect(screen.getByRole("button", { name: "Pending" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Clear filters/ })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Reset filters/ })).toBeInTheDocument()
     unmount()
 
     mockNavigation("status=pending,approved")
@@ -83,13 +83,21 @@ describe("LineupFilterBar", () => {
     expect(replace).toHaveBeenCalledWith("/line-ups", { scroll: false })
   })
 
-  it("shows an open-ended label and Clear filters when only `from` is set", () => {
+  it("shows an open-ended label and Reset filters when only `from` is set", () => {
     mockNavigation("from=2026-07-01")
 
     render(<LineupFilterBar />)
 
     expect(screen.getByRole("button", { name: "Jul 1, 2026 onward" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Clear filters/ })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Reset filters/ })).toBeInTheDocument()
+  })
+
+  it("treats an unparseable `from`/`to` value as unset", () => {
+    mockNavigation("from=not-a-date&to=also-not-a-date")
+
+    render(<LineupFilterBar />)
+
+    expect(screen.getByRole("button", { name: "Date range" })).toBeInTheDocument()
   })
 
   it("shows a bounded range label when both `from` and `to` are set", () => {
@@ -120,6 +128,22 @@ describe("LineupFilterBar", () => {
 
     expect(replace).toHaveBeenCalledTimes(1)
     expect(replace).toHaveBeenCalledWith("/line-ups?q=grace", { scroll: false })
+  })
+
+  it("collapses back to the bare pathname once the search box is cleared to empty", async () => {
+    vi.useFakeTimers()
+    const replace = mockNavigation("q=rooted")
+
+    render(<LineupFilterBar />)
+    const input = screen.getByPlaceholderText("Search by series...")
+
+    fireEvent.input(input, { target: { value: "" } })
+
+    for (let elapsed = 0; elapsed < 1000; elapsed += 50) {
+      await vi.advanceTimersByTimeAsync(50)
+    }
+
+    expect(replace).toHaveBeenCalledWith("/line-ups", { scroll: false })
   })
 
   it("picks a single date with nothing selected yet, writing it as an open-ended `from`", async () => {
@@ -156,17 +180,94 @@ describe("LineupFilterBar", () => {
     expect(replace).toHaveBeenCalledWith("/line-ups?from=2026-07-10", { scroll: false })
   })
 
-  it("clears every filter and resets the search input", async () => {
-    const replace = mockNavigation("q=rooted&from=2026-07-01&to=2026-07-15&status=pending")
+  it("moves the range to the previous full month when `from` is set", async () => {
+    const replace = mockNavigation("from=2026-07-01&to=2026-07-31")
+    const user = userEvent.setup()
+
+    render(<LineupFilterBar />)
+    await user.click(screen.getByRole("button", { name: "Previous month" }))
+
+    expect(replace).toHaveBeenCalledWith("/line-ups?from=2026-06-01&to=2026-06-30", { scroll: false })
+  })
+
+  it("moves the range to the next full month when `from` is set", async () => {
+    const replace = mockNavigation("from=2026-07-01&to=2026-07-31")
+    const user = userEvent.setup()
+
+    render(<LineupFilterBar />)
+    await user.click(screen.getByRole("button", { name: "Next month" }))
+
+    expect(replace).toHaveBeenCalledWith("/line-ups?from=2026-08-01&to=2026-08-31", { scroll: false })
+  })
+
+  it("anchors next-month navigation on today when no `from` is set yet", async () => {
+    vi.setSystemTime(new Date("2026-07-15T12:00:00"))
+    const replace = mockNavigation()
+    const user = userEvent.setup()
+
+    render(<LineupFilterBar />)
+    await user.click(screen.getByRole("button", { name: "Next month" }))
+
+    expect(replace).toHaveBeenCalledWith("/line-ups?from=2026-08-01&to=2026-08-31", { scroll: false })
+  })
+
+  it("anchors previous-month navigation on today when no `from` is set yet", async () => {
+    vi.setSystemTime(new Date("2026-07-15T12:00:00"))
+    const replace = mockNavigation()
+    const user = userEvent.setup()
+
+    render(<LineupFilterBar />)
+    await user.click(screen.getByRole("button", { name: "Previous month" }))
+
+    expect(replace).toHaveBeenCalledWith("/line-ups?from=2026-06-01&to=2026-06-30", { scroll: false })
+  })
+
+  it("defaults to 'Asc' and toggles to 'Desc' when no sort param is in the URL", async () => {
+    const replace = mockNavigation()
+    const user = userEvent.setup()
+
+    render(<LineupFilterBar />)
+    expect(screen.getByRole("button", { name: "Asc" })).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Asc" }))
+
+    expect(replace).toHaveBeenCalledWith("/line-ups?sort=desc", { scroll: false })
+  })
+
+  it("shows 'Desc' and toggles back to 'Asc' when sort=desc is in the URL", async () => {
+    const replace = mockNavigation("sort=desc")
+    const user = userEvent.setup()
+
+    render(<LineupFilterBar />)
+    expect(screen.getByRole("button", { name: "Desc" })).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Desc" }))
+
+    expect(replace).toHaveBeenCalledWith("/line-ups?sort=asc", { scroll: false })
+  })
+
+  it("preserves other filters when toggling sort", async () => {
+    const replace = mockNavigation("q=rooted&status=pending")
+    const user = userEvent.setup()
+
+    render(<LineupFilterBar />)
+    await user.click(screen.getByRole("button", { name: "Asc" }))
+
+    expect(replace).toHaveBeenCalledWith("/line-ups?q=rooted&status=pending&sort=desc", { scroll: false })
+  })
+
+  it("clears the search and status filters and resets the date range to the current month", async () => {
+    vi.setSystemTime(new Date("2026-07-15T12:00:00"))
+    const replace = mockNavigation("q=rooted&from=2026-06-01&to=2026-06-15&status=pending")
     const user = userEvent.setup()
 
     render(<LineupFilterBar />)
     const input = screen.getByPlaceholderText("Search by series...") as HTMLInputElement
     expect(input.value).toBe("rooted")
 
-    await user.click(screen.getByRole("button", { name: /Clear filters/ }))
+    await user.click(screen.getByRole("button", { name: /Reset filters/ }))
 
-    expect(replace).toHaveBeenCalledWith("/line-ups", { scroll: false })
+    expect(replace).toHaveBeenCalledWith("/line-ups?from=2026-07-01&to=2026-07-31", { scroll: false })
     expect(input.value).toBe("")
   })
 })
