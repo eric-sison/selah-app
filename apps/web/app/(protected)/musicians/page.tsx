@@ -10,13 +10,13 @@ import {
 
 export default function Musicians() {
   return (
-    <PageContent>
+    <PageContent className="pb-5">
       <div className="flex h-full flex-col">
         <PageHeader>
           <PageTitle>Musicians</PageTitle>
           <PageDescription>
-            Manage musician profiles and their instruments - set once here and carried over wherever they&apos;re
-            referenced.
+            Manage musician profiles and their instruments - set once here and carried over wherever
+            they&apos;re referenced.
           </PageDescription>
           <PageAction>
             <CreateMusicianSheet />

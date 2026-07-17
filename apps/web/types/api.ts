@@ -756,6 +756,7 @@ export interface operations {
                                 image: string | null;
                             };
                         }[];
+                        commentCount: number;
                         approvedBy: string | null;
                         approvedAt: string | null;
                         createdAt: string;
@@ -859,6 +860,7 @@ export interface operations {
                                 image: string | null;
                             };
                         }[];
+                        commentCount: number;
                         approvedBy: string | null;
                         approvedAt: string | null;
                         createdAt: string;
@@ -973,6 +975,7 @@ export interface operations {
                                 image: string | null;
                             };
                         }[];
+                        commentCount: number;
                         approvedBy: string | null;
                         approvedAt: string | null;
                         createdAt: string;
@@ -1156,6 +1159,7 @@ export interface operations {
                                 image: string | null;
                             };
                         }[];
+                        commentCount: number;
                         approvedBy: string | null;
                         approvedAt: string | null;
                         createdAt: string;
@@ -1292,6 +1296,7 @@ export interface operations {
                                 image: string | null;
                             };
                         }[];
+                        commentCount: number;
                         approvedBy: string | null;
                         approvedAt: string | null;
                         createdAt: string;
@@ -1493,6 +1498,7 @@ export interface operations {
                                 image: string | null;
                             };
                         }[];
+                        commentCount: number;
                         approvedBy: string | null;
                         approvedAt: string | null;
                         createdAt: string;

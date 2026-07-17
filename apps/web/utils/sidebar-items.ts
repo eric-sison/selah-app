@@ -1,14 +1,4 @@
-import {
-  BookOpen,
-  Calendar,
-  LayoutGrid,
-  LibraryBig,
-  type LucideIcon,
-  Mic2,
-  Music,
-  Settings,
-  Users,
-} from "lucide-react"
+import { Calendar, LayoutGrid, LibraryBig, type LucideIcon, Mic2, Music, Settings, Users } from "lucide-react"
 
 type AppPath = string
 

@@ -9,15 +9,21 @@ import {
   AvatarImage,
 } from "@workspace/ui/components/Avatar"
 import { Badge } from "@workspace/ui/components/Badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/Card"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/Card"
 import { Empty, EmptyAction, EmptyDescription, EmptyIcon, EmptyTitle } from "@workspace/ui/components/Empty"
 import { Skeleton } from "@workspace/ui/components/Skeleton"
 import { format } from "date-fns"
-import { FileMusic, ListMusic, Users } from "lucide-react"
-import { FunctionComponent } from "react"
+import { Check, Clock, FileMusic, ListMusic, MessageCircle, Users } from "lucide-react"
+import { FunctionComponent, type ReactNode } from "react"
 import { apiClient } from "@/lib/api-client"
 import { CreateLineupSheet } from "@/components/line-ups/CreateLineupSheet"
-import { formatLineupServiceType } from "@/utils/lineup-service-type"
 import { LINEUP_STATUS_LABELS, type LineupStatus } from "@/utils/lineup-status"
 import type { operations } from "@/types/api"
 
@@ -30,24 +36,45 @@ const SKELETON_CARD_COUNT = 6
 
 const STATUS_BADGE_CLASSES: Record<LineupStatus, string> = {
   draft: "",
-  pending: "",
+  pending: "border-transparent bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400",
   approved:
     "border-transparent bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
+}
+
+const STATUS_ICONS: Record<LineupStatus, ReactNode> = {
+  draft: null,
+  pending: <Clock />,
+  approved: <Check />,
 }
 
 const LineupCardSkeleton: FunctionComponent = () => (
   <Card>
     <CardHeader>
-      <Skeleton className="h-4 w-32" />
-      <Skeleton className="h-3 w-48" />
+      <div className="flex items-baseline gap-1.5">
+        <Skeleton className="h-6 w-8" />
+        <Skeleton className="h-3 w-8" />
+      </div>
+      <CardAction>
+        <Skeleton className="h-5 w-16 rounded-full" />
+      </CardAction>
     </CardHeader>
     <CardContent className="flex flex-col gap-3">
-      <Skeleton className="h-3 w-40" />
-      <div className="flex items-center gap-2">
-        <Skeleton className="size-6 shrink-0 rounded-full" />
+      <div className="flex flex-col gap-1.5">
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-4 w-40" />
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="size-6 shrink-0 rounded-full" />
+          <Skeleton className="size-6 shrink-0 rounded-full" />
+        </div>
         <Skeleton className="h-3 w-24" />
       </div>
     </CardContent>
+    <CardFooter className="flex items-center justify-between gap-2">
+      <Skeleton className="h-3 w-20" />
+      <Skeleton className="h-3 w-6" />
+    </CardFooter>
   </Card>
 )
 
@@ -55,36 +82,43 @@ interface LineupCardProps {
   lineup: Lineup
 }
 
+// Mirrors the "Line Ups" list-card design (big date block, a colored status
+// pill, series/topic hierarchy, then a team+roster row and a song/discussion
+// count footer) - service type, word reference, and rehearsal date are
+// deliberately left for the detail view rather than crowding this card.
 const LineupCard: FunctionComponent<LineupCardProps> = ({ lineup }) => {
+  const serviceDate = new Date(lineup.serviceDate)
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-mono text-xl leading-none font-bold tracking-tight">
+            {format(serviceDate, "dd")}
+          </span>
+          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            {format(serviceDate, "MMM")}
+          </span>
+        </div>
+        <CardAction>
           <Badge
             variant={lineup.status === "draft" ? "outline" : "secondary"}
             className={STATUS_BADGE_CLASSES[lineup.status]}
           >
+            {STATUS_ICONS[lineup.status]}
             {LINEUP_STATUS_LABELS[lineup.status]}
           </Badge>
-          <Badge variant="outline">{formatLineupServiceType(lineup.serviceType)}</Badge>
-        </div>
-        <CardTitle className="min-w-0 truncate">{lineup.seriesName}</CardTitle>
-        <CardDescription className="truncate">{lineup.topic}</CardDescription>
+        </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <span>{format(new Date(lineup.serviceDate), "EEE, MMM d 'at' h:mm a")}</span>
-          <span className="truncate">{lineup.team.name}</span>
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-bold tracking-wide text-sidebar-primary uppercase">
+            {lineup.seriesName}
+          </p>
+          <CardTitle className="min-w-0 truncate">{lineup.topic}</CardTitle>
         </div>
 
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ListMusic className="size-3.5" />
-            {lineup.songs.length === 0
-              ? "No songs yet"
-              : `${lineup.songs.length} song${lineup.songs.length === 1 ? "" : "s"}`}
-          </div>
-
           {lineup.members.length > 0 ? (
             <AvatarGroup>
               {lineup.members.slice(0, MAX_VISIBLE_MEMBER_AVATARS).map((member) => (
@@ -103,8 +137,23 @@ const LineupCard: FunctionComponent<LineupCardProps> = ({ lineup }) => {
               No roster yet
             </div>
           )}
+          <span className="min-w-0 truncate text-xs text-muted-foreground">{lineup.team.name}</span>
         </div>
       </CardContent>
+      <CardFooter className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <ListMusic className="size-3.5 shrink-0" />
+          <span className="truncate">
+            {lineup.songs.length === 0
+              ? "No songs yet"
+              : `${lineup.songs.length} song${lineup.songs.length === 1 ? "" : "s"}`}
+          </span>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <MessageCircle className="size-3.5" />
+          <span>{lineup.commentCount}</span>
+        </div>
+      </CardFooter>
     </Card>
   )
 }
