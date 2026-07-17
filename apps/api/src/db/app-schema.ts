@@ -226,13 +226,13 @@ export const lineup = pgTable(
     teamId: uuid("team_id")
       .notNull()
       .references(() => team.id),
-    seriesName: text("series_name").notNull(),
-    topic: text("topic").notNull(),
+    // All three nullable - a lineup can be drafted with just its schedule
+    // and team, with the series/topic/word details filled in later.
+    seriesName: text("series_name"),
+    topic: text("topic"),
     // e.g. "John 15:5-8" - kept separate from the passage text itself so the
-    // UI can render the reference and the quoted verse differently. Nullable -
-    // the create UI only collects the reference; the passage text can be
-    // filled in later (e.g. from an edit flow) if it's ever needed.
-    wordReference: text("word_reference").notNull(),
+    // UI can render the reference and the quoted verse differently.
+    wordReference: text("word_reference"),
     wordText: text("word_text"),
     direction: text("direction"),
     // Nullable and, like team.teamLeaderId, independent at the DB level -
@@ -254,9 +254,10 @@ export const lineup = pgTable(
   (table) => [
     index("lineup_team_id_idx").on(table.teamId),
     index("lineup_devo_leader_id_idx").on(table.devoLeaderId),
-    // Backs the spelling-tolerant series search in listLineups() - same
+    // Back the spelling-tolerant series/topic search in listLineups() - same
     // trigram approach as song.title/song.artist above.
     index("lineup_series_name_trgm_idx").using("gin", sql`${table.seriesName} gin_trgm_ops`),
+    index("lineup_topic_trgm_idx").using("gin", sql`${table.topic} gin_trgm_ops`),
   ]
 )
 
@@ -274,11 +275,18 @@ export const lineupSong = pgTable(
       .notNull()
       .references(() => song.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
+    // Nullable and independent at the DB level, same as lineup.devoLeaderId -
+    // the business rule that this must be one of the lineup's own roster
+    // (lineupMember) is enforced in the service layer, not a DB constraint.
+    // `set null` (not cascade) on delete so losing the singer's account
+    // leaves the song itself in the set list, just unassigned.
+    singerId: text("singer_id").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
     index("lineup_song_lineup_id_idx").on(table.lineupId),
     index("lineup_song_song_id_idx").on(table.songId),
+    index("lineup_song_singer_id_idx").on(table.singerId),
     unique("lineup_song_lineup_song_unique").on(table.lineupId, table.songId),
     unique("lineup_song_lineup_position_unique").on(table.lineupId, table.position),
   ]
@@ -292,6 +300,10 @@ export const lineupSongRelations = relations(lineupSong, ({ one }) => ({
   song: one(song, {
     fields: [lineupSong.songId],
     references: [song.id],
+  }),
+  singer: one(users, {
+    fields: [lineupSong.singerId],
+    references: [users.id],
   }),
 }))
 

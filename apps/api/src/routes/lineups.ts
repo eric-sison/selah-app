@@ -14,6 +14,7 @@ import {
   removeLineupMember,
   removeLineupSong,
   updateLineup,
+  updateLineupSongSinger,
 } from "../services/lineups.js"
 
 const LineupStatusSchema = z.enum(lineupStatus.enumValues)
@@ -31,6 +32,9 @@ const LineupSongResponseSchema = z.object({
     musicalKey: z.string().nullable(),
     tempo: z.number().nullable(),
   }),
+  // Who's singing this song, from the lineup's own roster - null until
+  // assigned.
+  singer: z.object({ id: z.string(), name: z.string(), image: z.string().nullable() }).nullable(),
 })
 
 const LineupMemberResponseSchema = z.object({
@@ -54,9 +58,9 @@ const LineupResponseSchema = z.object({
   serviceDate: z.string(),
   rehearsalDate: z.string().nullable(),
   team: z.object({ id: z.string(), name: z.string() }),
-  seriesName: z.string(),
-  topic: z.string(),
-  wordReference: z.string(),
+  seriesName: z.string().nullable(),
+  topic: z.string().nullable(),
+  wordReference: z.string().nullable(),
   wordText: z.string().nullable(),
   direction: z.string().nullable(),
   devoLeader: z.object({ id: z.string(), name: z.string(), image: z.string().nullable() }).nullable(),
@@ -103,6 +107,7 @@ function mapLineup(l: LineupWithJoins) {
         musicalKey: s.song.musicalKey,
         tempo: s.song.tempo,
       },
+      singer: s.singer ? { id: s.singer.id, name: s.singer.name, image: s.singer.image } : null,
     })),
     members: l.members.map((m) => ({
       id: m.id,
@@ -128,15 +133,17 @@ const CreateLineupRequestSchema = z.object({
   /** Omit if the rehearsal isn't scheduled yet. */
   rehearsalDate: z.iso.datetime().optional(),
   teamId: z.uuid(),
-  seriesName: z.string().min(1),
-  topic: z.string().min(1),
-  wordReference: z.string().min(1),
+  seriesName: z.string().min(1).optional(),
+  topic: z.string().min(1).optional(),
+  wordReference: z.string().min(1).optional(),
   /** Omit if the passage text isn't filled in yet - the reference alone is enough to create a lineup. */
   wordText: z.string().min(1).optional(),
   direction: z.string().optional(),
   devoLeaderId: z.string().min(1).optional(),
-  /** Song ids, in the order they should appear in the set list. */
-  songIds: z.array(z.uuid()).optional(),
+  /** Songs, in the order they should appear in the set list, each optionally assigned a singer from the roster. */
+  songs: z
+    .array(z.object({ songId: z.uuid(), singerId: z.string().min(1).optional() }))
+    .optional(),
   /** User ids to add to the roster - see addLineupMember for why this carries no instruments of its own. */
   members: z.array(z.string().min(1)).optional(),
 })
@@ -163,7 +170,7 @@ const createLineupRoute = createRoute({
 
 const ListLineupsQuerySchema = z.object({
   q: z.string().trim().min(1).optional().openapi({
-    description: "Spelling-tolerant search over the series name.",
+    description: "Spelling-tolerant search over the series name and topic.",
   }),
   from: z.iso.date().optional().openapi({
     description:
@@ -194,7 +201,7 @@ const listLineupsRoute = createRoute({
   tags: ["Lineups"],
   summary: "List lineups",
   description:
-    "Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name, a `from`/`to` service-date range, and/or `status` (comma-separated). Pass `sort` (`asc`/`desc`) to order by service date instead.",
+    "Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name and topic, a `from`/`to` service-date range, and/or `status` (comma-separated). Pass `sort` (`asc`/`desc`) to order by service date instead.",
   middleware: [requireAuth] as const,
   request: {
     query: ListLineupsQuerySchema,
@@ -226,14 +233,17 @@ const getLineupRoute = createRoute({
 })
 
 const UpdateLineupRequestSchema = z.object({
+  /** e.g. pulling a submitted lineup back to "draft" for further edits. */
+  status: LineupStatusSchema.optional(),
   serviceType: LineupServiceTypeSchema.optional(),
   serviceDate: z.iso.datetime().optional(),
   /** `null` clears the rehearsal slot entirely; omit to leave it untouched. */
   rehearsalDate: z.iso.datetime().nullable().optional(),
   teamId: z.uuid().optional(),
-  seriesName: z.string().min(1).optional(),
-  topic: z.string().min(1).optional(),
-  wordReference: z.string().min(1).optional(),
+  /** `null` clears the value; omit to leave it untouched - same for topic and wordReference below. */
+  seriesName: z.string().min(1).nullable().optional(),
+  topic: z.string().min(1).nullable().optional(),
+  wordReference: z.string().min(1).nullable().optional(),
   /** `null` clears the passage text; omit to leave it untouched. */
   wordText: z.string().min(1).nullable().optional(),
   direction: z.string().nullable().optional(),
@@ -247,7 +257,7 @@ const updateLineupRoute = createRoute({
   tags: ["Lineups"],
   summary: "Update a lineup",
   description:
-    "Admin-only. Updates a lineup's team assignment, series/topic, word, and/or direction. Use the songs/members endpoints to change the set list or roster.",
+    "Admin-only. Updates a lineup's status, team assignment, series/topic, word, and/or direction. Use the songs/members endpoints to change the set list or roster.",
   middleware: [requireAdmin] as const,
   request: {
     params: LineupIdParamSchema,
@@ -284,6 +294,8 @@ const deleteLineupRoute = createRoute({
 
 const AddLineupSongRequestSchema = z.object({
   songId: z.uuid(),
+  /** The roster member singing this song - omit if not assigned yet. */
+  singerId: z.string().min(1).optional(),
 })
 
 const addLineupSongRoute = createRoute({
@@ -324,6 +336,33 @@ const removeLineupSongRoute = createRoute({
     401: commonErrors[401],
     403: commonErrors[403],
     404: commonErrors[404],
+  },
+})
+
+const UpdateLineupSongRequestSchema = z.object({
+  /** `null` unassigns the singer entirely. */
+  singerId: z.string().min(1).nullable(),
+})
+
+const updateLineupSongRoute = createRoute({
+  method: "patch",
+  path: "/lineups/{id}/songs/{songId}",
+  operationId: "updateLineupSong",
+  tags: ["Lineups"],
+  summary: "Assign or clear a song's singer",
+  description:
+    "Admin-only. Updates who's singing a song already in the lineup's set list. Returns the full, updated lineup.",
+  middleware: [requireAdmin] as const,
+  request: {
+    params: LineupSongParamSchema,
+    ...jsonBody(UpdateLineupSongRequestSchema),
+  },
+  responses: {
+    200: jsonResponse(LineupResponseSchema, "Song updated."),
+    401: commonErrors[401],
+    403: commonErrors[403],
+    404: commonErrors[404],
+    422: commonErrors[422],
   },
 })
 
@@ -387,7 +426,7 @@ export const lineupsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
       wordText,
       direction,
       devoLeaderId,
-      songIds,
+      songs,
       members,
     } = c.req.valid("json")
 
@@ -402,7 +441,7 @@ export const lineupsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
       wordText,
       direction,
       devoLeaderId,
-      songIds,
+      songs,
       members,
       createdBy: user.id,
     })
@@ -443,6 +482,7 @@ export const lineupsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
     const user = c.get("user")!
     const { id } = c.req.valid("param")
     const {
+      status,
       serviceType,
       serviceDate,
       rehearsalDate,
@@ -457,6 +497,7 @@ export const lineupsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
     const updated = await updateLineup(
       id,
       {
+        status,
         serviceType,
         serviceDate: serviceDate ? new Date(serviceDate) : undefined,
         rehearsalDate:
@@ -490,14 +531,14 @@ export const lineupsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
   })
   .openapi(addLineupSongRoute, async (c) => {
     const { id } = c.req.valid("param")
-    const { songId } = c.req.valid("json")
+    const { songId, singerId } = c.req.valid("json")
 
     const existingLineup = await getLineup(id)
     if (!existingLineup) {
       return c.json({ status: 404, message: "Lineup not found." }, 404)
     }
 
-    await addLineupSong(id, songId)
+    await addLineupSong(id, songId, singerId)
 
     const updated = await getLineup(id)
     // existingLineup just confirmed this lineup exists, so it can't have
@@ -518,6 +559,26 @@ export const lineupsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
 
     await removeLineupSong(id, songId)
     return c.body(null, 204)
+  })
+  .openapi(updateLineupSongRoute, async (c) => {
+    const { id, songId } = c.req.valid("param")
+    const { singerId } = c.req.valid("json")
+
+    const existingLineup = await getLineup(id)
+    if (!existingLineup) {
+      return c.json({ status: 404, message: "Lineup not found." }, 404)
+    }
+    const song = existingLineup.songs.find((s) => s.song.id === songId)
+    if (!song) {
+      return c.json({ status: 404, message: "Song not found in this lineup." }, 404)
+    }
+
+    await updateLineupSongSinger(id, songId, singerId)
+
+    const updated = await getLineup(id)
+    // existingLineup just confirmed this lineup and song exist, so they
+    // can't have vanished by the time this second query runs a moment later.
+    return c.json(mapLineup(updated!), 200)
   })
   .openapi(addLineupMemberRoute, async (c) => {
     const { id } = c.req.valid("param")

@@ -320,11 +320,23 @@
                     "type": "string",
                     "minLength": 1
                   },
-                  "songIds": {
+                  "songs": {
                     "type": "array",
                     "items": {
-                      "type": "string",
-                      "format": "uuid"
+                      "type": "object",
+                      "properties": {
+                        "songId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "singerId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "songId"
+                      ]
                     }
                   },
                   "members": {
@@ -338,10 +350,7 @@
                 "required": [
                   "serviceType",
                   "serviceDate",
-                  "teamId",
-                  "seriesName",
-                  "topic",
-                  "wordReference"
+                  "teamId"
                 ]
               }
             }
@@ -400,13 +409,16 @@
                       ]
                     },
                     "seriesName": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "topic": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "wordReference": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "wordText": {
                       "type": "string",
@@ -477,12 +489,34 @@
                               "musicalKey",
                               "tempo"
                             ]
+                          },
+                          "singer": {
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "position",
-                          "song"
+                          "song",
+                          "singer"
                         ]
                       }
                     },
@@ -633,16 +667,16 @@
           "Lineups"
         ],
         "summary": "List lineups",
-        "description": "Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name, a `from`/`to` service-date range, and/or `status` (comma-separated). Pass `sort` (`asc`/`desc`) to order by service date instead.",
+        "description": "Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name and topic, a `from`/`to` service-date range, and/or `status` (comma-separated). Pass `sort` (`asc`/`desc`) to order by service date instead.",
         "parameters": [
           {
             "schema": {
               "type": "string",
               "minLength": 1,
-              "description": "Spelling-tolerant search over the series name."
+              "description": "Spelling-tolerant search over the series name and topic."
             },
             "required": false,
-            "description": "Spelling-tolerant search over the series name.",
+            "description": "Spelling-tolerant search over the series name and topic.",
             "name": "q",
             "in": "query"
           },
@@ -748,13 +782,16 @@
                         ]
                       },
                       "seriesName": {
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       "topic": {
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       "wordReference": {
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       "wordText": {
                         "type": "string",
@@ -825,12 +862,34 @@
                                 "musicalKey",
                                 "tempo"
                               ]
+                            },
+                            "singer": {
+                              "type": "object",
+                              "nullable": true,
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "image": {
+                                  "type": "string",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "image"
+                              ]
                             }
                           },
                           "required": [
                             "id",
                             "position",
-                            "song"
+                            "song",
+                            "singer"
                           ]
                         }
                       },
@@ -1035,13 +1094,16 @@
                       ]
                     },
                     "seriesName": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "topic": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "wordReference": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "wordText": {
                       "type": "string",
@@ -1112,12 +1174,34 @@
                               "musicalKey",
                               "tempo"
                             ]
+                          },
+                          "singer": {
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "position",
-                          "song"
+                          "song",
+                          "singer"
                         ]
                       }
                     },
@@ -1254,7 +1338,7 @@
           "Lineups"
         ],
         "summary": "Update a lineup",
-        "description": "Admin-only. Updates a lineup's team assignment, series/topic, word, and/or direction. Use the songs/members endpoints to change the set list or roster.",
+        "description": "Admin-only. Updates a lineup's status, team assignment, series/topic, word, and/or direction. Use the songs/members endpoints to change the set list or roster.",
         "parameters": [
           {
             "schema": {
@@ -1273,6 +1357,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "draft",
+                      "pending",
+                      "approved"
+                    ]
+                  },
                   "serviceType": {
                     "type": "string",
                     "enum": [
@@ -1299,14 +1391,17 @@
                   },
                   "seriesName": {
                     "type": "string",
+                    "nullable": true,
                     "minLength": 1
                   },
                   "topic": {
                     "type": "string",
+                    "nullable": true,
                     "minLength": 1
                   },
                   "wordReference": {
                     "type": "string",
+                    "nullable": true,
                     "minLength": 1
                   },
                   "wordText": {
@@ -1381,13 +1476,16 @@
                       ]
                     },
                     "seriesName": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "topic": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "wordReference": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "wordText": {
                       "type": "string",
@@ -1458,12 +1556,34 @@
                               "musicalKey",
                               "tempo"
                             ]
+                          },
+                          "singer": {
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "position",
-                          "song"
+                          "song",
+                          "singer"
                         ]
                       }
                     },
@@ -1718,6 +1838,10 @@
                   "songId": {
                     "type": "string",
                     "format": "uuid"
+                  },
+                  "singerId": {
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -1780,13 +1904,16 @@
                       ]
                     },
                     "seriesName": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "topic": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "wordReference": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "wordText": {
                       "type": "string",
@@ -1857,12 +1984,34 @@
                               "musicalKey",
                               "tempo"
                             ]
+                          },
+                          "singer": {
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "position",
-                          "song"
+                          "song",
+                          "singer"
                         ]
                       }
                     },
@@ -2097,6 +2246,372 @@
             }
           }
         }
+      },
+      "patch": {
+        "operationId": "updateLineupSong",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Assign or clear a song's singer",
+        "description": "Admin-only. Updates who's singing a song already in the lineup's set list. Returns the full, updated lineup.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "songId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "singerId": {
+                    "type": "string",
+                    "nullable": true,
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "singerId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Song updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "pending",
+                        "approved"
+                      ]
+                    },
+                    "serviceType": {
+                      "type": "string",
+                      "enum": [
+                        "sunday_service",
+                        "youth_service",
+                        "necrological_service",
+                        "prayer_meeting_service",
+                        "victory_day",
+                        "other"
+                      ]
+                    },
+                    "serviceDate": {
+                      "type": "string"
+                    },
+                    "rehearsalDate": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "team": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "seriesName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "topic": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "wordReference": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "wordText": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "direction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "devoLeader": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "image"
+                      ]
+                    },
+                    "songs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "position": {
+                            "type": "number"
+                          },
+                          "song": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "artist": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "musicalKey": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "tempo": {
+                                "type": "number",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "artist",
+                              "musicalKey",
+                              "tempo"
+                            ]
+                          },
+                          "singer": {
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "position",
+                          "song",
+                          "singer"
+                        ]
+                      }
+                    },
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "instruments": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "bass",
+                                "drums",
+                                "singer",
+                                "electric_guitar",
+                                "acoustic_guitar",
+                                "keyboard"
+                              ]
+                            }
+                          },
+                          "isAvailable": {
+                            "type": "boolean"
+                          },
+                          "user": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "instruments",
+                          "isAvailable",
+                          "user"
+                        ]
+                      }
+                    },
+                    "commentCount": {
+                      "type": "number"
+                    },
+                    "approvedBy": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "serviceType",
+                    "serviceDate",
+                    "rehearsalDate",
+                    "team",
+                    "seriesName",
+                    "topic",
+                    "wordReference",
+                    "wordText",
+                    "direction",
+                    "devoLeader",
+                    "songs",
+                    "members",
+                    "commentCount",
+                    "approvedBy",
+                    "approvedAt",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/lineups/{id}/members": {
@@ -2190,13 +2705,16 @@
                       ]
                     },
                     "seriesName": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "topic": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "wordReference": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
                     },
                     "wordText": {
                       "type": "string",
@@ -2267,12 +2785,34 @@
                               "musicalKey",
                               "tempo"
                             ]
+                          },
+                          "singer": {
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "position",
-                          "song"
+                          "song",
+                          "singer"
                         ]
                       }
                     },
@@ -3195,10 +3735,12 @@
                             "type": "string"
                           },
                           "seriesName": {
-                            "type": "string"
+                            "type": "string",
+                            "nullable": true
                           },
                           "topic": {
-                            "type": "string"
+                            "type": "string",
+                            "nullable": true
                           }
                         },
                         "required": [

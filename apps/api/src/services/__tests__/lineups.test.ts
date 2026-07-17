@@ -157,6 +157,24 @@ describe("createLineup", () => {
     expect(mockDb.transaction).toHaveBeenCalledTimes(1)
   })
 
+  it("creates a lineup without seriesName, topic, or wordReference", async () => {
+    const { serviceType, serviceDate, teamId, createdBy } = baseInput
+    const minimalInput = { serviceType, serviceDate, teamId, createdBy }
+    const created = { id: "lineup-1", ...minimalInput, rehearsalDate: null }
+    const { values } = mockInsertReturning(created)
+
+    const result = await createLineup(minimalInput)
+
+    expect(result).toBe(created)
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        seriesName: undefined,
+        topic: undefined,
+        wordReference: undefined,
+      })
+    )
+  })
+
   it("inserts each song at its array position in the same transaction", async () => {
     const created = { id: "lineup-1", ...baseInput }
     const valuesMocks = mockSequentialInserts([
@@ -165,16 +183,19 @@ describe("createLineup", () => {
       { resolveValue: undefined },
     ])
 
-    await createLineup({ ...baseInput, songIds: ["song-1", "song-2"] })
+    await createLineup({
+      ...baseInput,
+      songs: [{ songId: "song-1" }, { songId: "song-2", singerId: "user-4" }],
+    })
     const [, , songValues] = valuesMocks
 
     expect(songValues).toHaveBeenCalledWith([
-      { lineupId: "lineup-1", songId: "song-1", position: 0 },
-      { lineupId: "lineup-1", songId: "song-2", position: 1 },
+      { lineupId: "lineup-1", songId: "song-1", singerId: null, position: 0 },
+      { lineupId: "lineup-1", songId: "song-2", singerId: "user-4", position: 1 },
     ])
   })
 
-  it("de-dupes repeated song ids before inserting", async () => {
+  it("de-dupes repeated song ids before inserting, keeping the first occurrence's singer", async () => {
     const created = { id: "lineup-1", ...baseInput }
     const valuesMocks = mockSequentialInserts([
       { returning: [created] },
@@ -182,10 +203,18 @@ describe("createLineup", () => {
       { resolveValue: undefined },
     ])
 
-    await createLineup({ ...baseInput, songIds: ["song-1", "song-1"] })
+    await createLineup({
+      ...baseInput,
+      songs: [
+        { songId: "song-1", singerId: "user-4" },
+        { songId: "song-1", singerId: "user-5" },
+      ],
+    })
     const [, , songValues] = valuesMocks
 
-    expect(songValues).toHaveBeenCalledWith([{ lineupId: "lineup-1", songId: "song-1", position: 0 }])
+    expect(songValues).toHaveBeenCalledWith([
+      { lineupId: "lineup-1", songId: "song-1", singerId: "user-4", position: 0 },
+    ])
   })
 
   it("inserts roster members in the same transaction", async () => {
@@ -244,7 +273,7 @@ describe("createLineup", () => {
 
     await createLineup({
       ...baseInput,
-      songIds: ["song-1"],
+      songs: [{ songId: "song-1" }],
       members: ["user-2"],
     })
 
@@ -372,7 +401,7 @@ describe("listLineups", () => {
     expect(result[0]!.members).toEqual([{ id: "lm-1", userId: "user-1", instruments: [] }])
   })
 
-  it("filters by a spelling-tolerant series search and orders by similarity when `query` is given", async () => {
+  it("filters by a spelling-tolerant series/topic search and orders by similarity when `query` is given", async () => {
     mockDb.query.lineup.findMany.mockResolvedValue([])
     mockDb.query.musician.findMany.mockResolvedValue([])
 
@@ -583,7 +612,7 @@ describe("addLineupSong", () => {
     const result = await addLineupSong("lineup-1", "song-1")
 
     expect(result).toBe(created)
-    expect(values).toHaveBeenCalledWith({ lineupId: "lineup-1", songId: "song-1", position: 0 })
+    expect(values).toHaveBeenCalledWith({ lineupId: "lineup-1", songId: "song-1", singerId: null, position: 0 })
   })
 
   it("appends after the current highest position", async () => {
@@ -594,7 +623,23 @@ describe("addLineupSong", () => {
 
     await addLineupSong("lineup-1", "song-2")
 
-    expect(values).toHaveBeenCalledWith({ lineupId: "lineup-1", songId: "song-2", position: 3 })
+    expect(values).toHaveBeenCalledWith({ lineupId: "lineup-1", songId: "song-2", singerId: null, position: 3 })
+  })
+
+  it("stores the given singerId when assigned up front", async () => {
+    mockDb.query.lineupSong.findFirst.mockResolvedValue(undefined)
+    mockSelectMaxPosition(null)
+    const created = { id: "ls-1", lineupId: "lineup-1", songId: "song-1", singerId: "user-4", position: 0 }
+    const { values } = mockInsertReturning(created)
+
+    await addLineupSong("lineup-1", "song-1", "user-4")
+
+    expect(values).toHaveBeenCalledWith({
+      lineupId: "lineup-1",
+      songId: "song-1",
+      singerId: "user-4",
+      position: 0,
+    })
   })
 })
 

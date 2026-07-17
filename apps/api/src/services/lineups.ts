@@ -1,6 +1,13 @@
 import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm"
 import { db } from "../db/index.js"
-import { lineup, lineupMember, lineupServiceType, lineupSong, lineupStatus, schedule } from "../db/app-schema.js"
+import {
+  lineup,
+  lineupMember,
+  lineupServiceType,
+  lineupSong,
+  lineupStatus,
+  schedule,
+} from "../db/app-schema.js"
 import { getMusiciansByUserIds } from "./musicians.js"
 
 export type LineupServiceType = (typeof lineupServiceType.enumValues)[number]
@@ -73,6 +80,7 @@ const withJoins = {
       song: {
         columns: { id: true, title: true, artist: true, musicalKey: true, tempo: true },
       },
+      singer: { columns: { id: true, name: true, image: true } },
     },
   },
   members: {
@@ -92,17 +100,23 @@ export interface CreateLineupInput {
   /** When the lineup's rehearsal is - omit if not scheduled yet. */
   rehearsalDate?: Date | null
   teamId: string
-  seriesName: string
-  topic: string
-  wordReference: string
+  seriesName?: string
+  topic?: string
+  wordReference?: string
   wordText?: string
   direction?: string
   devoLeaderId?: string | null
-  /** Song ids, in the order they should appear in the set list. */
-  songIds?: string[]
+  /** Songs, in the order they should appear in the set list, each optionally assigned a singer from the roster. */
+  songs?: LineupSongInput[]
   /** User ids to add to the roster - see addLineupMember for why this carries no role of its own. */
   members?: string[]
   createdBy: string
+}
+
+export interface LineupSongInput {
+  songId: string
+  /** The roster member singing this song - omit if not assigned yet. */
+  singerId?: string | null
 }
 
 /**
@@ -123,7 +137,7 @@ export async function createLineup({
   wordText,
   direction,
   devoLeaderId,
-  songIds = [],
+  songs = [],
   members = [],
   createdBy,
 }: CreateLineupInput) {
@@ -149,12 +163,24 @@ export async function createLineup({
 
     // De-duped rather than rejected - a repeated song/member in the input is
     // harmless (it ends up in the set list/roster once either way), unlike a
-    // repeated row, which would violate this table's unique constraint.
-    const uniqueSongIds = [...new Set(songIds)]
-    if (uniqueSongIds.length > 0) {
-      await tx
-        .insert(lineupSong)
-        .values(uniqueSongIds.map((songId, position) => ({ lineupId: created.id, songId, position })))
+    // repeated row, which would violate this table's unique constraint. The
+    // first occurrence's singerId wins for a repeated songId - built by only
+    // ever setting a songId the first time it's seen, since Map.set on an
+    // existing key would otherwise let a later occurrence overwrite it.
+    const uniqueSongsById = new Map<string, LineupSongInput>()
+    for (const s of songs) {
+      if (!uniqueSongsById.has(s.songId)) uniqueSongsById.set(s.songId, s)
+    }
+    const uniqueSongs = [...uniqueSongsById.values()]
+    if (uniqueSongs.length > 0) {
+      await tx.insert(lineupSong).values(
+        uniqueSongs.map(({ songId, singerId }, position) => ({
+          lineupId: created.id,
+          songId,
+          singerId: singerId ?? null,
+          position,
+        }))
+      )
     }
 
     const uniqueMemberUserIds = [...new Set(members)]
@@ -183,7 +209,7 @@ async function attachMemberInstruments<T extends { userId: string }>(members: T[
 const SEARCH_SIMILARITY_THRESHOLD = 0.2
 
 export interface ListLineupsOptions {
-  /** Spelling-tolerant search over `seriesName` - omit to skip filtering by series. */
+  /** Spelling-tolerant search over `seriesName` and `topic` - omit to skip that filter. */
   query?: string
   /** Only lineups on or after this date (inclusive). Combine with `dateTo` for a bounded range, or omit `dateTo` for an open-ended "from this date on" filter. */
   dateFrom?: Date
@@ -206,13 +232,19 @@ export interface ListLineupsOptions {
  * sort.
  */
 export async function listLineups({ query, dateFrom, dateTo, statuses, sort }: ListLineupsOptions = {}) {
-  // Trigram similarity (via the lineup_series_name_trgm_idx GIN index)
+  // Trigram similarity (via the series-name/topic trigram GIN indexes)
   // tolerates misspellings; ILIKE is kept alongside it so a correctly-
   // spelled partial match is never excluded by the similarity floor - same
-  // approach as listSongs's title/artist search, just a single column here.
-  const similarity = query ? sql<number>`similarity(${lineup.seriesName}, ${query})` : undefined
+  // approach as listSongs's title/artist search. Both columns are nullable,
+  // hence the coalesce - a row with neither set would otherwise get a NULL
+  // similarity, which sorts *first* under DESC (Postgres defaults to NULLS
+  // FIRST there), floating never-matching rows above real matches.
+  const likeQuery = `%${query}%`
+  const similarity = query
+    ? sql<number>`greatest(similarity(coalesce(${lineup.seriesName}, ''), ${query}), similarity(coalesce(${lineup.topic}, ''), ${query}))`
+    : undefined
   const searchClause = query
-    ? sql`${similarity} > ${SEARCH_SIMILARITY_THRESHOLD} OR ${lineup.seriesName} ILIKE ${`%${query}%`}`
+    ? sql`${similarity} > ${SEARCH_SIMILARITY_THRESHOLD} OR ${lineup.seriesName} ILIKE ${likeQuery} OR ${lineup.topic} ILIKE ${likeQuery}`
     : undefined
 
   // `dateTo` is a calendar day, not a timestamp - `lt` the *next* day rather
@@ -255,22 +287,25 @@ export async function getLineup(id: string) {
 }
 
 export interface UpdateLineupInput {
+  /** e.g. pulling a submitted lineup back to "draft" for further edits. */
+  status?: LineupStatus
   serviceType?: LineupServiceType
   serviceDate?: Date
   /** `null` clears the rehearsal slot entirely (deletes its schedule row); `undefined` leaves it untouched. */
   rehearsalDate?: Date | null
   teamId?: string
-  seriesName?: string
-  topic?: string
-  wordReference?: string
+  /** `null` clears the value; `undefined` leaves it untouched - same for topic and wordReference. */
+  seriesName?: string | null
+  topic?: string | null
+  wordReference?: string | null
   wordText?: string | null
   direction?: string | null
   devoLeaderId?: string | null
 }
 
 /**
- * Updates a lineup's own fields (its team assignment, series/topic, word,
- * direction, and/or scheduling) and, in the same transaction, resyncs its
+ * Updates a lineup's own fields (its status, team assignment, series/topic,
+ * word, direction, and/or scheduling) and, in the same transaction, resyncs its
  * schedule slots against the resulting row - see syncLineupSchedules. Runs
  * the resync from the merged row rather than just the touched fields, so a
  * PATCH that doesn't touch scheduling at all still leaves the schedule in
@@ -316,13 +351,14 @@ export async function deleteLineup(id: string): Promise<boolean> {
 
 /**
  * Adds a song to a lineup's set list, appended after whatever's already
- * there.
+ * there - optionally assigning a singer for it from the roster up front.
  *
  * Idempotent - if the song is already in this lineup, returns the existing
  * row instead of erroring (mirrors the unique `(lineup_id, song_id)`
- * constraint at the DB level).
+ * constraint at the DB level); the given `singerId`, if any, is ignored in
+ * that case rather than overwriting an existing assignment.
  */
-export async function addLineupSong(lineupId: string, songId: string) {
+export async function addLineupSong(lineupId: string, songId: string, singerId?: string | null) {
   const existing = await db.query.lineupSong.findFirst({
     where: and(eq(lineupSong.lineupId, lineupId), eq(lineupSong.songId, songId)),
   })
@@ -335,9 +371,30 @@ export async function addLineupSong(lineupId: string, songId: string) {
 
   const [created] = await db
     .insert(lineupSong)
-    .values({ lineupId, songId, position: (maxPosition ?? -1) + 1 })
+    .values({ lineupId, songId, singerId: singerId ?? null, position: (maxPosition ?? -1) + 1 })
     .returning()
   return created
+}
+
+/**
+ * Assigns (or, given `null`, clears) who's singing a song already in a
+ * lineup's set list - the counterpart to addLineupSong's own singerId that
+ * lets it be set/changed after the song's already been added.
+ *
+ * @returns the updated row, or `undefined` if that (lineup, song) pair doesn't exist.
+ */
+export async function updateLineupSongSinger(lineupId: string, songId: string, singerId: string | null) {
+  const existing = await db.query.lineupSong.findFirst({
+    where: and(eq(lineupSong.lineupId, lineupId), eq(lineupSong.songId, songId)),
+  })
+  if (!existing) return undefined
+
+  const [updated] = await db
+    .update(lineupSong)
+    .set({ singerId })
+    .where(eq(lineupSong.id, existing.id))
+    .returning()
+  return updated
 }
 
 /**

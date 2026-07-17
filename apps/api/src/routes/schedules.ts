@@ -16,7 +16,9 @@ const ScheduleResponseSchema = z.object({
   lineupRole: ScheduleLineupRoleSchema.nullable(),
   title: z.string().nullable(),
   startAt: z.string(),
-  lineup: z.object({ id: z.string(), seriesName: z.string(), topic: z.string() }).nullable(),
+  lineup: z
+    .object({ id: z.string(), seriesName: z.string().nullable(), topic: z.string().nullable() })
+    .nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
