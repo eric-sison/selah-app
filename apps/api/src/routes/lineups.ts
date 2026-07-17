@@ -160,6 +160,28 @@ const createLineupRoute = createRoute({
   },
 })
 
+const ListLineupsQuerySchema = z.object({
+  q: z.string().trim().min(1).optional().openapi({
+    description: "Spelling-tolerant search over the series name.",
+  }),
+  from: z.iso.date().optional().openapi({
+    description:
+      "Only lineups on/after this service date (YYYY-MM-DD), inclusive. Given without `to`, filters to every lineup from this date on.",
+  }),
+  to: z.iso.date().optional().openapi({
+    description: "Only lineups on/before this service date (YYYY-MM-DD), inclusive.",
+  }),
+  status: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v.split(",").filter(Boolean) : undefined))
+    .pipe(z.array(LineupStatusSchema).optional())
+    .openapi({
+      type: "string",
+      description: "Comma-separated statuses (draft, pending, approved) - only lineups in one of these.",
+    }),
+})
+
 const listLineupsRoute = createRoute({
   method: "get",
   path: "/lineups",
@@ -167,11 +189,15 @@ const listLineupsRoute = createRoute({
   tags: ["Lineups"],
   summary: "List lineups",
   description:
-    "Any authenticated user can list every lineup, newest first, each with its team, devo leader, set list, and roster.",
+    "Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name, a `from`/`to` service-date range, and/or `status` (comma-separated).",
   middleware: [requireAuth] as const,
+  request: {
+    query: ListLineupsQuerySchema,
+  },
   responses: {
     200: jsonResponse(z.array(LineupResponseSchema), "Lineups."),
     401: commonErrors[401],
+    422: commonErrors[422],
   },
 })
 
@@ -384,7 +410,13 @@ export const lineupsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
     return c.json(mapLineup(withJoins!), 201)
   })
   .openapi(listLineupsRoute, async (c) => {
-    const lineups = await listLineups()
+    const { q, from, to, status } = c.req.valid("query")
+    const lineups = await listLineups({
+      query: q,
+      dateFrom: from ? new Date(from) : undefined,
+      dateTo: to ? new Date(to) : undefined,
+      statuses: status,
+    })
     return c.json(
       lineups.map((l) => mapLineup(l)),
       200

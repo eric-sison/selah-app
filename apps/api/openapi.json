@@ -633,7 +633,52 @@
           "Lineups"
         ],
         "summary": "List lineups",
-        "description": "Any authenticated user can list every lineup, newest first, each with its team, devo leader, set list, and roster.",
+        "description": "Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name, a `from`/`to` service-date range, and/or `status` (comma-separated).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Spelling-tolerant search over the series name."
+            },
+            "required": false,
+            "description": "Spelling-tolerant search over the series name.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Only lineups on/after this service date (YYYY-MM-DD), inclusive. Given without `to`, filters to every lineup from this date on."
+            },
+            "required": false,
+            "description": "Only lineups on/after this service date (YYYY-MM-DD), inclusive. Given without `to`, filters to every lineup from this date on.",
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Only lineups on/before this service date (YYYY-MM-DD), inclusive."
+            },
+            "required": false,
+            "description": "Only lineups on/before this service date (YYYY-MM-DD), inclusive.",
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated statuses (draft, pending, approved) - only lineups in one of these."
+            },
+            "required": false,
+            "description": "Comma-separated statuses (draft, pending, approved) - only lineups in one of these.",
+            "name": "status",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Lineups.",
@@ -883,6 +928,20 @@
                 "example": {
                   "status": 401,
                   "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
                 }
               }
             }

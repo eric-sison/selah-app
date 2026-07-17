@@ -260,14 +260,117 @@ describe("listLineups", () => {
     expect(result).toEqual([
       { ...rows[0]!, members: [{ id: "lm-1", userId: "user-1", instruments: ["bass"] }] },
     ])
-    expect(mockDb.query.lineup.findMany).toHaveBeenCalledWith(
+    const call = mockDb.query.lineup.findMany.mock.calls[0][0]
+    expect(call).toEqual(
       expect.objectContaining({
+        where: undefined,
         with: expect.objectContaining({
           team: { columns: { id: true, name: true } },
           devoLeader: { columns: { id: true, name: true, image: true } },
         }),
       })
     )
+    // No `query`, so this stays the plain newest-first order, not the
+    // similarity-ranked one.
+    expect(call.orderBy).not.toBeInstanceOf(Array)
+  })
+
+  it("filters by a spelling-tolerant series search and orders by similarity when `query` is given", async () => {
+    mockDb.query.lineup.findMany.mockResolvedValue([])
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await listLineups({ query: "Rootd" })
+
+    const call = mockDb.query.lineup.findMany.mock.calls[0][0]
+    expect(call.where).toBeDefined()
+    // Similarity-desc, then createdAt-desc as the tiebreaker.
+    expect(call.orderBy).toBeInstanceOf(Array)
+    expect(call.orderBy).toHaveLength(2)
+  })
+
+  it("filters by dateFrom alone as an open-ended range (no upper bound) when dateTo is omitted", async () => {
+    mockDb.query.lineup.findMany.mockResolvedValue([])
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await listLineups({ dateFrom: new Date("2026-07-01T00:00:00.000Z") })
+
+    const call = mockDb.query.lineup.findMany.mock.calls[0][0]
+    expect(call.where).toBeDefined()
+    expect(call.orderBy).not.toBeInstanceOf(Array)
+  })
+
+  it("filters by a bounded dateFrom/dateTo range", async () => {
+    mockDb.query.lineup.findMany.mockResolvedValue([])
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await listLineups({
+      dateFrom: new Date("2026-07-01T00:00:00.000Z"),
+      dateTo: new Date("2026-07-31T00:00:00.000Z"),
+    })
+
+    const call = mockDb.query.lineup.findMany.mock.calls[0][0]
+    expect(call.where).toBeDefined()
+  })
+
+  it("filters by dateTo alone", async () => {
+    mockDb.query.lineup.findMany.mockResolvedValue([])
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await listLineups({ dateTo: new Date("2026-07-31T00:00:00.000Z") })
+
+    const call = mockDb.query.lineup.findMany.mock.calls[0][0]
+    expect(call.where).toBeDefined()
+  })
+
+  it("combines search with a date range - both filters narrow the same query", async () => {
+    mockDb.query.lineup.findMany.mockResolvedValue([])
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await listLineups({
+      query: "Rooted",
+      dateFrom: new Date("2026-07-01T00:00:00.000Z"),
+      dateTo: new Date("2026-07-31T00:00:00.000Z"),
+    })
+
+    const call = mockDb.query.lineup.findMany.mock.calls[0][0]
+    expect(call.where).toBeDefined()
+    expect(call.orderBy).toBeInstanceOf(Array)
+  })
+
+  it("filters by statuses via inArray on lineup.status", async () => {
+    mockDb.query.lineup.findMany.mockResolvedValue([])
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await listLineups({ statuses: ["pending", "approved"] })
+
+    const call = mockDb.query.lineup.findMany.mock.calls[0][0]
+    expect(call.where).toBeDefined()
+    expect(call.orderBy).not.toBeInstanceOf(Array)
+  })
+
+  it("ignores an empty statuses array instead of filtering everything out", async () => {
+    mockDb.query.lineup.findMany.mockResolvedValue([])
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await listLineups({ statuses: [] })
+
+    const call = mockDb.query.lineup.findMany.mock.calls[0][0]
+    expect(call.where).toBeUndefined()
+  })
+
+  it("combines search, a date range, and statuses - every filter narrows the same query", async () => {
+    mockDb.query.lineup.findMany.mockResolvedValue([])
+    mockDb.query.musician.findMany.mockResolvedValue([])
+
+    await listLineups({
+      query: "Rooted",
+      dateFrom: new Date("2026-07-01T00:00:00.000Z"),
+      statuses: ["draft"],
+    })
+
+    const call = mockDb.query.lineup.findMany.mock.calls[0][0]
+    expect(call.where).toBeDefined()
+    expect(call.orderBy).toBeInstanceOf(Array)
   })
 })
 

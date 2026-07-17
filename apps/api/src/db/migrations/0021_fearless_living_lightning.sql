@@ -1,0 +1,1 @@
+CREATE INDEX "lineup_series_name_trgm_idx" ON "lineups" USING gin ("series_name" gin_trgm_ops);

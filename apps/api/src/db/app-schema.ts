@@ -254,6 +254,9 @@ export const lineup = pgTable(
   (table) => [
     index("lineup_team_id_idx").on(table.teamId),
     index("lineup_devo_leader_id_idx").on(table.devoLeaderId),
+    // Backs the spelling-tolerant series search in listLineups() - same
+    // trigram approach as song.title/song.artist above.
+    index("lineup_series_name_trgm_idx").using("gin", sql`${table.seriesName} gin_trgm_ops`),
   ]
 )
 

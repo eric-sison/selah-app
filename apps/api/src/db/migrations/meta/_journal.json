@@ -148,6 +148,13 @@
       "when": 1784250137360,
       "tag": "0020_serious_vin_gonzales",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1784258754805,
+      "tag": "0021_fearless_living_lightning",
+      "breakpoints": true
     }
   ]
 }

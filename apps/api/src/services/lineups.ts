@@ -1,9 +1,10 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm"
+import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm"
 import { db } from "../db/index.js"
-import { lineup, lineupMember, lineupServiceType, lineupSong, schedule } from "../db/app-schema.js"
+import { lineup, lineupMember, lineupServiceType, lineupSong, lineupStatus, schedule } from "../db/app-schema.js"
 import { getMusiciansByUserIds } from "./musicians.js"
 
 export type LineupServiceType = (typeof lineupServiceType.enumValues)[number]
+export type LineupStatus = (typeof lineupStatus.enumValues)[number]
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
@@ -179,14 +180,52 @@ async function attachMemberInstruments<T extends { userId: string }>(members: T[
   return members.map((m) => ({ ...m, instruments: musiciansByUserId.get(m.userId)?.instruments ?? [] }))
 }
 
+const SEARCH_SIMILARITY_THRESHOLD = 0.2
+
+export interface ListLineupsOptions {
+  /** Spelling-tolerant search over `seriesName` - omit to skip filtering by series. */
+  query?: string
+  /** Only lineups on or after this date (inclusive). Combine with `dateTo` for a bounded range, or omit `dateTo` for an open-ended "from this date on" filter. */
+  dateFrom?: Date
+  /** Only lineups on or before this date (inclusive). Given without `dateFrom`, filters everything up to and including this date. */
+  dateTo?: Date
+  /** Only lineups in one of these statuses - omit to skip filtering by status. */
+  statuses?: LineupStatus[]
+}
+
 /**
- * Lists every lineup, newest first, each joined with its team, devo leader,
+ * Lists lineups, newest first, each joined with its team, devo leader,
  * ordered set list, and roster - so the Line Ups list page can render
  * directly from this without per-lineup follow-up fetches.
+ *
+ * The search, date-range, and status filters combine with AND - omit any of
+ * them to skip that filter entirely.
  */
-export async function listLineups() {
+export async function listLineups({ query, dateFrom, dateTo, statuses }: ListLineupsOptions = {}) {
+  // Trigram similarity (via the lineup_series_name_trgm_idx GIN index)
+  // tolerates misspellings; ILIKE is kept alongside it so a correctly-
+  // spelled partial match is never excluded by the similarity floor - same
+  // approach as listSongs's title/artist search, just a single column here.
+  const similarity = query ? sql<number>`similarity(${lineup.seriesName}, ${query})` : undefined
+  const searchClause = query
+    ? sql`${similarity} > ${SEARCH_SIMILARITY_THRESHOLD} OR ${lineup.seriesName} ILIKE ${`%${query}%`}`
+    : undefined
+
+  // `dateTo` is a calendar day, not a timestamp - `lt` the *next* day rather
+  // than `lte` the given Date (which is midnight) so a lineup later that same
+  // day isn't excluded.
+  const dateToExclusive = dateTo ? new Date(dateTo.getTime() + 24 * 60 * 60 * 1000) : undefined
+
+  const where = and(
+    searchClause,
+    dateFrom ? gte(lineup.serviceDate, dateFrom) : undefined,
+    dateToExclusive ? lt(lineup.serviceDate, dateToExclusive) : undefined,
+    statuses && statuses.length > 0 ? inArray(lineup.status, statuses) : undefined
+  )
+
   const lineups = await db.query.lineup.findMany({
-    orderBy: desc(lineup.createdAt),
+    where,
+    orderBy: query ? [desc(similarity!), desc(lineup.createdAt)] : desc(lineup.createdAt),
     with: withJoins,
   })
   return Promise.all(lineups.map(async (l) => ({ ...l, members: await attachMemberInstruments(l.members) })))
