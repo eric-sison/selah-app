@@ -45,7 +45,7 @@ import type { operations } from "@/types/api"
 
 export type Musician = operations["listMusicians"]["responses"][200]["content"]["application/json"][number]
 
-const SKELETON_CARD_COUNT = 6
+const SKELETON_CARD_COUNT = 15
 
 const MusicianCardSkeleton: FunctionComponent = () => (
   <Card>
@@ -168,8 +168,8 @@ const MusicianCard: FunctionComponent<MusicianCardProps> = ({ musician }) => {
             </AlertDialogTitle>
             <AlertDialogDescription>
               This removes their instruments and takes them out of the team member picker. This action cannot
-              be undone. If they&apos;re still on a team, remove them from it first - this is blocked while any
-              membership remains.
+              be undone. If they&apos;re still on a team, remove them from it first - this is blocked while
+              any membership remains.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

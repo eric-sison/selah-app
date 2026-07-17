@@ -52,7 +52,7 @@ export type Team = operations["listTeams"]["responses"][200]["content"]["applica
 // Caps how many member avatars stack before collapsing into a "+N" count,
 // mirroring AvatarGroup/AvatarGroupCount's intended usage.
 const MAX_VISIBLE_MEMBER_AVATARS = 5
-const SKELETON_CARD_COUNT = 6
+const SKELETON_CARD_COUNT = 15
 
 const TeamCardSkeleton: FunctionComponent = () => (
   <Card>
