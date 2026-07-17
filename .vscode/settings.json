@@ -1,0 +1,7 @@
+{
+  "chat.disableAIFeatures": false,
+  "github.copilot.nextEditSuggestions.enabled": false,
+  "github.copilot.enable": {
+    "*": false
+  }
+}
