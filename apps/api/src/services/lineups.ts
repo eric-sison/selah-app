@@ -1,17 +1,22 @@
-import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm"
+import { and, asc, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm"
 import { db } from "../db/index.js"
+import { users } from "../db/auth-schema.js"
 import {
   lineup,
+  lineupComment,
+  lineupCommentReaction,
   lineupMember,
   lineupServiceType,
   lineupSong,
   lineupStatus,
+  reactionEmoji,
   schedule,
 } from "../db/app-schema.js"
 import { getMusiciansByUserIds } from "./musicians.js"
 
 export type LineupServiceType = (typeof lineupServiceType.enumValues)[number]
 export type LineupStatus = (typeof lineupStatus.enumValues)[number]
+export type ReactionEmoji = (typeof reactionEmoji.enumValues)[number]
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
@@ -78,7 +83,14 @@ const withJoins = {
     orderBy: asc(lineupSong.position),
     with: {
       song: {
-        columns: { id: true, title: true, artist: true, musicalKey: true, tempo: true },
+        columns: {
+          id: true,
+          title: true,
+          artist: true,
+          musicalKey: true,
+          tempo: true,
+          albumArtStorageKey: true,
+        },
       },
       singer: { columns: { id: true, name: true, image: true } },
     },
@@ -445,5 +457,135 @@ export async function removeLineupMember(memberId: string): Promise<boolean> {
   if (!found) return false
 
   await db.delete(lineupMember).where(eq(lineupMember.id, memberId))
+  return true
+}
+
+// Shared with each reply, so the route's mapper (see mapCommentReply in
+// routes/lineups.ts) doesn't have to special-case where the author/reactions
+// came from.
+const commentWithJoins = {
+  author: { columns: { id: true, name: true, image: true } },
+  reactions: { columns: { userId: true, emoji: true } },
+} as const
+
+/**
+ * Fetches a lineup's discussion - top-level comments (root, `parentCommentId`
+ * is null) with one level of nested replies, each carrying its author and
+ * raw reactions. Reaction counts/"did I react" are computed at the route
+ * layer (see mapComment), not here, since that depends on who's asking.
+ */
+export async function listLineupComments(lineupId: string) {
+  return db.query.lineupComment.findMany({
+    where: and(eq(lineupComment.lineupId, lineupId), isNull(lineupComment.parentCommentId)),
+    orderBy: asc(lineupComment.createdAt),
+    with: {
+      ...commentWithJoins,
+      replies: {
+        orderBy: asc(lineupComment.createdAt),
+        with: commentWithJoins,
+      },
+    },
+  })
+}
+
+/** @returns the raw row (no author/reactions joins) - just enough to validate a parent/lineup pairing before creating a reply or toggling a reaction. */
+export async function getLineupCommentById(commentId: string) {
+  return db.query.lineupComment.findFirst({ where: eq(lineupComment.id, commentId) })
+}
+
+export interface CreateLineupCommentInput {
+  lineupId: string
+  authorId: string
+  body: string
+  /** Omit for a top-level comment - see the route for why a reply can't itself be replied to. */
+  parentCommentId?: string
+}
+
+export async function createLineupComment(input: CreateLineupCommentInput) {
+  const [created] = await db
+    .insert(lineupComment)
+    .values({
+      lineupId: input.lineupId,
+      authorId: input.authorId,
+      parentCommentId: input.parentCommentId ?? null,
+      body: input.body,
+    })
+    .returning()
+
+  const author = await db.query.users.findFirst({
+    where: eq(users.id, input.authorId),
+    columns: { id: true, name: true, image: true },
+  })
+
+  return {
+    ...created!,
+    author: author!,
+    reactions: [] as { userId: string; emoji: ReactionEmoji }[],
+  }
+}
+
+/**
+ * Toggles the requesting user's reaction of a given emoji on a comment - add
+ * if they haven't reacted with it yet, remove if they have (mirrors the
+ * `(comment_id, user_id, emoji)` unique constraint at the DB level).
+ *
+ * @returns every reaction row left on the comment afterward, for the route
+ *   to re-summarize into per-emoji counts.
+ */
+export async function toggleLineupCommentReaction(commentId: string, userId: string, emoji: ReactionEmoji) {
+  const existing = await db.query.lineupCommentReaction.findFirst({
+    where: and(
+      eq(lineupCommentReaction.commentId, commentId),
+      eq(lineupCommentReaction.userId, userId),
+      eq(lineupCommentReaction.emoji, emoji)
+    ),
+  })
+
+  if (existing) {
+    await db.delete(lineupCommentReaction).where(eq(lineupCommentReaction.id, existing.id))
+  } else {
+    await db.insert(lineupCommentReaction).values({ commentId, userId, emoji })
+  }
+
+  return db.query.lineupCommentReaction.findMany({
+    where: eq(lineupCommentReaction.commentId, commentId),
+    columns: { userId: true, emoji: true },
+  })
+}
+
+/**
+ * Edits a comment or reply's body - ownership (only the author can edit) is
+ * checked at the route layer, since that's a per-request authorization
+ * concern, not a data-layer one.
+ *
+ * @returns the updated row with its author/reactions joins, or `undefined`
+ *   if no comment has this id.
+ */
+export async function updateLineupComment(commentId: string, body: string) {
+  const [updated] = await db
+    .update(lineupComment)
+    .set({ body })
+    .where(eq(lineupComment.id, commentId))
+    .returning()
+  if (!updated) return undefined
+
+  return db.query.lineupComment.findFirst({
+    where: eq(lineupComment.id, commentId),
+    with: commentWithJoins,
+  })
+}
+
+/**
+ * Deletes a comment or reply. Deleting a top-level comment cascades to its
+ * replies and every reaction on either (see the `onDelete: "cascade"` FKs on
+ * lineupComment/lineupCommentReaction in app-schema.ts).
+ *
+ * @returns `true` if a comment with this id existed and was removed.
+ */
+export async function deleteLineupComment(commentId: string): Promise<boolean> {
+  const found = await db.query.lineupComment.findFirst({ where: eq(lineupComment.id, commentId) })
+  if (!found) return false
+
+  await db.delete(lineupComment).where(eq(lineupComment.id, commentId))
   return true
 }

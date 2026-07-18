@@ -7,8 +7,11 @@ const mockDb = {
     lineup: { findFirst: vi.fn(), findMany: vi.fn() },
     lineupSong: { findFirst: vi.fn() },
     lineupMember: { findFirst: vi.fn() },
+    lineupComment: { findFirst: vi.fn(), findMany: vi.fn() },
+    lineupCommentReaction: { findFirst: vi.fn(), findMany: vi.fn() },
     schedule: { findFirst: vi.fn() },
     musician: { findMany: vi.fn() },
+    users: { findFirst: vi.fn() },
   },
   insert: vi.fn(),
   update: vi.fn(),
@@ -27,12 +30,19 @@ const {
   addLineupMember,
   addLineupSong,
   createLineup,
+  createLineupComment,
   deleteLineup,
+  deleteLineupComment,
   getLineup,
+  getLineupCommentById,
+  listLineupComments,
   listLineups,
   removeLineupMember,
   removeLineupSong,
+  toggleLineupCommentReaction,
   updateLineup,
+  updateLineupComment,
+  updateLineupSongSinger,
 } = await import("../lineups.js")
 
 function mockInsertReturning(row: unknown) {
@@ -643,6 +653,37 @@ describe("addLineupSong", () => {
   })
 })
 
+describe("updateLineupSongSinger", () => {
+  it("returns undefined without updating when that (lineup, song) pair doesn't exist", async () => {
+    mockDb.query.lineupSong.findFirst.mockResolvedValue(undefined)
+
+    expect(await updateLineupSongSinger("lineup-1", "song-1", "user-4")).toBeUndefined()
+    expect(mockDb.update).not.toHaveBeenCalled()
+  })
+
+  it("assigns the given singerId on the existing row", async () => {
+    mockDb.query.lineupSong.findFirst.mockResolvedValue({ id: "ls-1" })
+    const updated = { id: "ls-1", lineupId: "lineup-1", songId: "song-1", singerId: "user-4" }
+    const { set, where } = mockUpdateReturning(updated)
+
+    const result = await updateLineupSongSinger("lineup-1", "song-1", "user-4")
+
+    expect(result).toEqual(updated)
+    expect(set).toHaveBeenCalledWith({ singerId: "user-4" })
+    expect(where).toHaveBeenCalledTimes(1)
+  })
+
+  it("clears the singer when given null", async () => {
+    mockDb.query.lineupSong.findFirst.mockResolvedValue({ id: "ls-1" })
+    const updated = { id: "ls-1", lineupId: "lineup-1", songId: "song-1", singerId: null }
+    const { set } = mockUpdateReturning(updated)
+
+    await updateLineupSongSinger("lineup-1", "song-1", null)
+
+    expect(set).toHaveBeenCalledWith({ singerId: null })
+  })
+})
+
 describe("removeLineupSong", () => {
   it("returns false without deleting when that (lineup, song) pair doesn't exist", async () => {
     mockDb.query.lineupSong.findFirst.mockResolvedValue(undefined)
@@ -696,6 +737,157 @@ describe("removeLineupMember", () => {
     const { where } = mockDeleteWhere()
 
     expect(await removeLineupMember("lm-1")).toBe(true)
+    expect(where).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("listLineupComments", () => {
+  it("fetches only top-level comments for the lineup, with one level of nested replies", async () => {
+    const rows = [
+      {
+        id: "comment-1",
+        body: "Great set!",
+        author: { id: "user-1", name: "Alex", image: null },
+        reactions: [],
+        replies: [],
+      },
+    ]
+    mockDb.query.lineupComment.findMany.mockResolvedValue(rows)
+
+    const result = await listLineupComments("lineup-1")
+
+    expect(result).toBe(rows)
+    const call = mockDb.query.lineupComment.findMany.mock.calls[0][0]
+    expect(call.where).toBeDefined()
+    expect(call.with.replies).toBeDefined()
+    expect(call.with.author).toEqual({ columns: { id: true, name: true, image: true } })
+  })
+})
+
+describe("getLineupCommentById", () => {
+  it("returns the raw comment row when found", async () => {
+    const row = { id: "comment-1", lineupId: "lineup-1", parentCommentId: null }
+    mockDb.query.lineupComment.findFirst.mockResolvedValue(row)
+
+    expect(await getLineupCommentById("comment-1")).toBe(row)
+  })
+
+  it("returns undefined when no comment has this id", async () => {
+    mockDb.query.lineupComment.findFirst.mockResolvedValue(undefined)
+
+    expect(await getLineupCommentById("missing")).toBeUndefined()
+  })
+})
+
+describe("createLineupComment", () => {
+  it("inserts a top-level comment and returns it with its author and no reactions yet", async () => {
+    const created = { id: "comment-1", lineupId: "lineup-1", authorId: "user-1", body: "Great set!" }
+    const { values } = mockInsertReturning(created)
+    const author = { id: "user-1", name: "Alex", image: null }
+    mockDb.query.users.findFirst.mockResolvedValue(author)
+
+    const result = await createLineupComment({ lineupId: "lineup-1", authorId: "user-1", body: "Great set!" })
+
+    expect(result).toEqual({ ...created, author, reactions: [] })
+    expect(values).toHaveBeenCalledWith({
+      lineupId: "lineup-1",
+      authorId: "user-1",
+      parentCommentId: null,
+      body: "Great set!",
+    })
+  })
+
+  it("stores the given parentCommentId when replying", async () => {
+    const created = {
+      id: "comment-2",
+      lineupId: "lineup-1",
+      authorId: "user-1",
+      parentCommentId: "comment-1",
+      body: "Agreed!",
+    }
+    const { values } = mockInsertReturning(created)
+    mockDb.query.users.findFirst.mockResolvedValue({ id: "user-1", name: "Alex", image: null })
+
+    await createLineupComment({
+      lineupId: "lineup-1",
+      authorId: "user-1",
+      body: "Agreed!",
+      parentCommentId: "comment-1",
+    })
+
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({ parentCommentId: "comment-1" })
+    )
+  })
+})
+
+describe("toggleLineupCommentReaction", () => {
+  it("adds the reaction when the user hasn't reacted with this emoji yet", async () => {
+    mockDb.query.lineupCommentReaction.findFirst.mockResolvedValue(undefined)
+    const values = vi.fn().mockResolvedValue(undefined)
+    mockDb.insert.mockReturnValue({ values })
+    const finalReactions = [{ userId: "user-1", emoji: "🙏" }]
+    mockDb.query.lineupCommentReaction.findMany.mockResolvedValue(finalReactions)
+
+    const result = await toggleLineupCommentReaction("comment-1", "user-1", "🙏")
+
+    expect(values).toHaveBeenCalledWith({ commentId: "comment-1", userId: "user-1", emoji: "🙏" })
+    expect(mockDb.delete).not.toHaveBeenCalled()
+    expect(result).toBe(finalReactions)
+  })
+
+  it("removes the reaction when the user already reacted with this emoji", async () => {
+    mockDb.query.lineupCommentReaction.findFirst.mockResolvedValue({ id: "reaction-1" })
+    const { where } = mockDeleteWhere()
+    mockDb.query.lineupCommentReaction.findMany.mockResolvedValue([])
+
+    const result = await toggleLineupCommentReaction("comment-1", "user-1", "🙏")
+
+    expect(where).toHaveBeenCalledTimes(1)
+    expect(mockDb.insert).not.toHaveBeenCalled()
+    expect(result).toEqual([])
+  })
+})
+
+describe("updateLineupComment", () => {
+  it("returns undefined without re-fetching when no comment has this id", async () => {
+    mockUpdateReturning(undefined)
+
+    expect(await updateLineupComment("missing", "Edited body")).toBeUndefined()
+    expect(mockDb.query.lineupComment.findFirst).not.toHaveBeenCalled()
+  })
+
+  it("updates the body and returns the row with its author/reactions joins", async () => {
+    const { set, where } = mockUpdateReturning({ id: "comment-1", body: "Edited body" })
+    const withJoins = {
+      id: "comment-1",
+      body: "Edited body",
+      author: { id: "user-1", name: "Alex", image: null },
+      reactions: [],
+    }
+    mockDb.query.lineupComment.findFirst.mockResolvedValue(withJoins)
+
+    const result = await updateLineupComment("comment-1", "Edited body")
+
+    expect(result).toEqual(withJoins)
+    expect(set).toHaveBeenCalledWith({ body: "Edited body" })
+    expect(where).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("deleteLineupComment", () => {
+  it("returns false without deleting when no comment has this id", async () => {
+    mockDb.query.lineupComment.findFirst.mockResolvedValue(undefined)
+
+    expect(await deleteLineupComment("missing")).toBe(false)
+    expect(mockDb.delete).not.toHaveBeenCalled()
+  })
+
+  it("deletes the comment and returns true when found", async () => {
+    mockDb.query.lineupComment.findFirst.mockResolvedValue({ id: "comment-1" })
+    const { where } = mockDeleteWhere()
+
+    expect(await deleteLineupComment("comment-1")).toBe(true)
     expect(where).toHaveBeenCalledTimes(1)
   })
 })

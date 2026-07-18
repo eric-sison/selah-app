@@ -480,6 +480,9 @@
                               "tempo": {
                                 "type": "number",
                                 "nullable": true
+                              },
+                              "hasAlbumArt": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -487,7 +490,8 @@
                               "title",
                               "artist",
                               "musicalKey",
-                              "tempo"
+                              "tempo",
+                              "hasAlbumArt"
                             ]
                           },
                           "singer": {
@@ -853,6 +857,9 @@
                                 "tempo": {
                                   "type": "number",
                                   "nullable": true
+                                },
+                                "hasAlbumArt": {
+                                  "type": "boolean"
                                 }
                               },
                               "required": [
@@ -860,7 +867,8 @@
                                 "title",
                                 "artist",
                                 "musicalKey",
-                                "tempo"
+                                "tempo",
+                                "hasAlbumArt"
                               ]
                             },
                             "singer": {
@@ -1165,6 +1173,9 @@
                               "tempo": {
                                 "type": "number",
                                 "nullable": true
+                              },
+                              "hasAlbumArt": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -1172,7 +1183,8 @@
                               "title",
                               "artist",
                               "musicalKey",
-                              "tempo"
+                              "tempo",
+                              "hasAlbumArt"
                             ]
                           },
                           "singer": {
@@ -1547,6 +1559,9 @@
                               "tempo": {
                                 "type": "number",
                                 "nullable": true
+                              },
+                              "hasAlbumArt": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -1554,7 +1569,8 @@
                               "title",
                               "artist",
                               "musicalKey",
-                              "tempo"
+                              "tempo",
+                              "hasAlbumArt"
                             ]
                           },
                           "singer": {
@@ -1975,6 +1991,9 @@
                               "tempo": {
                                 "type": "number",
                                 "nullable": true
+                              },
+                              "hasAlbumArt": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -1982,7 +2001,8 @@
                               "title",
                               "artist",
                               "musicalKey",
-                              "tempo"
+                              "tempo",
+                              "hasAlbumArt"
                             ]
                           },
                           "singer": {
@@ -2418,6 +2438,9 @@
                               "tempo": {
                                 "type": "number",
                                 "nullable": true
+                              },
+                              "hasAlbumArt": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -2425,7 +2448,8 @@
                               "title",
                               "artist",
                               "musicalKey",
-                              "tempo"
+                              "tempo",
+                              "hasAlbumArt"
                             ]
                           },
                           "singer": {
@@ -2776,6 +2800,9 @@
                               "tempo": {
                                 "type": "number",
                                 "nullable": true
+                              },
+                              "hasAlbumArt": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -2783,7 +2810,8 @@
                               "title",
                               "artist",
                               "musicalKey",
-                              "tempo"
+                              "tempo",
+                              "hasAlbumArt"
                             ]
                           },
                           "singer": {
@@ -3003,6 +3031,768 @@
         "responses": {
           "204": {
             "description": "Member removed."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lineups/{id}/comments": {
+      "get": {
+        "operationId": "listLineupComments",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "List a lineup's discussion",
+        "description": "Any authenticated user can view a lineup's discussion - top-level comments with one level of nested replies, each with per-emoji reaction counts and whether the requesting user has reacted.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comments.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "body": {
+                        "type": "string"
+                      },
+                      "author": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "image": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "image"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "reactions": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "emoji": {
+                              "type": "string",
+                              "enum": [
+                                "🙏",
+                                "❤️",
+                                "🔥",
+                                "👏",
+                                "😂"
+                              ]
+                            },
+                            "count": {
+                              "type": "number"
+                            },
+                            "reactedByMe": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "emoji",
+                            "count",
+                            "reactedByMe"
+                          ]
+                        }
+                      },
+                      "replies": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "body": {
+                              "type": "string"
+                            },
+                            "author": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "image": {
+                                  "type": "string",
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "image"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "reactions": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "emoji": {
+                                    "type": "string",
+                                    "enum": [
+                                      "🙏",
+                                      "❤️",
+                                      "🔥",
+                                      "👏",
+                                      "😂"
+                                    ]
+                                  },
+                                  "count": {
+                                    "type": "number"
+                                  },
+                                  "reactedByMe": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "emoji",
+                                  "count",
+                                  "reactedByMe"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "body",
+                            "author",
+                            "createdAt",
+                            "reactions"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "body",
+                      "author",
+                      "createdAt",
+                      "reactions",
+                      "replies"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createLineupComment",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Post a comment or reply on a lineup",
+        "description": "Any authenticated user can post a top-level comment, or reply to an existing top-level comment.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "parentCommentId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Comment posted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "author": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "image"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "reactions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "emoji": {
+                            "type": "string",
+                            "enum": [
+                              "🙏",
+                              "❤️",
+                              "🔥",
+                              "👏",
+                              "😂"
+                            ]
+                          },
+                          "count": {
+                            "type": "number"
+                          },
+                          "reactedByMe": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "emoji",
+                          "count",
+                          "reactedByMe"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "body",
+                    "author",
+                    "createdAt",
+                    "reactions"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lineups/{id}/comments/{commentId}/reactions": {
+      "post": {
+        "operationId": "toggleLineupCommentReaction",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Toggle a reaction on a comment",
+        "description": "Any authenticated user can react to a comment - reacting with the same emoji again removes it. Returns the comment's updated per-emoji reaction summary.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "commentId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "emoji": {
+                    "type": "string",
+                    "enum": [
+                      "🙏",
+                      "❤️",
+                      "🔥",
+                      "👏",
+                      "😂"
+                    ]
+                  }
+                },
+                "required": [
+                  "emoji"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reaction toggled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "emoji": {
+                        "type": "string",
+                        "enum": [
+                          "🙏",
+                          "❤️",
+                          "🔥",
+                          "👏",
+                          "😂"
+                        ]
+                      },
+                      "count": {
+                        "type": "number"
+                      },
+                      "reactedByMe": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "emoji",
+                      "count",
+                      "reactedByMe"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lineups/{id}/comments/{commentId}": {
+      "patch": {
+        "operationId": "updateLineupComment",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Edit a comment or reply",
+        "description": "Only the comment's own author can edit it.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "commentId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Comment updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "author": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "image"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "reactions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "emoji": {
+                            "type": "string",
+                            "enum": [
+                              "🙏",
+                              "❤️",
+                              "🔥",
+                              "👏",
+                              "😂"
+                            ]
+                          },
+                          "count": {
+                            "type": "number"
+                          },
+                          "reactedByMe": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "emoji",
+                          "count",
+                          "reactedByMe"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "body",
+                    "author",
+                    "createdAt",
+                    "reactions"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteLineupComment",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Delete a comment or reply",
+        "description": "Only the comment's own author can delete it. Deleting a top-level comment also deletes its replies.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "commentId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Comment deleted."
           },
           "401": {
             "description": "Unauthorized. Missing or invalid authentication.",

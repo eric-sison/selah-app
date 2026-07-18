@@ -4,3614 +4,3967 @@
  */
 
 export interface paths {
-  "/api/health": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Liveness check
-     * @description Confirms the API process is up and able to respond to requests. This does not verify downstream dependencies (database, SMTP, etc.) so a 200 here does not guarantee those are reachable.
-     */
-    get: operations["getHealth"]
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/invitations": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Invite a new user
-     * @description Admin-only. Generates an invitation link (valid for 2 hours) and emails it to the given address.
-     */
-    post: operations["createInvitation"]
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/invitations/{token}": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Look up an invitation by token
-     * @description Public. Used by the sign-up page to check whether a token is still valid before showing the form.
-     */
-    get: operations["getInvitation"]
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/lineups": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List lineups
-     * @description Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name and topic, a `from`/`to` service-date range, and/or `status` (comma-separated). Pass `sort` (`asc`/`desc`) to order by service date instead.
-     */
-    get: operations["listLineups"]
-    put?: never
-    /**
-     * Create a lineup
-     * @description Admin-only. Creates a new lineup, optionally with an initial set list and roster, all in one transaction.
-     */
-    post: operations["createLineup"]
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/lineups/{id}": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a lineup by id
-     * @description Any authenticated user can fetch a single lineup, with its team, devo leader, set list, and roster.
-     */
-    get: operations["getLineup"]
-    put?: never
-    post?: never
-    /**
-     * Delete a lineup
-     * @description Admin-only. Deletes a lineup along with its set list, roster, schedule slots, and discussion.
-     */
-    delete: operations["deleteLineup"]
-    options?: never
-    head?: never
-    /**
-     * Update a lineup
-     * @description Admin-only. Updates a lineup's status, team assignment, series/topic, word, and/or direction. Use the songs/members endpoints to change the set list or roster.
-     */
-    patch: operations["updateLineup"]
-    trace?: never
-  }
-  "/api/lineups/{id}/songs": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Add a song to a lineup
-     * @description Admin-only. Appends a song to the lineup's set list. Idempotent - adding a song already in the set list is a no-op. Returns the full, updated lineup.
-     */
-    post: operations["addLineupSong"]
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/lineups/{id}/songs/{songId}": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    /**
-     * Remove a song from a lineup
-     * @description Admin-only. Removes a song from the lineup's set list.
-     */
-    delete: operations["removeLineupSong"]
-    options?: never
-    head?: never
-    /**
-     * Assign or clear a song's singer
-     * @description Admin-only. Updates who's singing a song already in the lineup's set list. Returns the full, updated lineup.
-     */
-    patch: operations["updateLineupSong"]
-    trace?: never
-  }
-  "/api/lineups/{id}/members": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Add a user to a lineup's roster
-     * @description Admin-only. Adds a user to the lineup's roster - independent of team membership, and either from the assigned team or from outside it. Their displayed instruments are resolved from their global musician profile, not set here. Idempotent - adding a user already on the roster is a no-op. Returns the full, updated lineup.
-     */
-    post: operations["addLineupMember"]
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/lineups/{id}/members/{memberId}": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    /**
-     * Remove a user from a lineup's roster
-     * @description Admin-only. Removes a single roster assignment.
-     */
-    delete: operations["removeLineupMember"]
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/musicians": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List musicians
-     * @description Any authenticated user can list every musician profile, alphabetically by name - used to populate the team member picker, among other places.
-     */
-    get: operations["listMusicians"]
-    put?: never
-    /**
-     * Create a musician profile
-     * @description Admin-only. Creates a global musician profile for a user, with an optional initial set of instruments. A user can only have one profile.
-     */
-    post: operations["createMusician"]
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/musicians/{id}": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a musician profile by id
-     * @description Any authenticated user can fetch a single musician profile.
-     */
-    get: operations["getMusician"]
-    put?: never
-    post?: never
-    /**
-     * Delete a musician profile
-     * @description Admin-only. Deletes a musician's profile - refused (409) while they're still a member of any team, since team membership requires a musician profile; remove them from every team first.
-     */
-    delete: operations["deleteMusician"]
-    options?: never
-    head?: never
-    /**
-     * Update a musician's instruments
-     * @description Admin-only. Replaces a musician's full set of instruments.
-     */
-    patch: operations["updateMusician"]
-    trace?: never
-  }
-  "/api/schedules": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List schedules
-     * @description Any authenticated user can list every schedule entry, ordered by when it happens, each joined with its lineup (if any).
-     */
-    get: operations["listSchedules"]
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/songs": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List uploaded songs
-     * @description Any authenticated user can list uploaded songs, paginated via `cursor`/`limit` and optionally filtered with a spelling-tolerant search over title and artist via the `q` query param.
-     */
-    get: operations["listSongs"]
-    put?: never
-    /**
-     * Upload a song
-     * @description Any authenticated user can upload a song's audio file and basic metadata.
-     */
-    post: operations["createSong"]
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/songs/{id}": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a song by id
-     * @description Any authenticated user can fetch a single song's metadata by id.
-     */
-    get: operations["getSong"]
-    put?: never
-    post?: never
-    /**
-     * Delete a song
-     * @description Admin-only. Deletes the song's database record and its audio file and album art (if any) from storage.
-     */
-    delete: operations["deleteSong"]
-    options?: never
-    head?: never
-    /**
-     * Update a song's chord sheet
-     * @description Any authenticated user can update a song's chord-over-lyric sheet.
-     */
-    patch: operations["updateSong"]
-    trace?: never
-  }
-  "/api/songs/{id}/stream-url": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a temporary playback URL for a song
-     * @description Any authenticated user can request a short-lived, signed URL for streaming a song's audio file directly from storage.
-     */
-    get: operations["getSongStreamUrl"]
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/songs/{id}/download-url": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a temporary download URL for a song
-     * @description Any authenticated user can request a short-lived, signed URL for downloading a song's original audio file.
-     */
-    get: operations["getSongDownloadUrl"]
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/songs/{id}/album-url": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a temporary URL for a song's album art
-     * @description Any authenticated user can request a short-lived, signed URL for a song's album art image, if one was uploaded.
-     */
-    get: operations["getSongAlbumUrl"]
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/teams": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List teams
-     * @description Any authenticated user can list every team, alphabetically by name, each with its members and their current instruments.
-     */
-    get: operations["listTeams"]
-    put?: never
-    /**
-     * Create a team
-     * @description Admin-only. Creates a new team, optionally with an initial roster, all in one transaction.
-     */
-    post: operations["createTeam"]
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/teams/{id}": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get a team by id
-     * @description Any authenticated user can fetch a single team, with its members and their current instruments.
-     */
-    get: operations["getTeam"]
-    put?: never
-    post?: never
-    /**
-     * Delete a team
-     * @description Admin-only. Deletes a team along with its membership rows.
-     */
-    delete: operations["deleteTeam"]
-    options?: never
-    head?: never
-    /**
-     * Update a team
-     * @description Admin-only. Updates a team's name and/or leader.
-     */
-    patch: operations["updateTeam"]
-    trace?: never
-  }
-  "/api/teams/{id}/members": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Add a member to a team
-     * @description Admin-only. Adds an existing musician to a team. Idempotent - adding an existing member is a no-op. Returns the full, updated team.
-     */
-    post: operations["addTeamMember"]
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/teams/{id}/members/{memberId}": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    /**
-     * Remove a member from a team
-     * @description Admin-only. Removes a member from a team - their musician profile is untouched.
-     */
-    delete: operations["removeTeamMember"]
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/api/users": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List users
-     * @description Admin-only. Lists every user, alphabetically by name - used to populate the musician and team-leader pickers when creating or editing a team.
-     */
-    get: operations["listUsers"]
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
+    "/api/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liveness check
+         * @description Confirms the API process is up and able to respond to requests. This does not verify downstream dependencies (database, SMTP, etc.) so a 200 here does not guarantee those are reachable.
+         */
+        get: operations["getHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite a new user
+         * @description Admin-only. Generates an invitation link (valid for 2 hours) and emails it to the given address.
+         */
+        post: operations["createInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invitations/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Look up an invitation by token
+         * @description Public. Used by the sign-up page to check whether a token is still valid before showing the form.
+         */
+        get: operations["getInvitation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lineups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List lineups
+         * @description Any authenticated user can list lineups, newest first, each with its team, devo leader, set list, and roster - optionally filtered by a spelling-tolerant `q` search over the series name and topic, a `from`/`to` service-date range, and/or `status` (comma-separated). Pass `sort` (`asc`/`desc`) to order by service date instead.
+         */
+        get: operations["listLineups"];
+        put?: never;
+        /**
+         * Create a lineup
+         * @description Admin-only. Creates a new lineup, optionally with an initial set list and roster, all in one transaction.
+         */
+        post: operations["createLineup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lineups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a lineup by id
+         * @description Any authenticated user can fetch a single lineup, with its team, devo leader, set list, and roster.
+         */
+        get: operations["getLineup"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a lineup
+         * @description Admin-only. Deletes a lineup along with its set list, roster, schedule slots, and discussion.
+         */
+        delete: operations["deleteLineup"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a lineup
+         * @description Admin-only. Updates a lineup's status, team assignment, series/topic, word, and/or direction. Use the songs/members endpoints to change the set list or roster.
+         */
+        patch: operations["updateLineup"];
+        trace?: never;
+    };
+    "/api/lineups/{id}/songs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a song to a lineup
+         * @description Admin-only. Appends a song to the lineup's set list. Idempotent - adding a song already in the set list is a no-op. Returns the full, updated lineup.
+         */
+        post: operations["addLineupSong"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lineups/{id}/songs/{songId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a song from a lineup
+         * @description Admin-only. Removes a song from the lineup's set list.
+         */
+        delete: operations["removeLineupSong"];
+        options?: never;
+        head?: never;
+        /**
+         * Assign or clear a song's singer
+         * @description Admin-only. Updates who's singing a song already in the lineup's set list. Returns the full, updated lineup.
+         */
+        patch: operations["updateLineupSong"];
+        trace?: never;
+    };
+    "/api/lineups/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a user to a lineup's roster
+         * @description Admin-only. Adds a user to the lineup's roster - independent of team membership, and either from the assigned team or from outside it. Their displayed instruments are resolved from their global musician profile, not set here. Idempotent - adding a user already on the roster is a no-op. Returns the full, updated lineup.
+         */
+        post: operations["addLineupMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lineups/{id}/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a user from a lineup's roster
+         * @description Admin-only. Removes a single roster assignment.
+         */
+        delete: operations["removeLineupMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lineups/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a lineup's discussion
+         * @description Any authenticated user can view a lineup's discussion - top-level comments with one level of nested replies, each with per-emoji reaction counts and whether the requesting user has reacted.
+         */
+        get: operations["listLineupComments"];
+        put?: never;
+        /**
+         * Post a comment or reply on a lineup
+         * @description Any authenticated user can post a top-level comment, or reply to an existing top-level comment.
+         */
+        post: operations["createLineupComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lineups/{id}/comments/{commentId}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Toggle a reaction on a comment
+         * @description Any authenticated user can react to a comment - reacting with the same emoji again removes it. Returns the comment's updated per-emoji reaction summary.
+         */
+        post: operations["toggleLineupCommentReaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lineups/{id}/comments/{commentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a comment or reply
+         * @description Only the comment's own author can delete it. Deleting a top-level comment also deletes its replies.
+         */
+        delete: operations["deleteLineupComment"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a comment or reply
+         * @description Only the comment's own author can edit it.
+         */
+        patch: operations["updateLineupComment"];
+        trace?: never;
+    };
+    "/api/musicians": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List musicians
+         * @description Any authenticated user can list every musician profile, alphabetically by name - used to populate the team member picker, among other places.
+         */
+        get: operations["listMusicians"];
+        put?: never;
+        /**
+         * Create a musician profile
+         * @description Admin-only. Creates a global musician profile for a user, with an optional initial set of instruments. A user can only have one profile.
+         */
+        post: operations["createMusician"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/musicians/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a musician profile by id
+         * @description Any authenticated user can fetch a single musician profile.
+         */
+        get: operations["getMusician"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a musician profile
+         * @description Admin-only. Deletes a musician's profile - refused (409) while they're still a member of any team, since team membership requires a musician profile; remove them from every team first.
+         */
+        delete: operations["deleteMusician"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a musician's instruments
+         * @description Admin-only. Replaces a musician's full set of instruments.
+         */
+        patch: operations["updateMusician"];
+        trace?: never;
+    };
+    "/api/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List schedules
+         * @description Any authenticated user can list every schedule entry, ordered by when it happens, each joined with its lineup (if any).
+         */
+        get: operations["listSchedules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List uploaded songs
+         * @description Any authenticated user can list uploaded songs, paginated via `cursor`/`limit` and optionally filtered with a spelling-tolerant search over title and artist via the `q` query param.
+         */
+        get: operations["listSongs"];
+        put?: never;
+        /**
+         * Upload a song
+         * @description Any authenticated user can upload a song's audio file and basic metadata.
+         */
+        post: operations["createSong"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a song by id
+         * @description Any authenticated user can fetch a single song's metadata by id.
+         */
+        get: operations["getSong"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a song
+         * @description Admin-only. Deletes the song's database record and its audio file and album art (if any) from storage.
+         */
+        delete: operations["deleteSong"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a song's chord sheet
+         * @description Any authenticated user can update a song's chord-over-lyric sheet.
+         */
+        patch: operations["updateSong"];
+        trace?: never;
+    };
+    "/api/songs/{id}/stream-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a temporary playback URL for a song
+         * @description Any authenticated user can request a short-lived, signed URL for streaming a song's audio file directly from storage.
+         */
+        get: operations["getSongStreamUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs/{id}/download-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a temporary download URL for a song
+         * @description Any authenticated user can request a short-lived, signed URL for downloading a song's original audio file.
+         */
+        get: operations["getSongDownloadUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs/{id}/album-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a temporary URL for a song's album art
+         * @description Any authenticated user can request a short-lived, signed URL for a song's album art image, if one was uploaded.
+         */
+        get: operations["getSongAlbumUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List teams
+         * @description Any authenticated user can list every team, alphabetically by name, each with its members and their current instruments.
+         */
+        get: operations["listTeams"];
+        put?: never;
+        /**
+         * Create a team
+         * @description Admin-only. Creates a new team, optionally with an initial roster, all in one transaction.
+         */
+        post: operations["createTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/teams/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a team by id
+         * @description Any authenticated user can fetch a single team, with its members and their current instruments.
+         */
+        get: operations["getTeam"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a team
+         * @description Admin-only. Deletes a team along with its membership rows.
+         */
+        delete: operations["deleteTeam"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a team
+         * @description Admin-only. Updates a team's name and/or leader.
+         */
+        patch: operations["updateTeam"];
+        trace?: never;
+    };
+    "/api/teams/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a member to a team
+         * @description Admin-only. Adds an existing musician to a team. Idempotent - adding an existing member is a no-op. Returns the full, updated team.
+         */
+        post: operations["addTeamMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/teams/{id}/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a member from a team
+         * @description Admin-only. Removes a member from a team - their musician profile is untouched.
+         */
+        delete: operations["removeTeamMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List users
+         * @description Admin-only. Lists every user, alphabetically by name - used to populate the musician and team-leader pickers when creating or editing a team.
+         */
+        get: operations["listUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
-export type webhooks = Record<string, never>
+export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    ErrorResponse: {
-      status: number
-      message: string
-      code?: string
-    }
-  }
-  responses: never
-  parameters: never
-  requestBodies: never
-  headers: never
-  pathItems: never
+    schemas: {
+        ErrorResponse: {
+            status: number;
+            message: string;
+            code?: string;
+        };
+    };
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
-export type $defs = Record<string, never>
+export type $defs = Record<string, never>;
 export interface operations {
-  getHealth: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Service is healthy and running. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 200,
-           *       "message": "Service is healthy and running.",
-           *       "code": "OK"
-           *     }
-           */
-          "application/json": {
-            /**
-             * @description HTTP status code, duplicated from the response status.
-             * @example 200
-             */
-            status: number
-            /**
-             * @description Human-readable summary of the health check result.
-             * @example Service is healthy and running.
-             */
-            message: string
-            /**
-             * @description Machine-readable status code.
-             * @example OK
-             */
-            code: string
-          }
-        }
-      }
-      /** @description Internal server error. Something went wrong. */
-      500: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 500,
-           *       "message": "Internal server error. Something went wrong."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  createInvitation: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          /** Format: email */
-          email: string
-        }
-      }
-    }
-    responses: {
-      /** @description Invitation created. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            email: string
-            expiresAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Conflict. Resource already exists. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 409,
-           *       "message": "Conflict. Resource already exists."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  getInvitation: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        token: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Invitation is valid. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            email: string
-            expiresAt: string
-          }
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  listLineups: {
-    parameters: {
-      query?: {
-        /** @description Spelling-tolerant search over the series name and topic. */
-        q?: string
-        /** @description Only lineups on/after this service date (YYYY-MM-DD), inclusive. Given without `to`, filters to every lineup from this date on. */
-        from?: string
-        /** @description Only lineups on/before this service date (YYYY-MM-DD), inclusive. */
-        to?: string
-        /** @description Comma-separated statuses (draft, pending, approved) - only lineups in one of these. */
-        status?: string
-        /** @description Order by service date: `asc` (soonest first) or `desc` (latest first). Omit to keep the default order (newest-created first, or search-relevance order when `q` is given). */
-        sort?: "asc" | "desc"
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Lineups. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            /** @enum {string} */
-            status: "draft" | "pending" | "approved"
-            /** @enum {string} */
-            serviceType:
-              | "sunday_service"
-              | "youth_service"
-              | "necrological_service"
-              | "prayer_meeting_service"
-              | "victory_day"
-              | "other"
-            serviceDate: string
-            rehearsalDate: string | null
-            team: {
-              id: string
-              name: string
-            }
-            seriesName: string | null
-            topic: string | null
-            wordReference: string | null
-            wordText: string | null
-            direction: string | null
-            devoLeader: {
-              id: string
-              name: string
-              image: string | null
-            } | null
-            songs: {
-              id: string
-              position: number
-              song: {
-                id: string
-                title: string
-                artist: string | null
-                musicalKey: string | null
-                tempo: number | null
-              }
-              singer: {
-                id: string
-                name: string
-                image: string | null
-              } | null
-            }[]
-            members: {
-              id: string
-              instruments: (
-                | "bass"
-                | "drums"
-                | "singer"
-                | "electric_guitar"
-                | "acoustic_guitar"
-                | "keyboard"
-              )[]
-              isAvailable: boolean
-              user: {
-                id: string
-                name: string
-                image: string | null
-              }
-            }[]
-            commentCount: number
-            approvedBy: string | null
-            approvedAt: string | null
-            createdAt: string
-            updatedAt: string
-          }[]
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  createLineup: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          /** @enum {string} */
-          serviceType:
-            | "sunday_service"
-            | "youth_service"
-            | "necrological_service"
-            | "prayer_meeting_service"
-            | "victory_day"
-            | "other"
-          /** Format: date-time */
-          serviceDate: string
-          /** Format: date-time */
-          rehearsalDate?: string
-          /** Format: uuid */
-          teamId: string
-          seriesName?: string
-          topic?: string
-          wordReference?: string
-          wordText?: string
-          direction?: string
-          devoLeaderId?: string
-          songs?: {
-            /** Format: uuid */
-            songId: string
-            singerId?: string
-          }[]
-          members?: string[]
-        }
-      }
-    }
-    responses: {
-      /** @description Lineup created. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            /** @enum {string} */
-            status: "draft" | "pending" | "approved"
-            /** @enum {string} */
-            serviceType:
-              | "sunday_service"
-              | "youth_service"
-              | "necrological_service"
-              | "prayer_meeting_service"
-              | "victory_day"
-              | "other"
-            serviceDate: string
-            rehearsalDate: string | null
-            team: {
-              id: string
-              name: string
-            }
-            seriesName: string | null
-            topic: string | null
-            wordReference: string | null
-            wordText: string | null
-            direction: string | null
-            devoLeader: {
-              id: string
-              name: string
-              image: string | null
-            } | null
-            songs: {
-              id: string
-              position: number
-              song: {
-                id: string
-                title: string
-                artist: string | null
-                musicalKey: string | null
-                tempo: number | null
-              }
-              singer: {
-                id: string
-                name: string
-                image: string | null
-              } | null
-            }[]
-            members: {
-              id: string
-              instruments: (
-                | "bass"
-                | "drums"
-                | "singer"
-                | "electric_guitar"
-                | "acoustic_guitar"
-                | "keyboard"
-              )[]
-              isAvailable: boolean
-              user: {
-                id: string
-                name: string
-                image: string | null
-              }
-            }[]
-            commentCount: number
-            approvedBy: string | null
-            approvedAt: string | null
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  getLineup: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Lineup. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            /** @enum {string} */
-            status: "draft" | "pending" | "approved"
-            /** @enum {string} */
-            serviceType:
-              | "sunday_service"
-              | "youth_service"
-              | "necrological_service"
-              | "prayer_meeting_service"
-              | "victory_day"
-              | "other"
-            serviceDate: string
-            rehearsalDate: string | null
-            team: {
-              id: string
-              name: string
-            }
-            seriesName: string | null
-            topic: string | null
-            wordReference: string | null
-            wordText: string | null
-            direction: string | null
-            devoLeader: {
-              id: string
-              name: string
-              image: string | null
-            } | null
-            songs: {
-              id: string
-              position: number
-              song: {
-                id: string
-                title: string
-                artist: string | null
-                musicalKey: string | null
-                tempo: number | null
-              }
-              singer: {
-                id: string
-                name: string
-                image: string | null
-              } | null
-            }[]
-            members: {
-              id: string
-              instruments: (
-                | "bass"
-                | "drums"
-                | "singer"
-                | "electric_guitar"
-                | "acoustic_guitar"
-                | "keyboard"
-              )[]
-              isAvailable: boolean
-              user: {
-                id: string
-                name: string
-                image: string | null
-              }
-            }[]
-            commentCount: number
-            approvedBy: string | null
-            approvedAt: string | null
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  deleteLineup: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Lineup deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  updateLineup: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          /** @enum {string} */
-          status?: "draft" | "pending" | "approved"
-          /** @enum {string} */
-          serviceType?:
-            | "sunday_service"
-            | "youth_service"
-            | "necrological_service"
-            | "prayer_meeting_service"
-            | "victory_day"
-            | "other"
-          /** Format: date-time */
-          serviceDate?: string
-          /** Format: date-time */
-          rehearsalDate?: string | null
-          /** Format: uuid */
-          teamId?: string
-          seriesName?: string | null
-          topic?: string | null
-          wordReference?: string | null
-          wordText?: string | null
-          direction?: string | null
-          devoLeaderId?: string | null
-        }
-      }
-    }
-    responses: {
-      /** @description Lineup updated. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            /** @enum {string} */
-            status: "draft" | "pending" | "approved"
-            /** @enum {string} */
-            serviceType:
-              | "sunday_service"
-              | "youth_service"
-              | "necrological_service"
-              | "prayer_meeting_service"
-              | "victory_day"
-              | "other"
-            serviceDate: string
-            rehearsalDate: string | null
-            team: {
-              id: string
-              name: string
-            }
-            seriesName: string | null
-            topic: string | null
-            wordReference: string | null
-            wordText: string | null
-            direction: string | null
-            devoLeader: {
-              id: string
-              name: string
-              image: string | null
-            } | null
-            songs: {
-              id: string
-              position: number
-              song: {
-                id: string
-                title: string
-                artist: string | null
-                musicalKey: string | null
-                tempo: number | null
-              }
-              singer: {
-                id: string
-                name: string
-                image: string | null
-              } | null
-            }[]
-            members: {
-              id: string
-              instruments: (
-                | "bass"
-                | "drums"
-                | "singer"
-                | "electric_guitar"
-                | "acoustic_guitar"
-                | "keyboard"
-              )[]
-              isAvailable: boolean
-              user: {
-                id: string
-                name: string
-                image: string | null
-              }
-            }[]
-            commentCount: number
-            approvedBy: string | null
-            approvedAt: string | null
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  addLineupSong: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          /** Format: uuid */
-          songId: string
-          singerId?: string
-        }
-      }
-    }
-    responses: {
-      /** @description Song added. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            /** @enum {string} */
-            status: "draft" | "pending" | "approved"
-            /** @enum {string} */
-            serviceType:
-              | "sunday_service"
-              | "youth_service"
-              | "necrological_service"
-              | "prayer_meeting_service"
-              | "victory_day"
-              | "other"
-            serviceDate: string
-            rehearsalDate: string | null
-            team: {
-              id: string
-              name: string
-            }
-            seriesName: string | null
-            topic: string | null
-            wordReference: string | null
-            wordText: string | null
-            direction: string | null
-            devoLeader: {
-              id: string
-              name: string
-              image: string | null
-            } | null
-            songs: {
-              id: string
-              position: number
-              song: {
-                id: string
-                title: string
-                artist: string | null
-                musicalKey: string | null
-                tempo: number | null
-              }
-              singer: {
-                id: string
-                name: string
-                image: string | null
-              } | null
-            }[]
-            members: {
-              id: string
-              instruments: (
-                | "bass"
-                | "drums"
-                | "singer"
-                | "electric_guitar"
-                | "acoustic_guitar"
-                | "keyboard"
-              )[]
-              isAvailable: boolean
-              user: {
-                id: string
-                name: string
-                image: string | null
-              }
-            }[]
-            commentCount: number
-            approvedBy: string | null
-            approvedAt: string | null
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  removeLineupSong: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-        songId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Song removed. */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  updateLineupSong: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-        songId: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          singerId: string | null
-        }
-      }
-    }
-    responses: {
-      /** @description Song updated. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            /** @enum {string} */
-            status: "draft" | "pending" | "approved"
-            /** @enum {string} */
-            serviceType:
-              | "sunday_service"
-              | "youth_service"
-              | "necrological_service"
-              | "prayer_meeting_service"
-              | "victory_day"
-              | "other"
-            serviceDate: string
-            rehearsalDate: string | null
-            team: {
-              id: string
-              name: string
-            }
-            seriesName: string | null
-            topic: string | null
-            wordReference: string | null
-            wordText: string | null
-            direction: string | null
-            devoLeader: {
-              id: string
-              name: string
-              image: string | null
-            } | null
-            songs: {
-              id: string
-              position: number
-              song: {
-                id: string
-                title: string
-                artist: string | null
-                musicalKey: string | null
-                tempo: number | null
-              }
-              singer: {
-                id: string
-                name: string
-                image: string | null
-              } | null
-            }[]
-            members: {
-              id: string
-              instruments: (
-                | "bass"
-                | "drums"
-                | "singer"
-                | "electric_guitar"
-                | "acoustic_guitar"
-                | "keyboard"
-              )[]
-              isAvailable: boolean
-              user: {
-                id: string
-                name: string
-                image: string | null
-              }
-            }[]
-            commentCount: number
-            approvedBy: string | null
-            approvedAt: string | null
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  addLineupMember: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          userId: string
-        }
-      }
-    }
-    responses: {
-      /** @description Member added. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            /** @enum {string} */
-            status: "draft" | "pending" | "approved"
-            /** @enum {string} */
-            serviceType:
-              | "sunday_service"
-              | "youth_service"
-              | "necrological_service"
-              | "prayer_meeting_service"
-              | "victory_day"
-              | "other"
-            serviceDate: string
-            rehearsalDate: string | null
-            team: {
-              id: string
-              name: string
-            }
-            seriesName: string | null
-            topic: string | null
-            wordReference: string | null
-            wordText: string | null
-            direction: string | null
-            devoLeader: {
-              id: string
-              name: string
-              image: string | null
-            } | null
-            songs: {
-              id: string
-              position: number
-              song: {
-                id: string
-                title: string
-                artist: string | null
-                musicalKey: string | null
-                tempo: number | null
-              }
-              singer: {
-                id: string
-                name: string
-                image: string | null
-              } | null
-            }[]
-            members: {
-              id: string
-              instruments: (
-                | "bass"
-                | "drums"
-                | "singer"
-                | "electric_guitar"
-                | "acoustic_guitar"
-                | "keyboard"
-              )[]
-              isAvailable: boolean
-              user: {
-                id: string
-                name: string
-                image: string | null
-              }
-            }[]
-            commentCount: number
-            approvedBy: string | null
-            approvedAt: string | null
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  removeLineupMember: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-        memberId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Member removed. */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  listMusicians: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Musicians. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            user: {
-              id: string
-              name: string
-              email: string
-              image: string | null
-            }
-            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[]
-            createdAt: string
-            updatedAt: string
-          }[]
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  createMusician: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          userId: string
-          instruments?: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[]
-        }
-      }
-    }
-    responses: {
-      /** @description Musician profile created. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            user: {
-              id: string
-              name: string
-              email: string
-              image: string | null
-            }
-            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[]
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Conflict. Resource already exists. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 409,
-           *       "message": "Conflict. Resource already exists."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  getMusician: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Musician. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            user: {
-              id: string
-              name: string
-              email: string
-              image: string | null
-            }
-            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[]
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  deleteMusician: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Musician profile deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Conflict. Resource already exists. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 409,
-           *       "message": "Conflict. Resource already exists."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  updateMusician: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[]
-        }
-      }
-    }
-    responses: {
-      /** @description Musician updated. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            user: {
-              id: string
-              name: string
-              email: string
-              image: string | null
-            }
-            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[]
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  listSchedules: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Schedules. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            /** @enum {string} */
-            type:
-              | "sunday_service"
-              | "youth_service"
-              | "necrological_service"
-              | "rehearsal"
-              | "prayer_meeting_service"
-              | "victory_day"
-              | "other"
-            /** @enum {string|null} */
-            lineupRole: "service" | "practice" | null
-            title: string | null
-            startAt: string
-            lineup: {
-              id: string
-              seriesName: string | null
-              topic: string | null
-            } | null
-            createdAt: string
-            updatedAt: string
-          }[]
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  listSongs: {
-    parameters: {
-      query?: {
-        /** @description Spelling-tolerant search over song title and artist. */
-        q?: string
-        /** @description Offset-based pagination cursor - pass back the previous response's `nextCursor`. */
-        cursor?: number | null
-        /** @description Max songs to return per page. */
-        limit?: number
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Paginated list of songs. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            items: {
-              id: string
-              title: string
-              artist: string | null
-              musicalKey: string | null
-              tempo: number | null
-              album: string | null
-              releaseDate: string | null
-              chordpro: string | null
-              originalFileName: string
-              mimeType: string
-              fileSizeBytes: number
-              hasAlbumArt: boolean
-              uploader: {
-                id: string
-                name: string
-              }
-              createdAt: string
-            }[]
-            nextCursor: number | null
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  createSong: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "multipart/form-data": {
-          title: string
-          artist?: string
-          musicalKey?: string
-          tempo?: number
-          album?: string
-          /** Format: date */
-          releaseDate?: string
-          /** Format: binary */
-          file: string
-          /** Format: binary */
-          albumArt?: string
-        }
-      }
-    }
-    responses: {
-      /** @description Song uploaded. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            title: string
-            artist: string | null
-            musicalKey: string | null
-            tempo: number | null
-            album: string | null
-            releaseDate: string | null
-            chordpro: string | null
-            originalFileName: string
-            mimeType: string
-            fileSizeBytes: number
-            hasAlbumArt: boolean
-            uploader: {
-              id: string
-              name: string
-            }
-            createdAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Payload too large. Request body exceeds the maximum allowed size. */
-      413: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 413,
-           *       "message": "Payload too large. Request body exceeds the maximum allowed size."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  getSong: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Song. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            title: string
-            artist: string | null
-            musicalKey: string | null
-            tempo: number | null
-            album: string | null
-            releaseDate: string | null
-            chordpro: string | null
-            originalFileName: string
-            mimeType: string
-            fileSizeBytes: number
-            hasAlbumArt: boolean
-            uploader: {
-              id: string
-              name: string
-            }
-            createdAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  deleteSong: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Song deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  updateSong: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          chordpro: string | null
-        }
-      }
-    }
-    responses: {
-      /** @description Song updated. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            title: string
-            artist: string | null
-            musicalKey: string | null
-            tempo: number | null
-            album: string | null
-            releaseDate: string | null
-            chordpro: string | null
-            originalFileName: string
-            mimeType: string
-            fileSizeBytes: number
-            hasAlbumArt: boolean
-            uploader: {
-              id: string
-              name: string
-            }
-            createdAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  getSongStreamUrl: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Signed playback URL. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            url: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  getSongDownloadUrl: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Signed download URL. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            url: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  getSongAlbumUrl: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Signed album art URL. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            url: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  listTeams: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Teams. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            name: string
-            leader: {
-              id: string
-              name: string
-              image: string | null
-            } | null
-            members: {
-              id: string
-              user: {
-                id: string
-                name: string
-                image: string | null
-              }
-              musicianId: string
-              instruments: (
-                | "bass"
-                | "drums"
-                | "singer"
-                | "electric_guitar"
-                | "acoustic_guitar"
-                | "keyboard"
-              )[]
-            }[]
-            createdAt: string
-            updatedAt: string
-          }[]
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  createTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          name: string
-          teamLeaderId?: string
-          members?: {
-            userId: string
-          }[]
-        }
-      }
-    }
-    responses: {
-      /** @description Team created. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            name: string
-            leader: {
-              id: string
-              name: string
-              image: string | null
-            } | null
-            members: {
-              id: string
-              user: {
-                id: string
-                name: string
-                image: string | null
-              }
-              musicianId: string
-              instruments: (
-                | "bass"
-                | "drums"
-                | "singer"
-                | "electric_guitar"
-                | "acoustic_guitar"
-                | "keyboard"
-              )[]
-            }[]
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  getTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Team. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            name: string
-            leader: {
-              id: string
-              name: string
-              image: string | null
-            } | null
-            members: {
-              id: string
-              user: {
-                id: string
-                name: string
-                image: string | null
-              }
-              musicianId: string
-              instruments: (
-                | "bass"
-                | "drums"
-                | "singer"
-                | "electric_guitar"
-                | "acoustic_guitar"
-                | "keyboard"
-              )[]
-            }[]
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  deleteTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Team deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  updateTeam: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          name?: string
-          teamLeaderId?: string | null
-        }
-      }
-    }
-    responses: {
-      /** @description Team updated. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            name: string
-            leader: {
-              id: string
-              name: string
-              image: string | null
-            } | null
-            members: {
-              id: string
-              user: {
-                id: string
-                name: string
-                image: string | null
-              }
-              musicianId: string
-              instruments: (
-                | "bass"
-                | "drums"
-                | "singer"
-                | "electric_guitar"
-                | "acoustic_guitar"
-                | "keyboard"
-              )[]
-            }[]
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  addTeamMember: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": {
-          userId: string
-        }
-      }
-    }
-    responses: {
-      /** @description Member added. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            name: string
-            leader: {
-              id: string
-              name: string
-              image: string | null
-            } | null
-            members: {
-              id: string
-              user: {
-                id: string
-                name: string
-                image: string | null
-              }
-              musicianId: string
-              instruments: (
-                | "bass"
-                | "drums"
-                | "singer"
-                | "electric_guitar"
-                | "acoustic_guitar"
-                | "keyboard"
-              )[]
-            }[]
-            createdAt: string
-            updatedAt: string
-          }
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Unprocessable. Request body failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 422,
-           *       "message": "Unprocessable. Request body failed validation."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  removeTeamMember: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-        memberId: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Member removed. */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Not found. Resource does not exist. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 404,
-           *       "message": "Not found. Resource does not exist."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
-  listUsers: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Users. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": {
-            id: string
-            name: string
-            email: string
-            image: string | null
-          }[]
-        }
-      }
-      /** @description Unauthorized. Missing or invalid authentication. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 401,
-           *       "message": "Unauthorized. Missing or invalid authentication."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-      /** @description Forbidden. Insufficient permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          /**
-           * @example {
-           *       "status": 403,
-           *       "message": "Forbidden. Insufficient permissions."
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorResponse"]
-        }
-      }
-    }
-  }
+    getHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service is healthy and running. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 200,
+                     *       "message": "Service is healthy and running.",
+                     *       "code": "OK"
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description HTTP status code, duplicated from the response status.
+                         * @example 200
+                         */
+                        status: number;
+                        /**
+                         * @description Human-readable summary of the health check result.
+                         * @example Service is healthy and running.
+                         */
+                        message: string;
+                        /**
+                         * @description Machine-readable status code.
+                         * @example OK
+                         */
+                        code: string;
+                    };
+                };
+            };
+            /** @description Internal server error. Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 500,
+                     *       "message": "Internal server error. Something went wrong."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: email */
+                    email: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Invitation created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        email: string;
+                        expiresAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict. Resource already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 409,
+                     *       "message": "Conflict. Resource already exists."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invitation is valid. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        email: string;
+                        expiresAt: string;
+                    };
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listLineups: {
+        parameters: {
+            query?: {
+                /** @description Spelling-tolerant search over the series name and topic. */
+                q?: string;
+                /** @description Only lineups on/after this service date (YYYY-MM-DD), inclusive. Given without `to`, filters to every lineup from this date on. */
+                from?: string;
+                /** @description Only lineups on/before this service date (YYYY-MM-DD), inclusive. */
+                to?: string;
+                /** @description Comma-separated statuses (draft, pending, approved) - only lineups in one of these. */
+                status?: string;
+                /** @description Order by service date: `asc` (soonest first) or `desc` (latest first). Omit to keep the default order (newest-created first, or search-relevance order when `q` is given). */
+                sort?: "asc" | "desc";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lineups. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        status: "draft" | "pending" | "approved";
+                        /** @enum {string} */
+                        serviceType: "sunday_service" | "youth_service" | "necrological_service" | "prayer_meeting_service" | "victory_day" | "other";
+                        serviceDate: string;
+                        rehearsalDate: string | null;
+                        team: {
+                            id: string;
+                            name: string;
+                        };
+                        seriesName: string | null;
+                        topic: string | null;
+                        wordReference: string | null;
+                        wordText: string | null;
+                        direction: string | null;
+                        devoLeader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        songs: {
+                            id: string;
+                            position: number;
+                            song: {
+                                id: string;
+                                title: string;
+                                artist: string | null;
+                                musicalKey: string | null;
+                                tempo: number | null;
+                                hasAlbumArt: boolean;
+                            };
+                            singer: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            } | null;
+                        }[];
+                        members: {
+                            id: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                            isAvailable: boolean;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                        }[];
+                        commentCount: number;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    }[];
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createLineup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    serviceType: "sunday_service" | "youth_service" | "necrological_service" | "prayer_meeting_service" | "victory_day" | "other";
+                    /** Format: date-time */
+                    serviceDate: string;
+                    /** Format: date-time */
+                    rehearsalDate?: string;
+                    /** Format: uuid */
+                    teamId: string;
+                    seriesName?: string;
+                    topic?: string;
+                    wordReference?: string;
+                    wordText?: string;
+                    direction?: string;
+                    devoLeaderId?: string;
+                    songs?: {
+                        /** Format: uuid */
+                        songId: string;
+                        singerId?: string;
+                    }[];
+                    members?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Lineup created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        status: "draft" | "pending" | "approved";
+                        /** @enum {string} */
+                        serviceType: "sunday_service" | "youth_service" | "necrological_service" | "prayer_meeting_service" | "victory_day" | "other";
+                        serviceDate: string;
+                        rehearsalDate: string | null;
+                        team: {
+                            id: string;
+                            name: string;
+                        };
+                        seriesName: string | null;
+                        topic: string | null;
+                        wordReference: string | null;
+                        wordText: string | null;
+                        direction: string | null;
+                        devoLeader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        songs: {
+                            id: string;
+                            position: number;
+                            song: {
+                                id: string;
+                                title: string;
+                                artist: string | null;
+                                musicalKey: string | null;
+                                tempo: number | null;
+                                hasAlbumArt: boolean;
+                            };
+                            singer: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            } | null;
+                        }[];
+                        members: {
+                            id: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                            isAvailable: boolean;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                        }[];
+                        commentCount: number;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getLineup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lineup. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        status: "draft" | "pending" | "approved";
+                        /** @enum {string} */
+                        serviceType: "sunday_service" | "youth_service" | "necrological_service" | "prayer_meeting_service" | "victory_day" | "other";
+                        serviceDate: string;
+                        rehearsalDate: string | null;
+                        team: {
+                            id: string;
+                            name: string;
+                        };
+                        seriesName: string | null;
+                        topic: string | null;
+                        wordReference: string | null;
+                        wordText: string | null;
+                        direction: string | null;
+                        devoLeader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        songs: {
+                            id: string;
+                            position: number;
+                            song: {
+                                id: string;
+                                title: string;
+                                artist: string | null;
+                                musicalKey: string | null;
+                                tempo: number | null;
+                                hasAlbumArt: boolean;
+                            };
+                            singer: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            } | null;
+                        }[];
+                        members: {
+                            id: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                            isAvailable: boolean;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                        }[];
+                        commentCount: number;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteLineup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lineup deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateLineup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    status?: "draft" | "pending" | "approved";
+                    /** @enum {string} */
+                    serviceType?: "sunday_service" | "youth_service" | "necrological_service" | "prayer_meeting_service" | "victory_day" | "other";
+                    /** Format: date-time */
+                    serviceDate?: string;
+                    /** Format: date-time */
+                    rehearsalDate?: string | null;
+                    /** Format: uuid */
+                    teamId?: string;
+                    seriesName?: string | null;
+                    topic?: string | null;
+                    wordReference?: string | null;
+                    wordText?: string | null;
+                    direction?: string | null;
+                    devoLeaderId?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Lineup updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        status: "draft" | "pending" | "approved";
+                        /** @enum {string} */
+                        serviceType: "sunday_service" | "youth_service" | "necrological_service" | "prayer_meeting_service" | "victory_day" | "other";
+                        serviceDate: string;
+                        rehearsalDate: string | null;
+                        team: {
+                            id: string;
+                            name: string;
+                        };
+                        seriesName: string | null;
+                        topic: string | null;
+                        wordReference: string | null;
+                        wordText: string | null;
+                        direction: string | null;
+                        devoLeader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        songs: {
+                            id: string;
+                            position: number;
+                            song: {
+                                id: string;
+                                title: string;
+                                artist: string | null;
+                                musicalKey: string | null;
+                                tempo: number | null;
+                                hasAlbumArt: boolean;
+                            };
+                            singer: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            } | null;
+                        }[];
+                        members: {
+                            id: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                            isAvailable: boolean;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                        }[];
+                        commentCount: number;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    addLineupSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    songId: string;
+                    singerId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Song added. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        status: "draft" | "pending" | "approved";
+                        /** @enum {string} */
+                        serviceType: "sunday_service" | "youth_service" | "necrological_service" | "prayer_meeting_service" | "victory_day" | "other";
+                        serviceDate: string;
+                        rehearsalDate: string | null;
+                        team: {
+                            id: string;
+                            name: string;
+                        };
+                        seriesName: string | null;
+                        topic: string | null;
+                        wordReference: string | null;
+                        wordText: string | null;
+                        direction: string | null;
+                        devoLeader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        songs: {
+                            id: string;
+                            position: number;
+                            song: {
+                                id: string;
+                                title: string;
+                                artist: string | null;
+                                musicalKey: string | null;
+                                tempo: number | null;
+                                hasAlbumArt: boolean;
+                            };
+                            singer: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            } | null;
+                        }[];
+                        members: {
+                            id: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                            isAvailable: boolean;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                        }[];
+                        commentCount: number;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    removeLineupSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                songId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Song removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateLineupSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                songId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    singerId: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Song updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        status: "draft" | "pending" | "approved";
+                        /** @enum {string} */
+                        serviceType: "sunday_service" | "youth_service" | "necrological_service" | "prayer_meeting_service" | "victory_day" | "other";
+                        serviceDate: string;
+                        rehearsalDate: string | null;
+                        team: {
+                            id: string;
+                            name: string;
+                        };
+                        seriesName: string | null;
+                        topic: string | null;
+                        wordReference: string | null;
+                        wordText: string | null;
+                        direction: string | null;
+                        devoLeader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        songs: {
+                            id: string;
+                            position: number;
+                            song: {
+                                id: string;
+                                title: string;
+                                artist: string | null;
+                                musicalKey: string | null;
+                                tempo: number | null;
+                                hasAlbumArt: boolean;
+                            };
+                            singer: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            } | null;
+                        }[];
+                        members: {
+                            id: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                            isAvailable: boolean;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                        }[];
+                        commentCount: number;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    addLineupMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Member added. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        status: "draft" | "pending" | "approved";
+                        /** @enum {string} */
+                        serviceType: "sunday_service" | "youth_service" | "necrological_service" | "prayer_meeting_service" | "victory_day" | "other";
+                        serviceDate: string;
+                        rehearsalDate: string | null;
+                        team: {
+                            id: string;
+                            name: string;
+                        };
+                        seriesName: string | null;
+                        topic: string | null;
+                        wordReference: string | null;
+                        wordText: string | null;
+                        direction: string | null;
+                        devoLeader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        songs: {
+                            id: string;
+                            position: number;
+                            song: {
+                                id: string;
+                                title: string;
+                                artist: string | null;
+                                musicalKey: string | null;
+                                tempo: number | null;
+                                hasAlbumArt: boolean;
+                            };
+                            singer: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            } | null;
+                        }[];
+                        members: {
+                            id: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                            isAvailable: boolean;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                        }[];
+                        commentCount: number;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    removeLineupMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listLineupComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comments. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        body: string;
+                        author: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        };
+                        createdAt: string;
+                        reactions: {
+                            /** @enum {string} */
+                            emoji: "🙏" | "❤️" | "🔥" | "👏" | "😂";
+                            count: number;
+                            reactedByMe: boolean;
+                        }[];
+                        replies: {
+                            id: string;
+                            body: string;
+                            author: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                            createdAt: string;
+                            reactions: {
+                                /** @enum {string} */
+                                emoji: "🙏" | "❤️" | "🔥" | "👏" | "😂";
+                                count: number;
+                                reactedByMe: boolean;
+                            }[];
+                        }[];
+                    }[];
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createLineupComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    body: string;
+                    /** Format: uuid */
+                    parentCommentId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Comment posted. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        body: string;
+                        author: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        };
+                        createdAt: string;
+                        reactions: {
+                            /** @enum {string} */
+                            emoji: "🙏" | "❤️" | "🔥" | "👏" | "😂";
+                            count: number;
+                            reactedByMe: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    toggleLineupCommentReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    emoji: "🙏" | "❤️" | "🔥" | "👏" | "😂";
+                };
+            };
+        };
+        responses: {
+            /** @description Reaction toggled. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        emoji: "🙏" | "❤️" | "🔥" | "👏" | "😂";
+                        count: number;
+                        reactedByMe: boolean;
+                    }[];
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteLineupComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comment deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateLineupComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    body: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Comment updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        body: string;
+                        author: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        };
+                        createdAt: string;
+                        reactions: {
+                            /** @enum {string} */
+                            emoji: "🙏" | "❤️" | "🔥" | "👏" | "😂";
+                            count: number;
+                            reactedByMe: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMusicians: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Musicians. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        user: {
+                            id: string;
+                            name: string;
+                            email: string;
+                            image: string | null;
+                        };
+                        instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                        createdAt: string;
+                        updatedAt: string;
+                    }[];
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createMusician: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    userId: string;
+                    instruments?: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                };
+            };
+        };
+        responses: {
+            /** @description Musician profile created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        user: {
+                            id: string;
+                            name: string;
+                            email: string;
+                            image: string | null;
+                        };
+                        instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict. Resource already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 409,
+                     *       "message": "Conflict. Resource already exists."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMusician: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Musician. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        user: {
+                            id: string;
+                            name: string;
+                            email: string;
+                            image: string | null;
+                        };
+                        instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteMusician: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Musician profile deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict. Resource already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 409,
+                     *       "message": "Conflict. Resource already exists."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateMusician: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                };
+            };
+        };
+        responses: {
+            /** @description Musician updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        user: {
+                            id: string;
+                            name: string;
+                            email: string;
+                            image: string | null;
+                        };
+                        instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listSchedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Schedules. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        type: "sunday_service" | "youth_service" | "necrological_service" | "rehearsal" | "prayer_meeting_service" | "victory_day" | "other";
+                        /** @enum {string|null} */
+                        lineupRole: "service" | "practice" | null;
+                        title: string | null;
+                        startAt: string;
+                        lineup: {
+                            id: string;
+                            seriesName: string | null;
+                            topic: string | null;
+                        } | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    }[];
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listSongs: {
+        parameters: {
+            query?: {
+                /** @description Spelling-tolerant search over song title and artist. */
+                q?: string;
+                /** @description Offset-based pagination cursor - pass back the previous response's `nextCursor`. */
+                cursor?: number | null;
+                /** @description Max songs to return per page. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of songs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            title: string;
+                            artist: string | null;
+                            musicalKey: string | null;
+                            tempo: number | null;
+                            album: string | null;
+                            releaseDate: string | null;
+                            chordpro: string | null;
+                            originalFileName: string;
+                            mimeType: string;
+                            fileSizeBytes: number;
+                            hasAlbumArt: boolean;
+                            uploader: {
+                                id: string;
+                                name: string;
+                            };
+                            createdAt: string;
+                        }[];
+                        nextCursor: number | null;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    title: string;
+                    artist?: string;
+                    musicalKey?: string;
+                    tempo?: number;
+                    album?: string;
+                    /** Format: date */
+                    releaseDate?: string;
+                    /** Format: binary */
+                    file: string;
+                    /** Format: binary */
+                    albumArt?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Song uploaded. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        title: string;
+                        artist: string | null;
+                        musicalKey: string | null;
+                        tempo: number | null;
+                        album: string | null;
+                        releaseDate: string | null;
+                        chordpro: string | null;
+                        originalFileName: string;
+                        mimeType: string;
+                        fileSizeBytes: number;
+                        hasAlbumArt: boolean;
+                        uploader: {
+                            id: string;
+                            name: string;
+                        };
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Payload too large. Request body exceeds the maximum allowed size. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 413,
+                     *       "message": "Payload too large. Request body exceeds the maximum allowed size."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Song. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        title: string;
+                        artist: string | null;
+                        musicalKey: string | null;
+                        tempo: number | null;
+                        album: string | null;
+                        releaseDate: string | null;
+                        chordpro: string | null;
+                        originalFileName: string;
+                        mimeType: string;
+                        fileSizeBytes: number;
+                        hasAlbumArt: boolean;
+                        uploader: {
+                            id: string;
+                            name: string;
+                        };
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Song deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateSong: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    chordpro: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Song updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        title: string;
+                        artist: string | null;
+                        musicalKey: string | null;
+                        tempo: number | null;
+                        album: string | null;
+                        releaseDate: string | null;
+                        chordpro: string | null;
+                        originalFileName: string;
+                        mimeType: string;
+                        fileSizeBytes: number;
+                        hasAlbumArt: boolean;
+                        uploader: {
+                            id: string;
+                            name: string;
+                        };
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSongStreamUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed playback URL. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSongDownloadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed download URL. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSongAlbumUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed album art URL. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listTeams: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Teams. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        leader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        members: {
+                            id: string;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                            musicianId: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                        }[];
+                        createdAt: string;
+                        updatedAt: string;
+                    }[];
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    teamLeaderId?: string;
+                    members?: {
+                        userId: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Team created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        leader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        members: {
+                            id: string;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                            musicianId: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                        }[];
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Team. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        leader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        members: {
+                            id: string;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                            musicianId: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                        }[];
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Team deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    teamLeaderId?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Team updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        leader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        members: {
+                            id: string;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                            musicianId: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                        }[];
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    addTeamMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Member added. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        leader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        members: {
+                            id: string;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                            musicianId: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                        }[];
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    removeTeamMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Users. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        email: string;
+                        image: string | null;
+                    }[];
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
 }

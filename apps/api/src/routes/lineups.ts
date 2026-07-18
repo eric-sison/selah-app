@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi"
-import { instrument, lineupServiceType, lineupStatus } from "../db/app-schema.js"
+import { instrument, lineupServiceType, lineupStatus, reactionEmoji } from "../db/app-schema.js"
 import type { RequestContext } from "../types/request-context.js"
 import { requireAdmin } from "../middleware/require-admin.js"
 import { requireAuth } from "../middleware/require-auth.js"
@@ -8,12 +8,19 @@ import {
   addLineupMember,
   addLineupSong,
   createLineup,
+  createLineupComment,
   deleteLineup,
+  deleteLineupComment,
   getLineup,
+  getLineupCommentById,
+  listLineupComments,
   listLineups,
+  type ReactionEmoji,
   removeLineupMember,
   removeLineupSong,
+  toggleLineupCommentReaction,
   updateLineup,
+  updateLineupComment,
   updateLineupSongSinger,
 } from "../services/lineups.js"
 
@@ -31,6 +38,7 @@ const LineupSongResponseSchema = z.object({
     artist: z.string().nullable(),
     musicalKey: z.string().nullable(),
     tempo: z.number().nullable(),
+    hasAlbumArt: z.boolean(),
   }),
   // Who's singing this song, from the lineup's own roster - null until
   // assigned.
@@ -106,6 +114,7 @@ function mapLineup(l: LineupWithJoins) {
         artist: s.song.artist,
         musicalKey: s.song.musicalKey,
         tempo: s.song.tempo,
+        hasAlbumArt: s.song.albumArtStorageKey !== null,
       },
       singer: s.singer ? { id: s.singer.id, name: s.singer.name, image: s.singer.image } : null,
     })),
@@ -123,9 +132,80 @@ function mapLineup(l: LineupWithJoins) {
   }
 }
 
+// Collapses a comment's raw reaction rows (one per user+emoji) into
+// per-emoji counts, and whether `viewerId` is one of the reactors - resolved
+// here rather than in the service since it depends on who's asking.
+function summarizeReactions(reactions: { userId: string; emoji: ReactionEmoji }[], viewerId: string) {
+  const summaries = new Map<ReactionEmoji, { count: number; reactedByMe: boolean }>()
+  for (const reaction of reactions) {
+    const entry = summaries.get(reaction.emoji) ?? { count: 0, reactedByMe: false }
+    entry.count += 1
+    if (reaction.userId === viewerId) entry.reactedByMe = true
+    summaries.set(reaction.emoji, entry)
+  }
+  return Array.from(summaries, ([emoji, summary]) => ({ emoji, ...summary }))
+}
+
+interface CommentReplyWithJoins {
+  id: string
+  body: string
+  author: { id: string; name: string; image: string | null }
+  createdAt: Date
+  reactions: { userId: string; emoji: ReactionEmoji }[]
+}
+
+function mapCommentReply(comment: CommentReplyWithJoins, viewerId: string) {
+  return {
+    id: comment.id,
+    body: comment.body,
+    author: comment.author,
+    createdAt: comment.createdAt.toISOString(),
+    reactions: summarizeReactions(comment.reactions, viewerId),
+  }
+}
+
+function mapComment(comment: CommentReplyWithJoins & { replies: CommentReplyWithJoins[] }, viewerId: string) {
+  return {
+    ...mapCommentReply(comment, viewerId),
+    replies: comment.replies.map((reply) => mapCommentReply(reply, viewerId)),
+  }
+}
+
 const LineupIdParamSchema = z.object({ id: z.uuid() })
 const LineupSongParamSchema = z.object({ id: z.uuid(), songId: z.uuid() })
 const LineupMemberParamSchema = z.object({ id: z.uuid(), memberId: z.uuid() })
+const LineupCommentParamSchema = z.object({ id: z.uuid(), commentId: z.uuid() })
+
+const ReactionEmojiSchema = z.enum(reactionEmoji.enumValues)
+
+const LineupCommentReactionSummarySchema = z.object({
+  emoji: ReactionEmojiSchema,
+  count: z.number(),
+  // Whether the requesting user is one of the people who reacted with this
+  // emoji - resolved per-request (see summarizeReactions below), not stored.
+  reactedByMe: z.boolean(),
+})
+
+const LineupCommentAuthorSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  image: z.string().nullable(),
+})
+
+// Shape shared by a top-level comment and a reply - a reply just never has
+// its own `replies` (see LineupCommentResponseSchema), matching the schema's
+// one-level-of-nesting UI constraint (see lineupComment in app-schema.ts).
+const LineupCommentReplyResponseSchema = z.object({
+  id: z.string(),
+  body: z.string(),
+  author: LineupCommentAuthorSchema,
+  createdAt: z.string(),
+  reactions: z.array(LineupCommentReactionSummarySchema),
+})
+
+const LineupCommentResponseSchema = LineupCommentReplyResponseSchema.extend({
+  replies: z.array(LineupCommentReplyResponseSchema),
+})
 
 const CreateLineupRequestSchema = z.object({
   serviceType: LineupServiceTypeSchema,
@@ -411,6 +491,122 @@ const removeLineupMemberRoute = createRoute({
   },
 })
 
+const listLineupCommentsRoute = createRoute({
+  method: "get",
+  path: "/lineups/{id}/comments",
+  operationId: "listLineupComments",
+  tags: ["Lineups"],
+  summary: "List a lineup's discussion",
+  description:
+    "Any authenticated user can view a lineup's discussion - top-level comments with one level of nested replies, each with per-emoji reaction counts and whether the requesting user has reacted.",
+  middleware: [requireAuth] as const,
+  request: {
+    params: LineupIdParamSchema,
+  },
+  responses: {
+    200: jsonResponse(z.array(LineupCommentResponseSchema), "Comments."),
+    401: commonErrors[401],
+    404: commonErrors[404],
+  },
+})
+
+const CreateLineupCommentRequestSchema = z.object({
+  body: z.string().min(1),
+  /** Omit to post a top-level comment - set to reply to an existing top-level comment. Replying to a reply isn't supported. */
+  parentCommentId: z.uuid().optional(),
+})
+
+const createLineupCommentRoute = createRoute({
+  method: "post",
+  path: "/lineups/{id}/comments",
+  operationId: "createLineupComment",
+  tags: ["Lineups"],
+  summary: "Post a comment or reply on a lineup",
+  description:
+    "Any authenticated user can post a top-level comment, or reply to an existing top-level comment.",
+  middleware: [requireAuth] as const,
+  request: {
+    params: LineupIdParamSchema,
+    ...jsonBody(CreateLineupCommentRequestSchema),
+  },
+  responses: {
+    201: jsonResponse(LineupCommentReplyResponseSchema, "Comment posted."),
+    401: commonErrors[401],
+    404: commonErrors[404],
+    422: commonErrors[422],
+  },
+})
+
+const ToggleLineupCommentReactionRequestSchema = z.object({
+  emoji: ReactionEmojiSchema,
+})
+
+const toggleLineupCommentReactionRoute = createRoute({
+  method: "post",
+  path: "/lineups/{id}/comments/{commentId}/reactions",
+  operationId: "toggleLineupCommentReaction",
+  tags: ["Lineups"],
+  summary: "Toggle a reaction on a comment",
+  description:
+    "Any authenticated user can react to a comment - reacting with the same emoji again removes it. Returns the comment's updated per-emoji reaction summary.",
+  middleware: [requireAuth] as const,
+  request: {
+    params: LineupCommentParamSchema,
+    ...jsonBody(ToggleLineupCommentReactionRequestSchema),
+  },
+  responses: {
+    200: jsonResponse(z.array(LineupCommentReactionSummarySchema), "Reaction toggled."),
+    401: commonErrors[401],
+    404: commonErrors[404],
+    422: commonErrors[422],
+  },
+})
+
+const UpdateLineupCommentRequestSchema = z.object({
+  body: z.string().min(1),
+})
+
+const updateLineupCommentRoute = createRoute({
+  method: "patch",
+  path: "/lineups/{id}/comments/{commentId}",
+  operationId: "updateLineupComment",
+  tags: ["Lineups"],
+  summary: "Edit a comment or reply",
+  description: "Only the comment's own author can edit it.",
+  middleware: [requireAuth] as const,
+  request: {
+    params: LineupCommentParamSchema,
+    ...jsonBody(UpdateLineupCommentRequestSchema),
+  },
+  responses: {
+    200: jsonResponse(LineupCommentReplyResponseSchema, "Comment updated."),
+    401: commonErrors[401],
+    403: commonErrors[403],
+    404: commonErrors[404],
+    422: commonErrors[422],
+  },
+})
+
+const deleteLineupCommentRoute = createRoute({
+  method: "delete",
+  path: "/lineups/{id}/comments/{commentId}",
+  operationId: "deleteLineupComment",
+  tags: ["Lineups"],
+  summary: "Delete a comment or reply",
+  description:
+    "Only the comment's own author can delete it. Deleting a top-level comment also deletes its replies.",
+  middleware: [requireAuth] as const,
+  request: {
+    params: LineupCommentParamSchema,
+  },
+  responses: {
+    204: { description: "Comment deleted." },
+    401: commonErrors[401],
+    403: commonErrors[403],
+    404: commonErrors[404],
+  },
+})
+
 export const lineupsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
   .openapi(createLineupRoute, async (c) => {
     // requireAdmin guarantees this is non-null.
@@ -609,5 +805,92 @@ export const lineupsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
     }
 
     await removeLineupMember(memberId)
+    return c.body(null, 204)
+  })
+  .openapi(listLineupCommentsRoute, async (c) => {
+    const { id } = c.req.valid("param")
+    // requireAuth guarantees this is non-null.
+    const user = c.get("user")!
+
+    const existingLineup = await getLineup(id)
+    if (!existingLineup) {
+      return c.json({ status: 404, message: "Lineup not found." }, 404)
+    }
+
+    const comments = await listLineupComments(id)
+    return c.json(
+      comments.map((comment) => mapComment(comment, user.id)),
+      200
+    )
+  })
+  .openapi(createLineupCommentRoute, async (c) => {
+    const { id } = c.req.valid("param")
+    const { body, parentCommentId } = c.req.valid("json")
+    // requireAuth guarantees this is non-null.
+    const user = c.get("user")!
+
+    const existingLineup = await getLineup(id)
+    if (!existingLineup) {
+      return c.json({ status: 404, message: "Lineup not found." }, 404)
+    }
+
+    if (parentCommentId) {
+      const parent = await getLineupCommentById(parentCommentId)
+      if (!parent || parent.lineupId !== id) {
+        return c.json({ status: 404, message: "Comment not found." }, 404)
+      }
+      if (parent.parentCommentId !== null) {
+        return c.json({ status: 422, message: "Cannot reply to a reply." }, 422)
+      }
+    }
+
+    const created = await createLineupComment({ lineupId: id, authorId: user.id, body, parentCommentId })
+    return c.json(mapCommentReply(created, user.id), 201)
+  })
+  .openapi(toggleLineupCommentReactionRoute, async (c) => {
+    const { id, commentId } = c.req.valid("param")
+    const { emoji } = c.req.valid("json")
+    // requireAuth guarantees this is non-null.
+    const user = c.get("user")!
+
+    const comment = await getLineupCommentById(commentId)
+    if (!comment || comment.lineupId !== id) {
+      return c.json({ status: 404, message: "Comment not found." }, 404)
+    }
+
+    const reactions = await toggleLineupCommentReaction(commentId, user.id, emoji)
+    return c.json(summarizeReactions(reactions, user.id), 200)
+  })
+  .openapi(updateLineupCommentRoute, async (c) => {
+    const { id, commentId } = c.req.valid("param")
+    const { body } = c.req.valid("json")
+    // requireAuth guarantees this is non-null.
+    const user = c.get("user")!
+
+    const comment = await getLineupCommentById(commentId)
+    if (!comment || comment.lineupId !== id) {
+      return c.json({ status: 404, message: "Comment not found." }, 404)
+    }
+    if (comment.authorId !== user.id) {
+      return c.json({ status: 403, message: "You can only edit your own comments." }, 403)
+    }
+
+    const updated = await updateLineupComment(commentId, body)
+    return c.json(mapCommentReply(updated!, user.id), 200)
+  })
+  .openapi(deleteLineupCommentRoute, async (c) => {
+    const { id, commentId } = c.req.valid("param")
+    // requireAuth guarantees this is non-null.
+    const user = c.get("user")!
+
+    const comment = await getLineupCommentById(commentId)
+    if (!comment || comment.lineupId !== id) {
+      return c.json({ status: 404, message: "Comment not found." }, 404)
+    }
+    if (comment.authorId !== user.id) {
+      return c.json({ status: 403, message: "You can only delete your own comments." }, 403)
+    }
+
+    await deleteLineupComment(commentId)
     return c.body(null, 204)
   })
