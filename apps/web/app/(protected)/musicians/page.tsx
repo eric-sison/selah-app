@@ -10,8 +10,8 @@ import {
 
 export default function Musicians() {
   return (
-    <PageContent className="pb-5">
-      <div className="flex h-full flex-col">
+    <PageContent>
+      <div className="flex min-h-full flex-col">
         <PageHeader>
           <PageTitle>Musicians</PageTitle>
           <PageDescription>

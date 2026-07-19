@@ -21,10 +21,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/DropdownMenu"
+import { Empty, EmptyDescription, EmptyIcon, EmptyTitle } from "@workspace/ui/components/Empty"
 import { InputGroupAddon } from "@workspace/ui/components/InputGroup"
 import { toast } from "@workspace/ui/components/Sonner"
 import { cn } from "@workspace/ui/lib/utils"
-import { ChevronDown, Mic2, Music, Search, X } from "lucide-react"
+import { ChevronDown, ListMusic, Mic2, Music, Search, X } from "lucide-react"
 import Image from "next/image"
 import { FunctionComponent, useState } from "react"
 import { apiClient } from "@/lib/api-client"
@@ -305,7 +306,15 @@ export const LineupSongList: FunctionComponent<LineupSongListProps> = ({ lineupI
         </Combobox>
 
         {songs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No songs yet.</p>
+          <Empty className="mt-3 min-h-0 gap-1 rounded-lg py-6">
+            <EmptyIcon className="mb-0 [&>svg]:size-20">
+              <ListMusic />
+            </EmptyIcon>
+            <div className="mt-2">
+              <EmptyTitle>No songs yet</EmptyTitle>
+              <EmptyDescription>Search above to build the song list.</EmptyDescription>
+            </div>
+          </Empty>
         ) : (
           <ul className="mt-4 flex flex-col divide-y divide-border">
             {songs.map((entry) => {

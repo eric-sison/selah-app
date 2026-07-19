@@ -18,7 +18,7 @@ import { toast } from "@workspace/ui/components/Sonner"
 import { Textarea } from "@workspace/ui/components/Textarea"
 import { cn } from "@workspace/ui/lib/utils"
 import { formatDistanceToNow } from "date-fns"
-import { MoreHorizontal, Reply, SmilePlus } from "lucide-react"
+import { MoreHorizontal, Reply, SendHorizontal, SmilePlus } from "lucide-react"
 import { FunctionComponent, useState } from "react"
 import { apiClient } from "@/lib/api-client"
 import { useSession } from "@/components/SessionProvider"
@@ -230,9 +230,12 @@ interface CommentComposerProps {
 // Shared by the "new top-level comment" composer and each comment's inline
 // reply composer - just an avatar (the requesting user's own, from
 // useSession) next to a borderless Textarea, so it reads as part of the
-// thread rather than a boxed form bolted onto it. The submit row only
-// appears once there's something to submit (or to cancel out of), keeping
-// an idle composer down to a single quiet line.
+// thread rather than a boxed form bolted onto it. Submit/cancel sit inside
+// the textarea itself, bottom-right, like a chat composer - the `pb-9`
+// reserves a blank strip at the bottom of the field for them to overlay
+// without covering typed text. That row only appears once there's
+// something to submit (or to cancel out of), keeping an idle composer down
+// to a single quiet line.
 const CommentComposer: FunctionComponent<CommentComposerProps> = ({
   value,
   onChange,
@@ -242,40 +245,48 @@ const CommentComposer: FunctionComponent<CommentComposerProps> = ({
   onCancel,
   authorImage,
   authorName,
-}) => (
-  <div className="flex gap-2.5">
-    <Avatar className="mt-0.5">
-      <AvatarImage src={authorImage} alt={authorName ?? "You"} />
-      <AvatarFallback>{authorName ? authorName.charAt(0) : "?"}</AvatarFallback>
-    </Avatar>
-    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <Textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        disabled={submitting}
-        className="min-h-9 resize-none border-none bg-muted/50 text-sm shadow-none focus-visible:ring-1"
-      />
-      {(value.trim().length > 0 || onCancel) && (
-        <div className="flex justify-end gap-2">
-          {onCancel && (
-            <Button type="button" variant="ghost" size="sm" disabled={submitting} onClick={onCancel}>
-              Cancel
-            </Button>
+}) => {
+  const showActions = value.trim().length > 0 || Boolean(onCancel)
+
+  return (
+    <div className="flex gap-2.5">
+      <Avatar className="mt-0.5">
+        <AvatarImage src={authorImage} alt={authorName ?? "You"} />
+        <AvatarFallback>{authorName ? authorName.charAt(0) : "?"}</AvatarFallback>
+      </Avatar>
+      <div className="relative min-w-0 flex-1">
+        <Textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          disabled={submitting}
+          className={cn(
+            "min-h-9 resize-none border-none bg-muted/50 text-sm shadow-none focus-visible:ring-1",
+            showActions && "pb-9"
           )}
-          <Button
-            type="button"
-            size="sm"
-            disabled={submitting || value.trim().length === 0}
-            onClick={onSubmit}
-          >
-            Post
-          </Button>
-        </div>
-      )}
+        />
+        {showActions && (
+          <div className="absolute right-1.5 bottom-1.5 flex items-center gap-1">
+            {onCancel && (
+              <Button type="button" variant="ghost" size="sm" disabled={submitting} onClick={onCancel}>
+                Cancel
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={submitting || value.trim().length === 0}
+              onClick={onSubmit}
+              aria-label="Post"
+            >
+              <SendHorizontal className="size-3" />
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 interface CommentThreadProps {
   comment: LineupComment

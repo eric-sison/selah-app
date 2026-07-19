@@ -11,7 +11,7 @@ import {
 export default function Teams() {
   return (
     <PageContent>
-      <div className="flex h-full flex-col">
+      <div className="flex min-h-full flex-col">
         <PageHeader>
           <PageTitle>Teams</PageTitle>
           <PageDescription>Manage your worship team members and their instruments.</PageDescription>

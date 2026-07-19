@@ -17,11 +17,7 @@ const mockEvents: ScheduleCalendarEvent[] = [
 
 export default function Schedules() {
   return (
-    // The layout's <Page> always applies its default `space-y-5` gap above
-    // this (no per-page `noGap` control anymore now that <Page> lives at the
-    // layout level) - only `pb-5` here, not `py-5`, so the top doesn't get a
-    // doubled-up gap.
-    <PageContent className="pb-5">
+    <PageContent>
       {/* <PageHeader>
         <PageTitle>Schedules</PageTitle>
         <PageDescription>

@@ -64,11 +64,12 @@ function mockApi({
 }
 
 describe("LineupSongList", () => {
-  it("shows 'No songs yet.' when there are no songs", () => {
+  it("shows an empty state when there are no songs", () => {
     mockApi()
     render(<LineupSongList lineupId="lineup-1" songs={[]} members={[]} />)
 
-    expect(screen.getByText("No songs yet.")).toBeInTheDocument()
+    expect(screen.getByText("No songs yet")).toBeInTheDocument()
+    expect(screen.getByText("Search above to build the song list.")).toBeInTheDocument()
   })
 
   it("renders a song's title, artist fallback, key/tempo meta, and album art fallback icon", () => {

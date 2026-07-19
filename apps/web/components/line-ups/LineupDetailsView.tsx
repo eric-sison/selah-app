@@ -68,7 +68,7 @@ export const LineupDetailsView: FunctionComponent<LineupDetailsViewProps> = ({ l
         </div>
       </div>
       {lineup && <EditLineupSheet lineup={lineup} open={updateSheetOpen} onOpenChange={setUpdateSheetOpen} />}
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto pb-5">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
           {lineupQuery.isLoading ? (
             <div className="flex flex-col gap-5">

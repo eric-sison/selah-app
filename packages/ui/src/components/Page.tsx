@@ -88,7 +88,7 @@ function PageAction({ className, ...props }: ComponentProps<"div">) {
 }
 
 function PageContent({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cn("flex-1 space-y-5 overflow-y-auto px-7", className)} {...props} />
+  return <div className={cn("flex-1 space-y-5 overflow-y-auto px-7 pb-7", className)} {...props} />
 }
 
 function PageFooter({ className, ...props }: ComponentProps<"div">) {

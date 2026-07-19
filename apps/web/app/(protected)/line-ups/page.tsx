@@ -12,7 +12,7 @@ import {
 export default function LineUps() {
   return (
     <PageContent>
-      <div className="flex h-full flex-col">
+      <div className="flex min-h-full flex-col">
         <PageHeader>
           <PageTitle>Line Ups</PageTitle>
           <PageDescription>Build and manage the set list for each upcoming service.</PageDescription>
