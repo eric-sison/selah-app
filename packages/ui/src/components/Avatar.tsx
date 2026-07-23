@@ -68,8 +68,17 @@ function AvatarGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="avatar-group"
+      // Overlap margin is scoped to `[&>[data-slot]~[data-slot]]` rather than
+      // a blanket `-space-x-2` (which is `> * + *`, matching literally any
+      // child) - a Popover/Combobox trigger placed in the group (e.g. the
+      // "add member" button) has its floating-focus-guard `<span>`s inserted
+      // as real DOM siblings the moment it opens, and those guards have no
+      // `data-slot`. A blanket sibling-margin rule would apply the -8px
+      // overlap to those guards too, shrinking the group's auto-computed
+      // width (and shifting whatever sits after it) purely because a popover
+      // opened - see the "N members" shift bug this fixed.
       className={cn(
-        "group/avatar-group flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background",
+        "group/avatar-group flex *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background [&>[data-slot]~[data-slot]]:-ml-2",
         className
       )}
       {...props}

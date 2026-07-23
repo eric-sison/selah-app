@@ -18,6 +18,15 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@workspace/ui/components/Combobox"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/DropdownMenu"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@workspace/ui/components/HoverCard"
 import { InputGroupAddon } from "@workspace/ui/components/InputGroup"
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/Popover"
@@ -172,10 +181,50 @@ const AddMemberButton: FunctionComponent<AddMemberButtonProps> = ({
   )
 }
 
+interface MemberDropdownItemProps {
+  member: Lineup["members"][number]
+  onRemove: () => void
+  removeDisabled?: boolean
+}
+
+// One roster member's row in the "N members" dropdown - avatar, name, and
+// role on the left, a remove button on the right. `closeOnClick={false}` on
+// the item itself keeps the menu open after a remove so several members can
+// be taken off in one go; the remove button stops propagation so clicking it
+// doesn't also trigger the item's own (no-op) select behavior.
+const MemberDropdownItem: FunctionComponent<MemberDropdownItemProps> = ({
+  member,
+  onRemove,
+  removeDisabled,
+}) => (
+  <DropdownMenuItem closeOnClick={false} className="gap-2">
+    <Avatar size="sm">
+      <AvatarImage src={member.user.image ?? undefined} alt={member.user.name} />
+      <AvatarFallback>{member.user.name.charAt(0)}</AvatarFallback>
+    </Avatar>
+    <div className="min-w-0 flex-1">
+      <p className="truncate text-sm">{member.user.name}</p>
+    </div>
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-xs"
+      className="shrink-0 rounded-full text-muted-foreground hover:text-destructive"
+      aria-label={`Remove ${member.user.name} from lineup`}
+      disabled={removeDisabled}
+      onClick={(e) => {
+        e.stopPropagation()
+        onRemove()
+      }}
+    >
+      <X className="size-3.5" />
+    </Button>
+  </DropdownMenuItem>
+)
+
 interface LineupRosterSectionProps {
   lineupId: string
   members: Lineup["members"]
-  devoLeader: Lineup["devoLeader"]
 }
 
 // The roster avatar stack under the lineup title - who's on it, plus
@@ -185,11 +234,11 @@ interface LineupRosterSectionProps {
 // lineup's id and its current roster, it fetches its own user-search list
 // and owns the add/remove mutations, so LineupDetailsView only has to
 // assemble it in - not thread roster state through the rest of the page.
-export const LineupRosterSection: FunctionComponent<LineupRosterSectionProps> = ({
-  lineupId,
-  members,
-  devoLeader,
-}) => {
+// Deliberately doesn't include the lineup's devo leader here - they're a
+// single lineup-level field (set via the Update details sheet), not a
+// `lineup members` row, so mixing them into this roster's avatar
+// stack/count would conflate two different relationships.
+export const LineupRosterSection: FunctionComponent<LineupRosterSectionProps> = ({ lineupId, members }) => {
   const queryClient = useQueryClient()
   const invalidateLineup = () => queryClient.invalidateQueries({ queryKey: ["lineup", lineupId] })
   const onMutationError = (error: Error) => toast.error(error.message, { position: "top-center" })
@@ -257,13 +306,35 @@ export const LineupRosterSection: FunctionComponent<LineupRosterSectionProps> = 
           onAdd={(userId) => addMember.mutate(userId)}
         />
       </AvatarGroup>
-      {members.length === 0 && !devoLeader ? (
+      {members.length === 0 ? (
         <p className="text-sm text-muted-foreground">No roster yet.</p>
       ) : (
-        <span className="text-sm text-muted-foreground">
-          {members.length + (devoLeader ? 1 : 0)} member
-          {members.length + (devoLeader ? 1 : 0) === 1 ? "" : "s"}
-        </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button
+                type="button"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              />
+            }
+          >
+            {members.length} member{members.length === 1 ? "" : "s"}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-64">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Team Members</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {members.map((member) => (
+                <MemberDropdownItem
+                  key={member.id}
+                  member={member}
+                  onRemove={() => removeMember.mutate(member.id)}
+                  removeDisabled={removeMember.isPending}
+                />
+              ))}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
     </div>
   )

@@ -47,29 +47,23 @@ function mockUsers(users: { id: string; name: string; email: string; image: stri
 }
 
 describe("LineupRosterSection", () => {
-  it("shows 'No roster yet.' when there are no members and no devo leader", () => {
+  it("shows 'No roster yet.' when there are no members", () => {
     mockUsers([])
-    render(<LineupRosterSection lineupId="lineup-1" members={[]} devoLeader={null} />)
+    render(<LineupRosterSection lineupId="lineup-1" members={[]} />)
 
     expect(screen.getByText("No roster yet.")).toBeInTheDocument()
   })
 
-  it("shows the member count, including the devo leader", () => {
+  it("shows the member count", () => {
     mockUsers([])
-    render(
-      <LineupRosterSection
-        lineupId="lineup-1"
-        members={[BEN, CASEY]}
-        devoLeader={{ id: "user-2", name: "Dana Cruz", image: null }}
-      />
-    )
+    render(<LineupRosterSection lineupId="lineup-1" members={[BEN, CASEY]} />)
 
-    expect(screen.getByText("3 members")).toBeInTheDocument()
+    expect(screen.getByText("2 members")).toBeInTheDocument()
   })
 
   it("uses singular 'member' for exactly one person on the roster", () => {
     mockUsers([])
-    render(<LineupRosterSection lineupId="lineup-1" members={[BEN]} devoLeader={null} />)
+    render(<LineupRosterSection lineupId="lineup-1" members={[BEN]} />)
 
     expect(screen.getByText("1 member")).toBeInTheDocument()
   })
@@ -77,7 +71,7 @@ describe("LineupRosterSection", () => {
   it("reveals a member's role, instruments, and availability on hover", async () => {
     const user = userEvent.setup()
     mockUsers([])
-    render(<LineupRosterSection lineupId="lineup-1" members={[BEN, CASEY]} devoLeader={null} />)
+    render(<LineupRosterSection lineupId="lineup-1" members={[BEN, CASEY]} />)
 
     await user.hover(screen.getAllByRole("button")[0]!)
 
@@ -93,7 +87,7 @@ describe("LineupRosterSection", () => {
     const user = userEvent.setup()
     mockUsers([])
     vi.mocked(apiClient.DELETE).mockResolvedValue({ data: {}, error: undefined } as never)
-    render(<LineupRosterSection lineupId="lineup-1" members={[BEN]} devoLeader={null} />)
+    render(<LineupRosterSection lineupId="lineup-1" members={[BEN]} />)
 
     await user.hover(screen.getAllByRole("button")[0]!)
     await user.click(await screen.findByRole("button", { name: "Remove from lineup" }))
@@ -112,7 +106,7 @@ describe("LineupRosterSection", () => {
       data: undefined,
       error: { status: 500, message: "Server error" },
     } as never)
-    render(<LineupRosterSection lineupId="lineup-1" members={[BEN]} devoLeader={null} />)
+    render(<LineupRosterSection lineupId="lineup-1" members={[BEN]} />)
 
     await user.hover(screen.getAllByRole("button")[0]!)
     await user.click(await screen.findByRole("button", { name: "Remove from lineup" }))
@@ -130,7 +124,7 @@ describe("LineupRosterSection", () => {
       data: undefined,
       error: { status: 500, message: "Server error" },
     } as never)
-    render(<LineupRosterSection lineupId="lineup-1" members={[]} devoLeader={null} />)
+    render(<LineupRosterSection lineupId="lineup-1" members={[]} />)
 
     await user.click(screen.getByRole("button", { name: "Add to roster" }))
     const input = await screen.findByPlaceholderText("Search members to add...")
@@ -145,7 +139,7 @@ describe("LineupRosterSection", () => {
     const members = Array.from({ length: 22 }, (_, i) =>
       createMockMember({ id: `lm-${i}`, user: { id: `user-${i}`, name: `Member ${i}`, image: null } })
     )
-    render(<LineupRosterSection lineupId="lineup-1" members={members} devoLeader={null} />)
+    render(<LineupRosterSection lineupId="lineup-1" members={members} />)
 
     expect(screen.getByText("+2")).toBeInTheDocument()
   })
@@ -157,7 +151,7 @@ describe("LineupRosterSection", () => {
       { id: "user-9", name: "Riley Chen", email: "riley@example.com", image: null },
     ])
     vi.mocked(apiClient.POST).mockResolvedValue({ data: {}, error: undefined } as never)
-    render(<LineupRosterSection lineupId="lineup-1" members={[BEN]} devoLeader={null} />)
+    render(<LineupRosterSection lineupId="lineup-1" members={[BEN]} />)
 
     await user.click(screen.getByRole("button", { name: "Add to roster" }))
     const input = await screen.findByPlaceholderText("Search members to add...")
@@ -186,7 +180,7 @@ describe("LineupRosterSection", () => {
       data: undefined,
       error: { status: 500, message: "Server error" },
     } as never)
-    render(<LineupRosterSection lineupId="lineup-1" members={[]} devoLeader={null} />)
+    render(<LineupRosterSection lineupId="lineup-1" members={[]} />)
 
     await user.click(screen.getByRole("button", { name: "Add to roster" }))
     const input = await screen.findByPlaceholderText("Search members to add...")
