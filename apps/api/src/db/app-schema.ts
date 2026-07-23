@@ -137,6 +137,53 @@ export const songStemsRelations = relations(songStems, ({ one }) => ({
   }),
 }))
 
+// Tracks a YouTube-to-mp3 import as its own job row, separate from `songs` -
+// the song doesn't exist yet while the download/conversion is in flight, so
+// unlike songStems (one row per already-created song) this has no songId
+// until status = "completed".
+export const youtubeImportStatus = pgEnum("youtube_import_status", [
+  "pending",
+  "downloading",
+  "completed",
+  "failed",
+])
+
+export const youtubeImportJob = pgTable(
+  "youtube_import_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    youtubeUrl: text("youtube_url").notNull(),
+    videoTitle: text("video_title"),
+    status: youtubeImportStatus("status").notNull().default("pending"),
+    // Nullable until status = "completed". `set null` (not cascade) on
+    // delete - the job row is a history/audit trail of the import, not
+    // something that should disappear if the resulting song is later
+    // deleted.
+    songId: uuid("song_id").references(() => song.id, { onDelete: "set null" }),
+    errorMessage: text("error_message"),
+    requestedBy: text("requested_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index("youtube_import_job_requested_by_idx").on(table.requestedBy)]
+)
+
+export const youtubeImportJobRelations = relations(youtubeImportJob, ({ one }) => ({
+  song: one(song, {
+    fields: [youtubeImportJob.songId],
+    references: [song.id],
+  }),
+  requestedByUser: one(users, {
+    fields: [youtubeImportJob.requestedBy],
+    references: [users.id],
+  }),
+}))
+
 // The fixed set of instruments/vocal parts a musician can play - deliberately
 // a closed enum rather than free text, since these drive coverage checks
 // (e.g. "does this team have a drummer?") that would silently break against

@@ -66,7 +66,7 @@ export const InviteForm: FunctionComponent = () => {
     <Card className="w-sm">
       <CardHeader>
         <CardTitle>Invite a user</CardTitle>
-        <CardDescription>Sends a sign-up link valid for 2 hours. Temporary admin tool.</CardDescription>
+        <CardDescription>Sends a sign-up link valid for 2 hours.</CardDescription>
       </CardHeader>
       <CardContent>
         <form

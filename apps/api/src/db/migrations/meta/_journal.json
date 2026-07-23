@@ -197,6 +197,13 @@
       "when": 1784834351022,
       "tag": "0027_regular_garia",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1784841934808,
+      "tag": "0028_spotty_corsair",
+      "breakpoints": true
     }
   ]
 }

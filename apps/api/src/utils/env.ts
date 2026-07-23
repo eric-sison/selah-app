@@ -41,6 +41,12 @@ const EnvSchema = z.object({
   STEM_WORKER_URL: z.url(),
   STEM_WORKER_SECRET: z.string().min(32),
   STEM_CALLBACK_SECRET: z.string().min(32),
+  // YouTube song import: shells out to a local yt-dlp binary (see
+  // lib/youtube.ts) rather than calling out to a separate worker - unlike
+  // stem separation, extraction/mp3 conversion is just a CLI tool, not a
+  // Python/ML workload, so it runs in-process.
+  YT_DLP_PATH: z.string().default("yt-dlp"),
+  YOUTUBE_IMPORT_MAX_DURATION_SECONDS: z.coerce.number().int().positive().default(1200),
 })
 
 export type Env = z.infer<typeof EnvSchema>

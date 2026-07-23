@@ -51,6 +51,14 @@ export const auth = betterAuth({
       })
     },
   },
+  user: {
+    changeEmail: {
+      enabled: true,
+      // No sendChangeEmailConfirmation configured, so this reuses
+      // emailVerification.sendVerificationEmail above - the link goes
+      // straight to the new address rather than confirming via the old one.
+    },
+  },
   socialProviders: {
     facebook: {
       clientId: env.FACEBOOK_CLIENT_ID,

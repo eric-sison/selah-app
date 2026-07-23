@@ -17,6 +17,7 @@ import { songStemsHandler } from "./routes/song-stems.js"
 import { songsHandler } from "./routes/songs.js"
 import { teamsHandler } from "./routes/teams.js"
 import { usersHandler } from "./routes/users.js"
+import { youtubeImportsHandler } from "./routes/youtube-imports.js"
 import { errorHandler } from "./middleware/error-handler.js"
 import { defaultHook, ErrorMessages } from "./utils/error-reponses.js"
 
@@ -53,6 +54,7 @@ const routes = [
   songsHandler,
   teamsHandler,
   usersHandler,
+  youtubeImportsHandler,
 ] as const
 routes.forEach((route) => app.route("/", route))
 

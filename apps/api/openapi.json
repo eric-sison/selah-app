@@ -7367,6 +7367,319 @@
           }
         }
       }
+    },
+    "/api/youtube-imports/metadata": {
+      "post": {
+        "operationId": "fetchYoutubeImportMetadata",
+        "tags": [
+          "Songs"
+        ],
+        "summary": "Preview a YouTube video's title/duration/thumbnail",
+        "description": "Any authenticated user can look up a YouTube video's details before importing it - doesn't download or convert anything.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Video details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    },
+                    "durationSeconds": {
+                      "type": "number"
+                    },
+                    "thumbnailUrl": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "title",
+                    "durationSeconds",
+                    "thumbnailUrl"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/youtube-imports": {
+      "post": {
+        "operationId": "startYoutubeImport",
+        "tags": [
+          "Songs"
+        ],
+        "summary": "Import a song from a YouTube URL",
+        "description": "Any authenticated user can start a background job that downloads a YouTube video's audio, converts it to mp3, and adds it to the song bank exactly like a manual upload. Poll GET /youtube-imports/{id} for progress.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "youtubeUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "artist": {
+                    "type": "string"
+                  },
+                  "musicalKey": {
+                    "type": "string"
+                  },
+                  "tempo": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "album": {
+                    "type": "string"
+                  },
+                  "releaseDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "albumArt": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "youtubeUrl",
+                  "title"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Import job started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "downloading",
+                        "completed",
+                        "failed"
+                      ]
+                    },
+                    "errorMessage": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "songId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "errorMessage",
+                    "songId"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload too large. Request body exceeds the maximum allowed size.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 413,
+                  "message": "Payload too large. Request body exceeds the maximum allowed size."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/youtube-imports/{id}": {
+      "get": {
+        "operationId": "getYoutubeImportStatus",
+        "tags": [
+          "Songs"
+        ],
+        "summary": "Get a YouTube import job's status",
+        "description": "Any authenticated user can poll a YouTube import job's progress.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current import status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "downloading",
+                        "completed",
+                        "failed"
+                      ]
+                    },
+                    "errorMessage": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "songId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "errorMessage",
+                    "songId"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

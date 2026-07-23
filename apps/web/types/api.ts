@@ -628,6 +628,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/youtube-imports/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview a YouTube video's title/duration/thumbnail
+         * @description Any authenticated user can look up a YouTube video's details before importing it - doesn't download or convert anything.
+         */
+        post: operations["fetchYoutubeImportMetadata"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/youtube-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a song from a YouTube URL
+         * @description Any authenticated user can start a background job that downloads a YouTube video's audio, converts it to mp3, and adds it to the song bank exactly like a manual upload. Poll GET /youtube-imports/{id} for progress.
+         */
+        post: operations["startYoutubeImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/youtube-imports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a YouTube import job's status
+         * @description Any authenticated user can poll a YouTube import job's progress.
+         */
+        get: operations["getYoutubeImportStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4363,6 +4423,212 @@ export interface operations {
                      * @example {
                      *       "status": 403,
                      *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fetchYoutubeImportMetadata: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uri */
+                    url: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Video details. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        title: string;
+                        durationSeconds: number;
+                        thumbnailUrl: string | null;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startYoutubeImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: uri */
+                    youtubeUrl: string;
+                    title: string;
+                    artist?: string;
+                    musicalKey?: string;
+                    tempo?: number;
+                    album?: string;
+                    /** Format: date */
+                    releaseDate?: string;
+                    /** Format: binary */
+                    albumArt?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Import job started. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        status: "pending" | "downloading" | "completed" | "failed";
+                        errorMessage: string | null;
+                        songId: string | null;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Payload too large. Request body exceeds the maximum allowed size. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 413,
+                     *       "message": "Payload too large. Request body exceeds the maximum allowed size."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getYoutubeImportStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current import status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        status: "pending" | "downloading" | "completed" | "failed";
+                        errorMessage: string | null;
+                        songId: string | null;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];

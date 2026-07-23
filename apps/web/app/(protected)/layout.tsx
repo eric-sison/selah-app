@@ -9,6 +9,8 @@ import { AppSidebar } from "@/components/AppSidebar"
 import { PageBreadcrumbNav } from "@/components/PageBreadcrumbNav"
 import { MiniMusicPlayer } from "@/components/songs/MiniMusicPlayer"
 import { SongPlayerProvider } from "@/components/songs/SongPlayerProvider"
+import { YoutubeImportIndicator } from "@/components/songs/YoutubeImportIndicator"
+import { YoutubeImportProvider } from "@/components/songs/YoutubeImportProvider"
 
 export default async function ProtectedLayout({ children }: Readonly<PropsWithChildren>) {
   const session = await getServerSession()
@@ -34,13 +36,16 @@ export default async function ProtectedLayout({ children }: Readonly<PropsWithCh
           the gradient above - clear them so it shows through everywhere. */}
         <AppSidebar variant="sidebar" className="**:data-[slot=sidebar-inner]:bg-transparent" />
         <SongPlayerProvider>
-          <SidebarInset className="bg-transparent">
-            <Page>
-              <PageBreadcrumbNav />
-              {children}
-            </Page>
-          </SidebarInset>
-          <MiniMusicPlayer />
+          <YoutubeImportProvider>
+            <SidebarInset className="bg-transparent">
+              <Page>
+                <PageBreadcrumbNav />
+                {children}
+              </Page>
+            </SidebarInset>
+            <MiniMusicPlayer />
+            <YoutubeImportIndicator />
+          </YoutubeImportProvider>
         </SongPlayerProvider>
       </SidebarProvider>
     </SessionProvider>

@@ -26,10 +26,10 @@ export const UploadSongDialog: FunctionComponent = () => {
           </Button>
         }
       />
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Upload a song</DialogTitle>
-          <DialogDescription>Add an audio file and its basic details to the song bank.</DialogDescription>
+          <DialogDescription>Add an audio file, or import one straight from a YouTube URL.</DialogDescription>
         </DialogHeader>
         <SongUploadForm onSuccess={() => setOpen(false)} />
       </DialogContent>
