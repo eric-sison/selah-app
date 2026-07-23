@@ -15,6 +15,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -25,9 +26,22 @@ import { Empty, EmptyDescription, EmptyIcon, EmptyTitle } from "@workspace/ui/co
 import { InputGroupAddon } from "@workspace/ui/components/InputGroup"
 import { toast } from "@workspace/ui/components/Sonner"
 import { cn } from "@workspace/ui/lib/utils"
-import { ChevronDown, ListMusic, Mic2, Music, Search, X } from "lucide-react"
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  EllipsisVertical,
+  GripVertical,
+  ListMusic,
+  Mic2,
+  Music,
+  Search,
+  SquareArrowOutUpRight,
+  Trash2,
+} from "lucide-react"
 import Image from "next/image"
-import { FunctionComponent, useState } from "react"
+import { FunctionComponent, type RefObject, useRef, useState } from "react"
+import Draggable, { type DraggableEventHandler } from "react-draggable"
 import { apiClient } from "@/lib/api-client"
 import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import type { Lineup } from "@/components/line-ups/LineupList"
@@ -183,13 +197,165 @@ interface SongComboboxItemProps {
 
 const SongComboboxItem: FunctionComponent<SongComboboxItemProps> = ({ song }) => (
   <ComboboxItem value={song}>
-    <Music className="size-4 shrink-0 text-muted-foreground" />
+    <SongThumbnail song={song} />
     <div className="flex min-w-0 flex-col">
       <span className="truncate">{song.title}</span>
       <span className="truncate text-xs text-muted-foreground">{song.artist ?? "Unknown artist"}</span>
     </div>
   </ComboboxItem>
 )
+
+// Moves `id` (always a member of `order` - every caller sources it from the
+// same songs list) to `targetIndex`, or returns `order` unchanged (same
+// reference) if it's already there - callers use that to tell a real move
+// apart from a no-op.
+function moveItem<T>(order: T[], id: T, targetIndex: number): T[] {
+  const from = order.indexOf(id)
+  if (from === targetIndex) return order
+  const next = [...order]
+  next.splice(from, 1)
+  next.splice(targetIndex, 0, id)
+  return next
+}
+
+interface SongRowProps {
+  entry: Lineup["songs"][number]
+  index: number
+  total: number
+  members: Lineup["members"]
+  singerPending: boolean
+  removePending: boolean
+  onAssignSinger: (singerId: string | null) => void
+  onRemove: () => void
+  onMoveUp: () => void
+  onMoveDown: () => void
+  onDragPreview: (targetIndex: number) => void
+  onDragCommit: (targetIndex: number) => void
+}
+
+// One row of the set list - thumbnail, title/artist, key/tempo meta, singer
+// picker, and a drag handle + overflow menu (move up/down/remove) in place
+// of a plain remove button, since a set list's order matters as much as its
+// contents. Dragging (via the handle) and the menu's move up/down both
+// resolve to the same onDragCommit/onMove* callbacks, which the parent
+// turns into a single reorder mutation - this component only ever reports
+// "the row I represent should end up at index N".
+const SongRow: FunctionComponent<SongRowProps> = ({
+  entry,
+  index,
+  total,
+  members,
+  singerPending,
+  removePending,
+  onAssignSinger,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+  onDragPreview,
+  onDragCommit,
+}) => {
+  const nodeRef = useRef<HTMLLIElement>(null)
+  // Captured once at drag start (not read live off `index`/row height each
+  // frame) since both can shift mid-drag as the preview reorders sibling
+  // rows - the drag math needs a fixed baseline for the gesture's duration.
+  const dragStartIndex = useRef(index)
+  const rowHeight = useRef(0)
+  const [dragging, setDragging] = useState(false)
+
+  const targetIndexForDelta = (deltaY: number) => {
+    const raw = dragStartIndex.current + Math.round(deltaY / rowHeight.current)
+    return Math.min(Math.max(raw, 0), total - 1)
+  }
+
+  const handleDrag: DraggableEventHandler = (_event, data) => onDragPreview(targetIndexForDelta(data.y))
+
+  const handleStop: DraggableEventHandler = (_event, data) => {
+    setDragging(false)
+    onDragCommit(targetIndexForDelta(data.y))
+  }
+
+  const meta = [
+    entry.song.musicalKey ? `Key of ${entry.song.musicalKey}` : null,
+    entry.song.tempo ? `${entry.song.tempo} BPM` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+
+  return (
+    <Draggable
+      nodeRef={nodeRef as RefObject<HTMLElement | null>}
+      axis="y"
+      handle=".drag-handle"
+      position={{ x: 0, y: 0 }}
+      onStart={() => {
+        dragStartIndex.current = index
+        // Draggable already validates its node exists before calling
+        // onStart (it throws otherwise), so nodeRef.current is set here.
+        rowHeight.current = nodeRef.current!.offsetHeight
+        setDragging(true)
+      }}
+      onDrag={handleDrag}
+      onStop={handleStop}
+    >
+      <li
+        ref={nodeRef}
+        className={cn(
+          "flex items-center gap-3 bg-card py-2 first:pt-0 last:pb-0",
+          dragging ? "relative z-10" : "transition-transform duration-150"
+        )}
+      >
+        <button
+          type="button"
+          className="drag-handle flex shrink-0 cursor-grab touch-none items-center text-muted-foreground active:cursor-grabbing"
+          aria-label={`Reorder ${entry.song.title}`}
+        >
+          <GripVertical className="size-4" />
+        </button>
+        <SongThumbnail song={entry.song} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{entry.song.title}</p>
+          <p className="truncate text-xs text-muted-foreground">{entry.song.artist ?? "Unknown artist"}</p>
+        </div>
+        {meta && <span className="shrink-0 text-xs text-muted-foreground">{meta}</span>}
+        <SongSingerPicker
+          members={members}
+          singer={entry.singer}
+          disabled={singerPending}
+          onAssign={onAssignSinger}
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`More actions for ${entry.song.title}`}
+              />
+            }
+          >
+            <EllipsisVertical className="size-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem disabled={index === 0} onClick={onMoveUp}>
+              <ArrowUp />
+              Move up
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={index === total - 1} onClick={onMoveDown}>
+              <ArrowDown />
+              Move down
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" disabled={removePending} onClick={onRemove}>
+              <Trash2 />
+              Remove
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </li>
+    </Draggable>
+  )
+}
 
 interface LineupSongListProps {
   lineupId: string
@@ -263,16 +429,62 @@ export const LineupSongList: FunctionComponent<LineupSongListProps> = ({ lineupI
     onError: onMutationError,
   })
 
+  // Applied on top of `songs`' own order the instant a drag/move is
+  // committed, and cleared once the refetch it kicks off actually lands -
+  // otherwise the row would snap back to its old slot for the round trip.
+  const [optimisticSongIds, setOptimisticSongIds] = useState<string[] | null>(null)
+  // Live drag-in-progress preview, kept separate from optimisticSongIds so a
+  // released-but-not-yet-committed drag can't be confused with one that's
+  // actually been sent to the server.
+  const [dragPreview, setDragPreview] = useState<{ songId: string; targetIndex: number } | null>(null)
+
+  const reorderSongs = useMutation({
+    mutationFn: async (songIds: string[]) => {
+      const { error } = await apiClient.PUT("/api/lineups/{id}/songs-order", {
+        params: { path: { id: lineupId } },
+        body: { songIds },
+      })
+      if (error) throw new Error("Failed to reorder songs.")
+    },
+    onSuccess: async () => {
+      await invalidateLineup()
+      setOptimisticSongIds(null)
+    },
+    onError: (error: Error) => {
+      setOptimisticSongIds(null)
+      onMutationError(error)
+    },
+  })
+
+  const songsById = new Map(songs.map((entry) => [entry.song.id, entry]))
+  const committedOrder = optimisticSongIds ?? songs.map((entry) => entry.song.id)
+  const displayOrder = dragPreview
+    ? moveItem(committedOrder, dragPreview.songId, dragPreview.targetIndex)
+    : committedOrder
+  const orderedSongs = displayOrder.map((songId) => songsById.get(songId)!)
+
+  const commitReorder = (songId: string, targetIndex: number) => {
+    const next = moveItem(committedOrder, songId, targetIndex)
+    if (next === committedOrder) return
+    setOptimisticSongIds(next)
+    reorderSongs.mutate(next)
+  }
+
   const availableSongs = (songResults.data?.items ?? []).filter(
     (song) => !songs.some((entry) => entry.song.id === song.id)
   )
 
   return (
     <>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <Music className="size-4" />
-          Song List
+      <CardHeader className="mb-2 border-b">
+        <CardTitle className="flex items-center justify-between text-sm font-medium text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Music className="size-4" />
+            Song List
+          </div>
+          <Button variant="outline" size="icon">
+            <SquareArrowOutUpRight />
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -317,43 +529,26 @@ export const LineupSongList: FunctionComponent<LineupSongListProps> = ({ lineupI
           </Empty>
         ) : (
           <ul className="mt-4 flex flex-col divide-y divide-border">
-            {songs.map((entry) => {
-              const meta = [
-                entry.song.musicalKey ? `Key of ${entry.song.musicalKey}` : null,
-                entry.song.tempo ? `${entry.song.tempo} BPM` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")
-
-              return (
-                <li key={entry.id} className="flex items-center gap-3 py-2 first:pt-0 last:pb-0">
-                  <SongThumbnail song={entry.song} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{entry.song.title}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {entry.song.artist ?? "Unknown artist"}
-                    </p>
-                  </div>
-                  {meta && <span className="shrink-0 text-xs text-muted-foreground">{meta}</span>}
-                  <SongSingerPicker
-                    members={members}
-                    singer={entry.singer}
-                    disabled={updateSongSinger.isPending}
-                    onAssign={(singerId) => updateSongSinger.mutate({ songId: entry.song.id, singerId })}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Remove ${entry.song.title}`}
-                    disabled={removeSong.isPending}
-                    onClick={() => removeSong.mutate(entry.song.id)}
-                  >
-                    <X className="size-4" />
-                  </Button>
-                </li>
-              )
-            })}
+            {orderedSongs.map((entry, index) => (
+              <SongRow
+                key={entry.song.id}
+                entry={entry}
+                index={index}
+                total={orderedSongs.length}
+                members={members}
+                singerPending={updateSongSinger.isPending}
+                removePending={removeSong.isPending}
+                onAssignSinger={(singerId) => updateSongSinger.mutate({ songId: entry.song.id, singerId })}
+                onRemove={() => removeSong.mutate(entry.song.id)}
+                onMoveUp={() => commitReorder(entry.song.id, index - 1)}
+                onMoveDown={() => commitReorder(entry.song.id, index + 1)}
+                onDragPreview={(targetIndex) => setDragPreview({ songId: entry.song.id, targetIndex })}
+                onDragCommit={(targetIndex) => {
+                  setDragPreview(null)
+                  commitReorder(entry.song.id, targetIndex)
+                }}
+              />
+            ))}
           </ul>
         )}
       </CardContent>

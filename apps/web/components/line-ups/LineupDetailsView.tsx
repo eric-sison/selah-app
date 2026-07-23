@@ -100,6 +100,28 @@ export const LineupDetailsView: FunctionComponent<LineupDetailsViewProps> = ({ l
 
   return (
     <div className="flex h-full flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-fit"
+          nativeButton={false}
+          render={
+            <Link href="/line-ups">
+              <ChevronLeft />
+              Line Ups
+            </Link>
+          }
+        />
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" disabled={!lineup} onClick={() => setUpdateSheetOpen(true)}>
+            Update details
+          </Button>
+          <Button size="sm" variant="outline">
+            Send for approval
+          </Button>
+        </div>
+      </div>
       {lineup && <EditLineupSheet lineup={lineup} open={updateSheetOpen} onOpenChange={setUpdateSheetOpen} />}
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">

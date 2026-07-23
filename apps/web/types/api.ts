@@ -160,6 +160,26 @@ export interface paths {
         patch: operations["updateLineupSong"];
         trace?: never;
     };
+    "/api/lineups/{id}/songs-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Reorder a lineup's set list
+         * @description Admin-only. Reorders every song already in the lineup's set list to match the given order. Returns the full, updated lineup.
+         */
+        put: operations["reorderLineupSongs"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lineups/{id}/members": {
         parameters: {
             query?: never;
@@ -1586,6 +1606,148 @@ export interface operations {
         };
         responses: {
             /** @description Song updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        status: "draft" | "pending" | "approved";
+                        /** @enum {string} */
+                        serviceType: "sunday_service" | "youth_service" | "necrological_service" | "prayer_meeting_service" | "victory_day" | "other";
+                        serviceDate: string;
+                        rehearsalDate: string | null;
+                        team: {
+                            id: string;
+                            name: string;
+                        };
+                        seriesName: string | null;
+                        topic: string | null;
+                        wordReference: string | null;
+                        wordText: string | null;
+                        direction: string | null;
+                        devoLeader: {
+                            id: string;
+                            name: string;
+                            image: string | null;
+                        } | null;
+                        songs: {
+                            id: string;
+                            position: number;
+                            song: {
+                                id: string;
+                                title: string;
+                                artist: string | null;
+                                musicalKey: string | null;
+                                tempo: number | null;
+                                hasAlbumArt: boolean;
+                            };
+                            singer: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            } | null;
+                        }[];
+                        members: {
+                            id: string;
+                            instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                            isAvailable: boolean;
+                            user: {
+                                id: string;
+                                name: string;
+                                image: string | null;
+                            };
+                        }[];
+                        commentCount: number;
+                        approvedBy: string | null;
+                        approvedAt: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reorderLineupSongs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    songIds: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Set list reordered. */
             200: {
                 headers: {
                     [name: string]: unknown;

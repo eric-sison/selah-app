@@ -5,7 +5,7 @@ import { lineup } from "../../db/app-schema.js"
 const mockDb = {
   query: {
     lineup: { findFirst: vi.fn(), findMany: vi.fn() },
-    lineupSong: { findFirst: vi.fn() },
+    lineupSong: { findFirst: vi.fn(), findMany: vi.fn() },
     lineupMember: { findFirst: vi.fn() },
     lineupComment: { findFirst: vi.fn(), findMany: vi.fn() },
     lineupCommentReaction: { findFirst: vi.fn(), findMany: vi.fn() },
@@ -39,6 +39,7 @@ const {
   listLineups,
   removeLineupMember,
   removeLineupSong,
+  reorderLineupSongs,
   toggleLineupCommentReaction,
   updateLineup,
   updateLineupComment,
@@ -69,6 +70,16 @@ function mockDeleteWhere() {
 // syncLineupSchedules updates a schedule row directly (no `.returning()`),
 // unlike mockUpdateReturning's shape below.
 function mockScheduleUpdate() {
+  const where = vi.fn().mockResolvedValue(undefined)
+  const set = vi.fn().mockReturnValue({ where })
+  mockDb.update.mockReturnValue({ set })
+  return { set, where }
+}
+
+// reorderLineupSongs updates each row's position directly (no `.returning()`),
+// same shape as mockScheduleUpdate above, reused here under its own name
+// since it isn't schedule-specific.
+function mockPlainUpdate() {
   const where = vi.fn().mockResolvedValue(undefined)
   const set = vi.fn().mockReturnValue({ where })
   mockDb.update.mockReturnValue({ set })
@@ -698,6 +709,42 @@ describe("removeLineupSong", () => {
 
     expect(await removeLineupSong("lineup-1", "song-1")).toBe(true)
     expect(where).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("reorderLineupSongs", () => {
+  it("returns false without writing when songIds is a different length than the current set list", async () => {
+    mockDb.query.lineupSong.findMany.mockResolvedValue([
+      { id: "ls-1", songId: "song-1" },
+      { id: "ls-2", songId: "song-2" },
+    ])
+
+    expect(await reorderLineupSongs("lineup-1", ["song-1"])).toBe(false)
+    expect(mockDb.transaction).not.toHaveBeenCalled()
+  })
+
+  it("returns false without writing when a given songId isn't in the lineup's set list", async () => {
+    mockDb.query.lineupSong.findMany.mockResolvedValue([{ id: "ls-1", songId: "song-1" }])
+
+    expect(await reorderLineupSongs("lineup-1", ["song-2"])).toBe(false)
+    expect(mockDb.update).not.toHaveBeenCalled()
+  })
+
+  it("renumbers positions to match the given order and returns true", async () => {
+    mockDb.query.lineupSong.findMany.mockResolvedValue([
+      { id: "ls-1", songId: "song-1" },
+      { id: "ls-2", songId: "song-2" },
+    ])
+    const { set, where } = mockPlainUpdate()
+
+    const result = await reorderLineupSongs("lineup-1", ["song-2", "song-1"])
+
+    expect(result).toBe(true)
+    // Every row's position is shifted to a negative placeholder first, then
+    // set to its final value - never colliding with another row's position
+    // mid-transaction (see reorderLineupSongs' doc comment).
+    expect(set.mock.calls).toEqual([[{ position: -1 }], [{ position: -2 }], [{ position: 0 }], [{ position: 1 }]])
+    expect(where).toHaveBeenCalledTimes(4)
   })
 })
 

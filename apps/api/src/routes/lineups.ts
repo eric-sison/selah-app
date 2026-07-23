@@ -18,6 +18,7 @@ import {
   type ReactionEmoji,
   removeLineupMember,
   removeLineupSong,
+  reorderLineupSongs,
   toggleLineupCommentReaction,
   updateLineup,
   updateLineupComment,
@@ -446,6 +447,33 @@ const updateLineupSongRoute = createRoute({
   },
 })
 
+const ReorderLineupSongsRequestSchema = z.object({
+  /** Every song currently in the lineup's set list, in the order they should now appear - same set, no additions or removals. */
+  songIds: z.array(z.uuid()).min(1),
+})
+
+const reorderLineupSongsRoute = createRoute({
+  method: "put",
+  path: "/lineups/{id}/songs-order",
+  operationId: "reorderLineupSongs",
+  tags: ["Lineups"],
+  summary: "Reorder a lineup's set list",
+  description:
+    "Admin-only. Reorders every song already in the lineup's set list to match the given order. Returns the full, updated lineup.",
+  middleware: [requireAdmin] as const,
+  request: {
+    params: LineupIdParamSchema,
+    ...jsonBody(ReorderLineupSongsRequestSchema),
+  },
+  responses: {
+    200: jsonResponse(LineupResponseSchema, "Set list reordered."),
+    401: commonErrors[401],
+    403: commonErrors[403],
+    404: commonErrors[404],
+    422: commonErrors[422],
+  },
+})
+
 const AddLineupMemberRequestSchema = z.object({
   userId: z.string().min(1),
 })
@@ -774,6 +802,28 @@ export const lineupsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
     const updated = await getLineup(id)
     // existingLineup just confirmed this lineup and song exist, so they
     // can't have vanished by the time this second query runs a moment later.
+    return c.json(mapLineup(updated!), 200)
+  })
+  .openapi(reorderLineupSongsRoute, async (c) => {
+    const { id } = c.req.valid("param")
+    const { songIds } = c.req.valid("json")
+
+    const existingLineup = await getLineup(id)
+    if (!existingLineup) {
+      return c.json({ status: 404, message: "Lineup not found." }, 404)
+    }
+
+    const reordered = await reorderLineupSongs(id, songIds)
+    if (!reordered) {
+      return c.json(
+        { status: 422, message: "songIds must match the lineup's current set list exactly." },
+        422
+      )
+    }
+
+    const updated = await getLineup(id)
+    // existingLineup just confirmed this lineup exists, so it can't have
+    // vanished by the time this second query runs a moment later.
     return c.json(mapLineup(updated!), 200)
   })
   .openapi(addLineupMemberRoute, async (c) => {

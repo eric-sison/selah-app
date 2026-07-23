@@ -2638,6 +2638,372 @@
         }
       }
     },
+    "/api/lineups/{id}/songs-order": {
+      "put": {
+        "operationId": "reorderLineupSongs",
+        "tags": [
+          "Lineups"
+        ],
+        "summary": "Reorder a lineup's set list",
+        "description": "Admin-only. Reorders every song already in the lineup's set list to match the given order. Returns the full, updated lineup.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "songIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "songIds"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Set list reordered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "pending",
+                        "approved"
+                      ]
+                    },
+                    "serviceType": {
+                      "type": "string",
+                      "enum": [
+                        "sunday_service",
+                        "youth_service",
+                        "necrological_service",
+                        "prayer_meeting_service",
+                        "victory_day",
+                        "other"
+                      ]
+                    },
+                    "serviceDate": {
+                      "type": "string"
+                    },
+                    "rehearsalDate": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "team": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "seriesName": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "topic": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "wordReference": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "wordText": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "direction": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "devoLeader": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "image"
+                      ]
+                    },
+                    "songs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "position": {
+                            "type": "number"
+                          },
+                          "song": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "artist": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "musicalKey": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "tempo": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "hasAlbumArt": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "title",
+                              "artist",
+                              "musicalKey",
+                              "tempo",
+                              "hasAlbumArt"
+                            ]
+                          },
+                          "singer": {
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "position",
+                          "song",
+                          "singer"
+                        ]
+                      }
+                    },
+                    "members": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "instruments": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "bass",
+                                "drums",
+                                "singer",
+                                "electric_guitar",
+                                "acoustic_guitar",
+                                "keyboard"
+                              ]
+                            }
+                          },
+                          "isAvailable": {
+                            "type": "boolean"
+                          },
+                          "user": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "image": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "image"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "instruments",
+                          "isAvailable",
+                          "user"
+                        ]
+                      }
+                    },
+                    "commentCount": {
+                      "type": "number"
+                    },
+                    "approvedBy": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "approvedAt": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "serviceType",
+                    "serviceDate",
+                    "rehearsalDate",
+                    "team",
+                    "seriesName",
+                    "topic",
+                    "wordReference",
+                    "wordText",
+                    "direction",
+                    "devoLeader",
+                    "songs",
+                    "members",
+                    "commentCount",
+                    "approvedBy",
+                    "approvedAt",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/lineups/{id}/members": {
       "post": {
         "operationId": "addLineupMember",

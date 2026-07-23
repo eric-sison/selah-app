@@ -410,6 +410,43 @@ export async function updateLineupSongSinger(lineupId: string, songId: string, s
 }
 
 /**
+ * Reorders a lineup's entire set list to match `songIds` - every song
+ * already in the set list, given in its new order. Renumbers positions to
+ * 0..n-1 to match.
+ *
+ * Each row's position is first shifted to a negative, per-row-unique
+ * placeholder and only then set to its final value, so the transaction
+ * never asks the unique `(lineup_id, position)` constraint to hold two rows
+ * at the same position at once (it isn't deferrable).
+ *
+ * @returns `false` without writing anything if `songIds` isn't exactly the
+ *   set of songs already in this lineup's set list (same length, same
+ *   songIds) - a mismatch means the caller's view of the set list is stale.
+ */
+export async function reorderLineupSongs(lineupId: string, songIds: string[]): Promise<boolean> {
+  const existing = await db.query.lineupSong.findMany({ where: eq(lineupSong.lineupId, lineupId) })
+
+  const existingBySongId = new Map(existing.map((row) => [row.songId, row]))
+  const isExactMatch =
+    songIds.length === existing.length && songIds.every((songId) => existingBySongId.has(songId))
+  if (!isExactMatch) return false
+
+  await db.transaction(async (tx) => {
+    for (const [index, songId] of songIds.entries()) {
+      await tx
+        .update(lineupSong)
+        .set({ position: -(index + 1) })
+        .where(eq(lineupSong.id, existingBySongId.get(songId)!.id))
+    }
+    for (const [index, songId] of songIds.entries()) {
+      await tx.update(lineupSong).set({ position: index }).where(eq(lineupSong.id, existingBySongId.get(songId)!.id))
+    }
+  })
+
+  return true
+}
+
+/**
  * Removes a song from a lineup's set list, leaving the rest of the ordering
  * untouched (positions aren't renumbered).
  *

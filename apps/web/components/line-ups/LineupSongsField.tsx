@@ -205,7 +205,7 @@ interface SongComboboxItemProps {
 
 const SongComboboxItem: FunctionComponent<SongComboboxItemProps> = ({ song }) => (
   <ComboboxItem value={song}>
-    <Music className="size-4 shrink-0 text-muted-foreground" />
+    <SongThumbnail song={song} />
     <div className="flex min-w-0 flex-col">
       <span className="truncate">{song.title}</span>
       <span className="truncate text-xs text-muted-foreground">{song.artist ?? "Unknown artist"}</span>
