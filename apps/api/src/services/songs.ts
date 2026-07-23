@@ -170,17 +170,23 @@ export async function getSong(id: string) {
 }
 
 export interface UpdateSongInput {
-  chordpro: string | null
+  chordpro?: string | null
+  musicalKey?: string | null
+  tempo?: number | null
 }
 
 /**
- * Updates a song's chord-over-lyric sheet.
+ * Updates a song's chord-over-lyric sheet, musical key, and/or tempo.
+ *
+ * Only the fields present in `input` are changed - Drizzle's `.set()` drops
+ * `undefined` keys from the generated `SET` clause, so an omitted field is
+ * left untouched rather than overwritten with `null`.
  *
  * @returns the updated song (re-fetched with its uploader join, see below),
  *   or `undefined` if no song has this id.
  */
-export async function updateSong(id: string, { chordpro }: UpdateSongInput) {
-  const [updated] = await db.update(song).set({ chordpro }).where(eq(song.id, id)).returning()
+export async function updateSong(id: string, input: UpdateSongInput) {
+  const [updated] = await db.update(song).set(input).where(eq(song.id, id)).returning()
   if (!updated) return undefined
 
   // The plain `.returning()` row has no `uploader` join - re-fetch through

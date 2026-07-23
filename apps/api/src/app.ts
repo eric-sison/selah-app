@@ -13,6 +13,7 @@ import { invitationsHandler } from "./routes/invitations.js"
 import { lineupsHandler } from "./routes/lineups.js"
 import { musiciansHandler } from "./routes/musicians.js"
 import { schedulesHandler } from "./routes/schedules.js"
+import { songStemsHandler } from "./routes/song-stems.js"
 import { songsHandler } from "./routes/songs.js"
 import { teamsHandler } from "./routes/teams.js"
 import { usersHandler } from "./routes/users.js"
@@ -48,6 +49,7 @@ const routes = [
   lineupsHandler,
   musiciansHandler,
   schedulesHandler,
+  songStemsHandler,
   songsHandler,
   teamsHandler,
   usersHandler,

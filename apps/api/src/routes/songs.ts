@@ -140,7 +140,9 @@ const getSongRoute = createRoute({
 })
 
 const UpdateSongBodySchema = z.object({
-  chordpro: z.string().nullable(),
+  chordpro: z.string().nullable().optional(),
+  musicalKey: z.string().nullable().optional(),
+  tempo: z.number().int().positive().nullable().optional(),
 })
 
 const updateSongRoute = createRoute({
@@ -148,8 +150,9 @@ const updateSongRoute = createRoute({
   path: "/songs/{id}",
   operationId: "updateSong",
   tags: ["Songs"],
-  summary: "Update a song's chord sheet",
-  description: "Any authenticated user can update a song's chord-over-lyric sheet.",
+  summary: "Update a song's chord sheet, musical key, or tempo",
+  description:
+    "Any authenticated user can update a song's chord-over-lyric sheet, musical key, and/or tempo. All fields are optional - only the ones provided are changed.",
   middleware: [requireAuth] as const,
   request: {
     params: z.object({ id: z.uuid() }),
@@ -347,8 +350,8 @@ export const songsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
   })
   .openapi(updateSongRoute, async (c) => {
     const { id } = c.req.valid("param")
-    const { chordpro } = c.req.valid("json")
-    const updated = await updateSong(id, { chordpro })
+    const body = c.req.valid("json")
+    const updated = await updateSong(id, body)
 
     if (!updated) {
       return c.json({ status: 404, message: "Song not found." }, 404)

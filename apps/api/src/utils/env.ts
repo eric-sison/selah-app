@@ -30,6 +30,17 @@ const EnvSchema = z.object({
   S3_ACCESS_KEY_ID: z.string().min(1),
   S3_SECRET_ACCESS_KEY: z.string().min(1),
   S3_BUCKET: z.string().default("selah-songs"),
+  // Stem separation: apps/api posts a job to the worker (STEM_WORKER_URL,
+  // authenticated with STEM_WORKER_SECRET) and the worker posts its result
+  // back to apps/api's callback route (authenticated with
+  // STEM_CALLBACK_SECRET) - two distinct secrets so a leak in one direction
+  // doesn't compromise the other. API_PUBLIC_URL is this API's own
+  // externally-reachable base URL, needed so the callback URL handed to the
+  // worker (which may run on a different host) actually resolves back here.
+  API_PUBLIC_URL: z.url().default("http://localhost:4000"),
+  STEM_WORKER_URL: z.url(),
+  STEM_WORKER_SECRET: z.string().min(32),
+  STEM_CALLBACK_SECRET: z.string().min(32),
 })
 
 export type Env = z.infer<typeof EnvSchema>

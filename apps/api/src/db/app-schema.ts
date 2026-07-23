@@ -74,6 +74,67 @@ export const songRelations = relations(song, ({ one }) => ({
     fields: [song.uploadedBy],
     references: [users.id],
   }),
+  stems: one(songStems),
+}))
+
+// A song has at most one separation job/result at a time - re-running
+// separation replaces this row (see services/song-stems.ts's upsert) rather
+// than accumulating a history of past attempts.
+export const stemSeparationStatus = pgEnum("stem_separation_status", [
+  "pending",
+  "processing",
+  "completed",
+  "failed",
+])
+
+export const songStems = pgTable(
+  "song_stems",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    songId: uuid("song_id")
+      .notNull()
+      .references(() => song.id, { onDelete: "cascade" }),
+    status: stemSeparationStatus("status").notNull().default("pending"),
+    // Populated only once status = "completed" - kept as flat columns (not
+    // jsonb) since the set is fixed and closed, mirroring
+    // song.storageKey/albumArtStorageKey above. htdemucs_6s (the only
+    // Demucs model that can isolate piano) always produces all 6 of these
+    // together - guitar isn't optional once piano is requested.
+    vocalsStorageKey: text("vocals_storage_key"),
+    drumsStorageKey: text("drums_storage_key"),
+    bassStorageKey: text("bass_storage_key"),
+    guitarStorageKey: text("guitar_storage_key"),
+    pianoStorageKey: text("piano_storage_key"),
+    otherStorageKey: text("other_storage_key"),
+    errorMessage: text("error_message"),
+    // Minted per job and echoed back by the worker on its completion
+    // callback - lets completeStemSeparation() reject a stale/replayed
+    // callback from a superseded job for the same song.
+    callbackToken: text("callback_token").notNull(),
+    requestedBy: text("requested_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("song_stems_song_id_idx").on(table.songId),
+    unique("song_stems_song_id_unique").on(table.songId),
+  ]
+)
+
+export const songStemsRelations = relations(songStems, ({ one }) => ({
+  song: one(song, {
+    fields: [songStems.songId],
+    references: [song.id],
+  }),
+  requestedByUser: one(users, {
+    fields: [songStems.requestedBy],
+    references: [users.id],
+  }),
 }))
 
 // The fixed set of instruments/vocal parts a musician can play - deliberately
