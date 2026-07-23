@@ -55,3 +55,9 @@ scratch.txt
 # vendored audio worklet, copied from node_modules on dev/build - see
 # apps/web/scripts/copy-soundtouch-worklet.mjs
 apps/web/public/soundtouch-processor.js
+
+# services/stem-worker (Python, outside the pnpm workspace)
+services/stem-worker/.venv
+services/stem-worker/__pycache__
+**/__pycache__
+*.pyc

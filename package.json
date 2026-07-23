@@ -9,7 +9,8 @@
     "format": "turbo format",
     "typecheck": "turbo typecheck",
     "openapi:generate": "pnpm --filter api openapi:generate && pnpm --filter web openapi:generate",
-    "garage:init": "bash scripts/garage-init.sh"
+    "garage:init": "bash scripts/garage-init.sh",
+    "stem-worker:dev": "bash scripts/stem-worker-dev.sh"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
