@@ -45,6 +45,28 @@ export const ChordProView: FunctionComponent<ChordProViewProps> = ({ chordpro, t
           )
         }
 
+        // A line that's just chords (e.g. an intro/interlude bar written as
+        // "[E] [G#m] [A]") has nothing but whitespace under every chord, so
+        // the usual chord-over-text column layout below - which sizes each
+        // column to its own content - collapses to the chord label's own
+        // width and the chords run together with no visible gap at all.
+        // There's no lyric text to align against here, so instead of that
+        // column layout, lay the chords out as a plain spaced row.
+        const isChordsOnlyLine = line.segments.every((segment) => segment.text.trim() === "")
+        if (isChordsOnlyLine) {
+          return (
+            <div key={index} className="flex flex-wrap items-baseline gap-4">
+              {line.segments
+                .filter((segment): segment is { chord: string; text: string } => segment.chord !== null)
+                .map((segment, segmentIndex) => (
+                  <span key={segmentIndex} className="text-sm font-extrabold text-sidebar-primary">
+                    {transposeChord(segment.chord, transposeSemitones)}
+                  </span>
+                ))}
+            </div>
+          )
+        }
+
         return (
           <div key={index} className="flex flex-nowrap">
             {line.segments.map((segment, segmentIndex) => {

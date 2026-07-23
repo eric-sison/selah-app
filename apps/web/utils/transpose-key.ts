@@ -1,4 +1,6 @@
-const CHROMATIC_SCALE = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+// Exported for detect-key.ts, which needs the same sharp-spelled, C-rooted
+// index-to-note-name mapping to label a detected pitch class.
+export const CHROMATIC_SCALE = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
 // Common flat spellings normalized to the same chromatic index - output is
 // always spelled with sharps. Full key-signature-correct enharmonic

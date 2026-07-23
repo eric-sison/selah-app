@@ -360,6 +360,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/songs/{id}/stems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a song's stem separation status
+         * @description Any authenticated user can check the status of a song's stem separation job, and get short-lived signed playback URLs for its 6 stems once it has completed.
+         */
+        get: operations["getStemStatus"];
+        put?: never;
+        /**
+         * Split a song into stems
+         * @description Any authenticated user can request a song's audio be separated into vocals, drums, bass, guitar, piano, and other instruments (via a self-hosted Demucs worker). Requesting again - whether already in progress, previously failed, or already completed - restarts the job and replaces any existing result.
+         */
+        post: operations["startStemSeparation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs/{id}/stems/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Worker callback: report a stem separation job's outcome
+         * @description Called by the stem separation worker, not an end user, once a job finishes - either with the 6 uploaded stem storage keys, or an error message. Authenticated with a shared secret rather than a user session.
+         */
+        post: operations["stemSeparationCallback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/songs": {
         parameters: {
             query?: never;
@@ -406,8 +450,8 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Update a song's chord sheet
-         * @description Any authenticated user can update a song's chord-over-lyric sheet.
+         * Update a song's chord sheet, musical key, or tempo
+         * @description Any authenticated user can update a song's chord-over-lyric sheet, musical key, and/or tempo. All fields are optional - only the ones provided are changed.
          */
         patch: operations["updateSong"];
         trace?: never;
@@ -2939,6 +2983,201 @@ export interface operations {
             };
         };
     };
+    getStemStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current separation status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "pending" | "processing" | "completed" | "failed";
+                        errorMessage: string | null;
+                        urls: {
+                            vocals: string;
+                            drums: string;
+                            bass: string;
+                            guitar: string;
+                            piano: string;
+                            other: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startStemSeparation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Separation job started. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "pending" | "processing" | "completed" | "failed";
+                        errorMessage: string | null;
+                        urls: {
+                            vocals: string;
+                            drums: string;
+                            bass: string;
+                            guitar: string;
+                            piano: string;
+                            other: string;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    stemSeparationCallback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    callbackToken: string;
+                    stems: {
+                        vocals: string;
+                        drums: string;
+                        bass: string;
+                        guitar: string;
+                        piano: string;
+                        other: string;
+                    };
+                } | {
+                    callbackToken: string;
+                    error: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Job outcome recorded. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listSongs: {
         parameters: {
             query?: {
@@ -3263,7 +3502,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    chordpro: string | null;
+                    chordpro?: string | null;
+                    musicalKey?: string | null;
+                    tempo?: number | null;
                 };
             };
         };

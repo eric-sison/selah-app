@@ -15,10 +15,30 @@ import {
 import { apiClient } from "@/lib/api-client"
 import type { Song } from "@/components/songs/NowPlayingCard"
 import { shuffleArray } from "@/utils/shuffle"
+import { computeDriftCorrections } from "@/utils/stem-sync"
+import { STEM_NAMES } from "@/utils/stems"
+import type { StemName, StemUrls } from "@/utils/stems"
 
 export interface LoopSection {
   start: number
   end: number
+}
+
+const DEFAULT_STEM_VOLUMES: Record<StemName, number> = {
+  vocals: 1,
+  drums: 1,
+  bass: 1,
+  guitar: 1,
+  piano: 1,
+  other: 1,
+}
+const DEFAULT_STEM_MUTED: Record<StemName, boolean> = {
+  vocals: false,
+  drums: false,
+  bass: false,
+  guitar: false,
+  piano: false,
+  other: false,
 }
 
 const MIN_SPEED = 0.5
@@ -74,6 +94,20 @@ interface PlayerContextValue {
   // track doesn't keep playing with its now-stale data on screen, and a
   // pending load that 404s as a result doesn't surface a misleading error.
   stopIfActive: (songId: string) => void
+  // 6-stem playback for the active song, additive to the single-file
+  // playback above - see enableStemsMode/disableStemsMode below for how the
+  // two modes hand off between each other. `stemsEnabled` is always reset to
+  // `false` (and the mix settings below to their defaults) whenever a new
+  // song loads - stems are per-song and must be explicitly re-enabled.
+  stemsEnabled: boolean
+  enableStemsMode: (urls: StemUrls) => Promise<void>
+  disableStemsMode: () => void
+  stemVolumes: Record<StemName, number>
+  setStemVolume: (stem: StemName, value: number) => void
+  stemMuted: Record<StemName, boolean>
+  toggleStemMute: (stem: StemName) => void
+  soloedStem: StemName | null
+  setSoloedStem: (stem: StemName | null) => void
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null)
@@ -105,6 +139,30 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
   const [loopSection, setLoopSection] = useState<LoopSection | null>(null)
   const [isShuffling, setIsShuffling] = useState(false)
   const [repeatCurrentSong, setRepeatCurrentSong] = useState(false)
+
+  // 6 additional hidden <audio> elements, always mounted (see the JSX below)
+  // so createMediaElementSource can be called on them exactly once, same
+  // constraint as the single `audioRef` above. "vocals" is the sync leader -
+  // see the second listener effect below - the other 5 are only ever driven
+  // imperatively (play/pause/seek), never listened to directly.
+  const stemAudioRefs = useRef<Record<StemName, HTMLAudioElement | null>>({
+    vocals: null,
+    drums: null,
+    bass: null,
+    guitar: null,
+    piano: null,
+    other: null,
+  })
+  // Built lazily, once, the first time stems mode is actually entered -
+  // source -> gain -> soundTouch per stem, fanned into the same SoundTouch
+  // node the single-file path uses, so pitch/tempo-shift and the waveform
+  // keep working unchanged on the summed 6-stem signal.
+  const stemsGraphBuiltRef = useRef(false)
+  const stemGainNodesRef = useRef<Partial<Record<StemName, GainNode>>>({})
+  const [stemsEnabled, setStemsEnabled] = useState(false)
+  const [stemVolumes, setStemVolumes] = useState<Record<StemName, number>>(DEFAULT_STEM_VOLUMES)
+  const [stemMuted, setStemMuted] = useState<Record<StemName, boolean>>(DEFAULT_STEM_MUTED)
+  const [soloedStem, setSoloedStem] = useState<StemName | null>(null)
 
   // The songs to auto-advance through when the current one ends. Mirrored
   // into refs so the "ended" listener (registered once on mount) always
@@ -151,6 +209,19 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     repeatCurrentSongRef.current = repeatCurrentSong
   }, [repeatCurrentSong])
 
+  // Recomputes each stem's actual gain whenever its volume, mute, or the
+  // soloed stem changes - a no-op per stem until ensureStemsGraph has built
+  // its GainNode (i.e. before stems mode has ever been entered this
+  // session).
+  useEffect(() => {
+    for (const stem of STEM_NAMES) {
+      const gainNode = stemGainNodesRef.current[stem]
+      if (!gainNode) continue
+      const silenced = stemMuted[stem] || (soloedStem !== null && soloedStem !== stem)
+      gainNode.gain.value = silenced ? 0 : stemVolumes[stem]
+    }
+  }, [stemVolumes, stemMuted, soloedStem])
+
   const ensureAudioGraph = async () => {
     const audio = audioRef.current
     if (!audio || audioContextRef.current) return
@@ -158,15 +229,12 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     const context = new AudioContext()
     const source = context.createMediaElementSource(audio)
 
-    // SoundTouchNode will drive speed (time-stretch) and transpose
-    // (pitch-shift) independently, in real time, once the UI controls for
-    // them return - the native element's own `playbackRate` is deliberately
-    // left untouched (see setSpeed) so there's only one source of truth for
-    // tempo. It's registered and instantiated eagerly so setSpeed/
-    // setTransposeSemitones have a live node to write to, but it's not
-    // wired into the signal path below yet (bypassed, source connects
-    // straight to the analyser) - keep it that way until it's re-verified
-    // end to end.
+    // SoundTouchNode drives speed (time-stretch) and transpose (pitch-shift)
+    // independently, in real time - the native element's own `playbackRate`
+    // is deliberately left untouched (see setSpeed) so there's only one
+    // source of truth for tempo. It sits inline in the graph (source ->
+    // soundTouch -> analyser -> destination) below so both take effect on
+    // whatever's actually playing, not just the values stored in state.
     //
     // Imported dynamically rather than as a static top-level import: the
     // package's SoundTouchNode class declaration does `extends
@@ -185,11 +253,48 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
 
     // Analyser sits inline in the graph rather than as a side-tap, so it must
     // also connect to destination or the audio element goes silent.
-    source.connect(analyser)
+    // soundTouch sits ahead of it so both it and the waveform reflect the
+    // pitch/time-stretched signal, not the original.
+    source.connect(soundTouch)
+    soundTouch.connect(analyser)
     analyser.connect(context.destination)
 
     audioContextRef.current = context
     setAnalyserNode(analyser)
+  }
+
+  // Builds the 6 stems' own graph nodes (source -> gain -> soundTouch, fanned
+  // into the same SoundTouch node ensureAudioGraph already built) the first
+  // time stems mode is actually entered, rather than unconditionally in
+  // ensureAudioGraph - most songs never use stems, so this avoids 4 extra
+  // createMediaElementSource calls (and their one-per-element lifetime limit)
+  // for sessions that don't need them.
+  const ensureStemsGraph = async () => {
+    await ensureAudioGraph()
+    if (stemsGraphBuiltRef.current) return
+
+    const context = audioContextRef.current
+    const soundTouch = soundTouchNodeRef.current
+    // ensureAudioGraph (awaited above) guarantees both are set - defensive only.
+    /* v8 ignore next */
+    if (!context || !soundTouch) return
+
+    for (const stem of STEM_NAMES) {
+      const audio = stemAudioRefs.current[stem]
+      // Every stem <audio> element is rendered unconditionally (see the JSX
+      // below), so this is unreachable in practice - kept as a defensive
+      // guard, not exercised by tests.
+      /* v8 ignore next */
+      if (!audio) continue
+
+      const source = context.createMediaElementSource(audio)
+      const gain = context.createGain()
+      source.connect(gain)
+      gain.connect(soundTouch)
+      stemGainNodesRef.current[stem] = gain
+    }
+
+    stemsGraphBuiltRef.current = true
   }
 
   // audio.play() rejects for two very different reasons: AbortError, which
@@ -210,6 +315,40 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     }
   }
 
+  const setTransposeSemitones = (value: number) => {
+    const clamped = Math.min(Math.max(value, MIN_TRANSPOSE_SEMITONES), MAX_TRANSPOSE_SEMITONES)
+    const soundTouch = soundTouchNodeRef.current
+    if (soundTouch) soundTouch.pitchSemitones.value = clamped
+    setTransposeSemitonesState(clamped)
+  }
+
+  // Atomic transport primitives for stems mode - every stems-mode branch
+  // below (playOrToggle, skip, seek, loop enforcement) goes through these
+  // instead of touching individual stem elements directly, so all 4 always
+  // move together.
+  const pauseAllStems = () => {
+    for (const stem of STEM_NAMES) stemAudioRefs.current[stem]?.pause()
+  }
+
+  const playAllStems = async (): Promise<void> => {
+    await Promise.all(
+      STEM_NAMES.map((stem) => {
+        const audio = stemAudioRefs.current[stem]
+        return audio ? safePlay(audio) : Promise.resolve("aborted" as const)
+      })
+    )
+  }
+
+  // Seeks all 4 directly (rather than the leader alone + waiting for the
+  // timeupdate drift-correction pass to catch the followers up) so an
+  // explicit seek/skip/loop-restart doesn't have an audible desync window.
+  const seekAllStems = (time: number) => {
+    for (const stem of STEM_NAMES) {
+      const audio = stemAudioRefs.current[stem]
+      if (audio) audio.currentTime = time
+    }
+  }
+
   const loadSong = async (song: Song, { autoplay }: { autoplay: boolean }) => {
     const audio = audioRef.current
     // The <audio> ref is attached synchronously on mount and every caller
@@ -217,6 +356,16 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     // practice - kept as a defensive guard, not exercised by tests.
     /* v8 ignore next */
     if (!audio) return
+
+    // A new song always starts in single-track mode - stems are per-song, so
+    // whatever was enabled/mixed for the previous song doesn't carry over.
+    if (stemsEnabled) {
+      pauseAllStems()
+      setStemsEnabled(false)
+    }
+    setStemVolumes(DEFAULT_STEM_VOLUMES)
+    setStemMuted(DEFAULT_STEM_MUTED)
+    setSoloedStem(null)
 
     setLoadingSongId(song.id)
     try {
@@ -233,6 +382,9 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
       // A loop range is a time offset into a specific track - meaningless
       // once the track changes.
       setLoopSection(null)
+      // A transpose is relative to this specific track's own key - carrying
+      // it over to a different song would silently mis-pitch it.
+      setTransposeSemitones(0)
       if (autoplay) {
         const result = await safePlay(audio)
         if (result === "failed") {
@@ -261,6 +413,22 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     loadSongRef.current = loadSong
   })
 
+  // Shared tail of both "ended" handlers below (single-track and stems-mode)
+  // once the repeat-current-song case has been ruled out by each - reads
+  // only refs, so it's safe to define once here rather than duplicated
+  // inside both effects.
+  const advanceQueueOrStop = () => {
+    const order = playbackOrderRef.current
+    const currentIndex = order.findIndex((song) => song.id === activeSongIdRef.current)
+    const next = currentIndex >= 0 ? order[currentIndex + 1] : undefined
+
+    if (next) {
+      void loadSongRef.current(next, { autoplay: true })
+    } else {
+      setActiveSongId(null)
+    }
+  }
+
   useEffect(() => {
     const audio = audioRef.current
     // See loadSong's identical guard above - unreachable once mounted.
@@ -278,15 +446,7 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
         return
       }
 
-      const order = playbackOrderRef.current
-      const currentIndex = order.findIndex((song) => song.id === activeSongIdRef.current)
-      const next = currentIndex >= 0 ? order[currentIndex + 1] : undefined
-
-      if (next) {
-        void loadSongRef.current(next, { autoplay: true })
-      } else {
-        setActiveSongId(null)
-      }
+      advanceQueueOrStop()
     }
     const handleTimeUpdate = () => {
       const loop = loopSectionRef.current
@@ -309,6 +469,70 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
       audio.removeEventListener("ended", handleEnded)
       audio.removeEventListener("timeupdate", handleTimeUpdate)
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata)
+    }
+  }, [])
+
+  // Stems-mode counterpart of the listener effect above, bound to the
+  // "vocals" stem as the sync leader instead of the single-file `audioRef`.
+  // Both effects stay registered for the component's whole lifetime, but
+  // only one element is ever actually playing at a time (enableStemsMode/
+  // disableStemsMode always pause whichever side isn't active), so only one
+  // side's events ever fire in practice.
+  useEffect(() => {
+    const leader = stemAudioRefs.current.vocals
+    // Every stem <audio> element is rendered unconditionally (see the JSX
+    // below), so this is unreachable in practice - kept as a defensive
+    // guard, not exercised by tests.
+    /* v8 ignore next */
+    if (!leader) return
+
+    const handlePlay = () => setIsPlaying(true)
+    const handlePause = () => setIsPlaying(false)
+    const handleEnded = () => {
+      setIsPlaying(false)
+
+      if (repeatCurrentSongRef.current) {
+        seekAllStems(0)
+        void playAllStems()
+        return
+      }
+
+      advanceQueueOrStop()
+    }
+    const handleTimeUpdate = () => {
+      const loop = loopSectionRef.current
+      if (loop && leader.currentTime >= loop.end) {
+        seekAllStems(loop.start)
+      } else {
+        const followerTimes: Partial<Record<StemName, number>> = {}
+        for (const stem of STEM_NAMES) {
+          if (stem === "vocals") continue
+          const follower = stemAudioRefs.current[stem]
+          if (follower) followerTimes[stem] = follower.currentTime
+        }
+
+        const corrections = computeDriftCorrections(leader.currentTime, followerTimes)
+        for (const [stem, time] of Object.entries(corrections) as [StemName, number][]) {
+          const follower = stemAudioRefs.current[stem]
+          if (follower) follower.currentTime = time
+        }
+      }
+      setCurrentTime(leader.currentTime)
+    }
+    const handleLoadedMetadata = () => setDuration(leader.duration)
+
+    leader.addEventListener("play", handlePlay)
+    leader.addEventListener("pause", handlePause)
+    leader.addEventListener("ended", handleEnded)
+    leader.addEventListener("timeupdate", handleTimeUpdate)
+    leader.addEventListener("loadedmetadata", handleLoadedMetadata)
+
+    return () => {
+      leader.removeEventListener("play", handlePlay)
+      leader.removeEventListener("pause", handlePause)
+      leader.removeEventListener("ended", handleEnded)
+      leader.removeEventListener("timeupdate", handleTimeUpdate)
+      leader.removeEventListener("loadedmetadata", handleLoadedMetadata)
     }
   }, [])
 
@@ -340,6 +564,16 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     }
 
     if (activeSongId === song.id) {
+      if (stemsEnabled) {
+        const leader = stemAudioRefs.current.vocals
+        if (leader?.paused) {
+          await playAllStems()
+        } else {
+          pauseAllStems()
+        }
+        return
+      }
+
       if (audio.paused) {
         const resumeTime = audio.currentTime
         const result = await safePlay(audio)
@@ -396,12 +630,24 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
   const toggleRepeatCurrentSong = () => setRepeatCurrentSong((prev) => !prev)
 
   const skip = (seconds: number) => {
+    if (stemsEnabled) {
+      const leader = stemAudioRefs.current.vocals
+      if (!leader || !Number.isFinite(leader.duration)) return
+      seekAllStems(Math.min(Math.max(leader.currentTime + seconds, 0), leader.duration))
+      return
+    }
+
     const audio = audioRef.current
     if (!audio || !Number.isFinite(audio.duration)) return
     audio.currentTime = Math.min(Math.max(audio.currentTime + seconds, 0), audio.duration)
   }
 
   const seek = (time: number) => {
+    if (stemsEnabled) {
+      seekAllStems(time)
+      return
+    }
+
     const audio = audioRef.current
     // See loadSong's identical guard above - unreachable once mounted.
     /* v8 ignore next */
@@ -413,6 +659,11 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     cancelledLoadIdsRef.current.add(songId)
 
     if (activeSongIdRef.current !== songId) return
+
+    if (stemsEnabled) {
+      pauseAllStems()
+      setStemsEnabled(false)
+    }
 
     const audio = audioRef.current
     // See setVolume's identical guard below - unreachable once mounted.
@@ -436,6 +687,15 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     // writes together, not a real conditional in practice.
     /* v8 ignore next */
     if (audio) audio.volume = clamped
+    // Master volume is applied per-element (there's no single node it'd
+    // otherwise pass through) - written to all 6 stems too so the one
+    // volume control keeps working regardless of which mode is active. This
+    // is independent of each stem's own relative mix level (stemVolumes,
+    // applied via its GainNode) - the two multiply together.
+    for (const stem of STEM_NAMES) {
+      const stemAudio = stemAudioRefs.current[stem]
+      if (stemAudio) stemAudio.volume = clamped
+    }
     setVolumeState(clamped)
   }
 
@@ -446,11 +706,57 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
     setSpeedState(clamped)
   }
 
-  const setTransposeSemitones = (value: number) => {
-    const clamped = Math.min(Math.max(value, MIN_TRANSPOSE_SEMITONES), MAX_TRANSPOSE_SEMITONES)
-    const soundTouch = soundTouchNodeRef.current
-    if (soundTouch) soundTouch.pitchSemitones.value = clamped
-    setTransposeSemitonesState(clamped)
+  // Hands playback off from the single-file element to the 6 stem elements
+  // at the same position/play-state - see the guiding constraint in the
+  // feature's plan doc: the single-file path above stays untouched, this is
+  // purely additive. Only callable once stems are known to exist for the
+  // active song (the popover UI is responsible for that check, since it's
+  // the one polling separation status).
+  const enableStemsMode = async (urls: StemUrls) => {
+    if (stemsEnabled) return
+    await ensureStemsGraph()
+
+    const audio = audioRef.current
+    const resumeTime = audio?.currentTime ?? 0
+    const wasPlaying = isPlaying
+    audio?.pause()
+
+    for (const stem of STEM_NAMES) {
+      const stemAudio = stemAudioRefs.current[stem]
+      if (!stemAudio) continue
+      stemAudio.volume = volume
+      stemAudio.src = urls[stem]
+      stemAudio.currentTime = resumeTime
+    }
+
+    setStemsEnabled(true)
+
+    if (wasPlaying) await playAllStems()
+  }
+
+  const disableStemsMode = () => {
+    if (!stemsEnabled) return
+
+    const leader = stemAudioRefs.current.vocals
+    const resumeTime = leader?.currentTime ?? currentTime
+    const wasPlaying = isPlaying
+    pauseAllStems()
+    setStemsEnabled(false)
+
+    const audio = audioRef.current
+    if (audio) {
+      audio.currentTime = resumeTime
+      if (wasPlaying) void safePlay(audio)
+    }
+  }
+
+  const setStemVolume = (stem: StemName, value: number) => {
+    const clamped = Math.min(Math.max(value, 0), 1)
+    setStemVolumes((prev) => ({ ...prev, [stem]: clamped }))
+  }
+
+  const toggleStemMute = (stem: StemName) => {
+    setStemMuted((prev) => ({ ...prev, [stem]: !prev[stem] }))
   }
 
   return (
@@ -483,9 +789,28 @@ export const SongPlayerProvider: FunctionComponent<PropsWithChildren> = ({ child
         skip,
         seek,
         stopIfActive,
+        stemsEnabled,
+        enableStemsMode,
+        disableStemsMode,
+        stemVolumes,
+        setStemVolume,
+        stemMuted,
+        toggleStemMute,
+        soloedStem,
+        setSoloedStem,
       }}
     >
       <audio ref={audioRef} className="hidden" crossOrigin="anonymous" />
+      {STEM_NAMES.map((stem) => (
+        <audio
+          key={stem}
+          ref={(el) => {
+            stemAudioRefs.current[stem] = el
+          }}
+          className="hidden"
+          crossOrigin="anonymous"
+        />
+      ))}
       {children}
     </PlayerContext.Provider>
   )

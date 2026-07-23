@@ -17,6 +17,8 @@ class MockSoundTouchNode {
   static register = vi.fn().mockResolvedValue(undefined)
   playbackRate = { value: 1 }
   pitchSemitones = { value: 0 }
+  connect = vi.fn()
+  disconnect = vi.fn()
 }
 
 vi.mock("@soundtouchjs/audio-worklet", () => ({

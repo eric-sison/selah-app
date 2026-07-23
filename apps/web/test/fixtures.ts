@@ -5,6 +5,7 @@ import type { Session } from "@/lib/session"
 import type { LoopSection } from "@/components/songs/SongPlayerProvider"
 import type { Team } from "@/components/teams/TeamList"
 import type { operations } from "@/types/api"
+import type { StemName, StemUrls } from "@/utils/stems"
 
 // SongPlayerProvider's own PlayerContextValue interface isn't exported -
 // this is a structural duplicate kept in sync by hand. Components under
@@ -38,6 +39,15 @@ export interface MockPlayerContextValue {
   skip: (seconds: number) => void
   seek: (time: number) => void
   stopIfActive: (songId: string) => void
+  stemsEnabled: boolean
+  enableStemsMode: (urls: StemUrls) => Promise<void>
+  disableStemsMode: () => void
+  stemVolumes: Record<StemName, number>
+  setStemVolume: (stem: StemName, value: number) => void
+  stemMuted: Record<StemName, boolean>
+  toggleStemMute: (stem: StemName) => void
+  soloedStem: StemName | null
+  setSoloedStem: (stem: StemName | null) => void
 }
 
 export function createMockSong(overrides: Partial<Song> = {}): Song {
@@ -153,6 +163,15 @@ export function createMockPlayerContextValue(
     skip: vi.fn(),
     seek: vi.fn(),
     stopIfActive: vi.fn(),
+    stemsEnabled: false,
+    enableStemsMode: vi.fn(),
+    disableStemsMode: vi.fn(),
+    stemVolumes: { vocals: 1, drums: 1, bass: 1, guitar: 1, piano: 1, other: 1 },
+    setStemVolume: vi.fn(),
+    stemMuted: { vocals: false, drums: false, bass: false, guitar: false, piano: false, other: false },
+    toggleStemMute: vi.fn(),
+    soloedStem: null,
+    setSoloedStem: vi.fn(),
     ...overrides,
   }
 }

@@ -90,7 +90,9 @@ export const MiniMusicPlayer: FunctionComponent = () => {
     enabled: !!song?.hasAlbumArt,
   })
 
-  if (!activeSongId || pathname.startsWith("/songs")) return null
+  // Also hidden on the line up's full song list page - it embeds its own
+  // MusicPlayerBar in its PageFooter, same as the songs pages above.
+  if (!activeSongId || pathname.startsWith("/songs") || pathname.endsWith("/song-list")) return null
 
   if (activeSongQuery.isLoading) {
     return (

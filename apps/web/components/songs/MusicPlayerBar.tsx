@@ -1,39 +1,59 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@workspace/ui/components/Button"
+import { Input } from "@workspace/ui/components/Input"
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/Popover"
+import { Separator } from "@workspace/ui/components/Separator"
 import { Skeleton } from "@workspace/ui/components/Skeleton"
 import { Slider } from "@workspace/ui/components/Slider"
 import { Spinner } from "@workspace/ui/components/Spinner"
+import { toast } from "@workspace/ui/components/Sonner"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/Tooltip"
 import { cn } from "@workspace/ui/lib/utils"
 import {
+  AudioLines,
+  FastForward,
   FileMusic,
+  Hand,
+  Headphones,
   ListMusic,
+  Metronome,
+  Minus,
   Music,
+  Music2,
   Pause,
   Pencil,
   Play,
   Plus,
   Repeat,
+  Repeat2,
+  Rewind,
+  RotateCcw,
   Shuffle,
   SkipBack,
   SkipForward,
   Volume1,
   Volume2,
   VolumeX,
+  Wand2,
   X,
 } from "lucide-react"
 import Image from "next/image"
 import { FunctionComponent, useEffect, useRef, useState } from "react"
 import { apiClient } from "@/lib/api-client"
-import { formatFileSize } from "@/utils/format-file-size"
-import { formatTime } from "@/utils/format-time"
+import { detectKeyFromAudioBuffer } from "@/utils/detect-key"
+import { formatTime, parseTime } from "@/utils/format-time"
+import { STEM_NAMES } from "@/utils/stems"
+import type { StemName } from "@/utils/stems"
+import { transposeKey } from "@/utils/transpose-key"
+import { useMetronome } from "@/hooks/use-metronome"
+import { useTapTempo } from "@/hooks/use-tap-tempo"
 import { usePlayer } from "@/components/songs/SongPlayerProvider"
 import { EditChordProDialog } from "@/components/songs/EditChordProDialog"
 import { SongDetailsSheet } from "@/components/songs/SongDetailsSheet"
 import { SongLyricsChords } from "@/components/songs/SongLyricsChords"
+import type { Song } from "@/components/songs/NowPlayingCard"
 
 // See NowPlayingCard.tsx - the shared Slider uses `thumbAlignment="edge"`
 // with a 12px (size-3) thumb, so the thumb's on-screen center isn't a pure
@@ -45,6 +65,10 @@ const THUMB_SIZE_PX = 12
 // can stutter if fired on every drag tick) until the pointer pauses - the
 // slider's displayed position still updates immediately via `scrubValue`.
 const SEEK_DEBOUNCE_MS = 150
+
+// How far the fast-forward/rewind buttons jump within the current song -
+// matches the common podcast/audiobook-player convention.
+const SKIP_SECONDS = 5
 
 // Caps the "fall back to library order" fetch below (see `order`) - the
 // list endpoint is paginated, so this is a bounded approximation of "the
@@ -69,7 +93,9 @@ const MusicPlayerBarSkeleton: FunctionComponent = () => (
     <div className="flex items-center justify-center gap-4">
       <Skeleton className="size-9 shrink-0 rounded-full" />
       <Skeleton className="size-9 shrink-0 rounded-full" />
+      <Skeleton className="size-9 shrink-0 rounded-full" />
       <Skeleton className="size-10 shrink-0 rounded-full" />
+      <Skeleton className="size-9 shrink-0 rounded-full" />
       <Skeleton className="size-9 shrink-0 rounded-full" />
       <Skeleton className="size-9 shrink-0 rounded-full" />
     </div>
@@ -78,9 +104,750 @@ const MusicPlayerBarSkeleton: FunctionComponent = () => (
       <Skeleton className="size-9 shrink-0 rounded-full" />
       <Skeleton className="size-9 shrink-0 rounded-full" />
       <Skeleton className="size-9 shrink-0 rounded-full" />
+      <Skeleton className="size-9 shrink-0 rounded-full" />
+      <Skeleton className="size-9 shrink-0 rounded-full" />
+      <Skeleton className="size-9 shrink-0 rounded-full" />
     </div>
   </div>
 )
+
+// Matches the display-only chord transpose's own clamp range in
+// SongLyricsChords.tsx - this one actually re-pitches the audio (see
+// SongPlayerProvider's setTransposeSemitones), but a consistent ±12 (one
+// octave) range keeps the two features feeling coherent.
+const MIN_TRANSPOSE_SEMITONES = -12
+const MAX_TRANSPOSE_SEMITONES = 12
+
+function formatSignedSemitones(value: number): string {
+  if (value === 0) return "0"
+  return value > 0 ? `+${value}` : `${value}`
+}
+
+interface SongKeyPopoverProps {
+  song: Song
+}
+
+// Key detection and "save to DB" are local to whichever song is loaded -
+// keyed by song.id where this is rendered below (same reasoning as
+// EditChordProDialog/SongLyricsChords) so a detected-but-not-saved result
+// can't linger on screen once the user moves on to a different song.
+// `transposeSemitones` itself stays in the player context instead of local
+// state, since it drives the actual audio pitch-shift.
+const SongKeyPopover: FunctionComponent<SongKeyPopoverProps> = ({ song }) => {
+  const { transposeSemitones, setTransposeSemitones } = usePlayer()
+  const queryClient = useQueryClient()
+
+  // Re-fetches a fresh stream URL and decodes the whole file client-side
+  // rather than reusing the already-playing <audio> element, since that
+  // element's buffered range depends on how much of the track has actually
+  // played - detection needs the decoded PCM up front regardless of
+  // playback position.
+  const detectKey = useMutation({
+    mutationFn: async (): Promise<string | null> => {
+      const { data, error } = await apiClient.GET("/api/songs/{id}/stream-url", {
+        params: { path: { id: song.id } },
+      })
+      if (error) throw new Error("Failed to load audio for analysis.")
+
+      const response = await fetch(data.url)
+      const arrayBuffer = await response.arrayBuffer()
+
+      const audioContext = new AudioContext()
+      try {
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+        return detectKeyFromAudioBuffer(audioBuffer)
+      } finally {
+        await audioContext.close()
+      }
+    },
+    onSuccess: (detectedKey) => {
+      if (!detectedKey) toast.error("Couldn't detect a key for this song.", { position: "top-center" })
+    },
+    onError: () => toast.error("Failed to analyze this song.", { position: "top-center" }),
+  })
+
+  const saveKey = useMutation({
+    mutationFn: async (musicalKey: string) => {
+      const { error } = await apiClient.PATCH("/api/songs/{id}", {
+        params: { path: { id: song.id } },
+        body: { musicalKey },
+      })
+      if (error) throw new Error("Failed to update key.")
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["song", song.id] })
+      await queryClient.invalidateQueries({ queryKey: ["songs"] })
+      toast.success("Key updated.")
+      detectKey.reset()
+    },
+    onError: () => toast.error("Failed to update key.", { position: "top-center" }),
+  })
+
+  const shiftedKey = song.musicalKey ? transposeKey(song.musicalKey, transposeSemitones) : null
+
+  return (
+    <Popover>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Key and pitch">
+                  <Music2 className="size-4" />
+                </Button>
+              }
+            />
+          }
+        />
+        <TooltipContent>Key & pitch</TooltipContent>
+      </Tooltip>
+
+      <PopoverContent side="top" align="end" className="w-64">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">Original key</p>
+          <p className="text-sm font-medium">{song.musicalKey ? `Key of ${song.musicalKey}` : "Not set"}</p>
+        </div>
+
+        <div className="flex flex-col items-center gap-2">
+          <p className="w-full text-xs font-medium text-muted-foreground">Shift pitch</p>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon-sm"
+              aria-label="Shift down a semitone"
+              disabled={transposeSemitones <= MIN_TRANSPOSE_SEMITONES}
+              onClick={() => setTransposeSemitones(transposeSemitones - 1)}
+            >
+              <Minus />
+            </Button>
+            <span className="min-w-10 text-center text-2xl font-bold tabular-nums">
+              {formatSignedSemitones(transposeSemitones)}
+            </span>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              aria-label="Shift up a semitone"
+              disabled={transposeSemitones >= MAX_TRANSPOSE_SEMITONES}
+              onClick={() => setTransposeSemitones(transposeSemitones + 1)}
+            >
+              <Plus />
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {shiftedKey && transposeSemitones !== 0
+              ? `Now playing in Key of ${shiftedKey}`
+              : "No pitch shift"}
+          </p>
+        </div>
+
+        <Separator />
+
+        {detectKey.data ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            disabled={saveKey.isPending}
+            onClick={() => saveKey.mutate(detectKey.data!)}
+          >
+            {saveKey.isPending ? <Spinner /> : <Wand2 />}
+            Use detected key: {detectKey.data}
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            disabled={detectKey.isPending}
+            onClick={() => detectKey.mutate()}
+          >
+            {detectKey.isPending ? <Spinner /> : <Wand2 />}
+            {detectKey.isPending ? "Detecting key..." : "Detect key"}
+          </Button>
+        )}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+interface SongTempoPopoverProps {
+  song: Song
+}
+
+// Tap tempo plus an audible metronome (see hooks/use-tap-tempo.ts and
+// hooks/use-metronome.ts) rather than automatic detection from the audio -
+// autocorrelation-based tempo estimation is prone to locking onto a clean
+// multiple of the real tempo (e.g. a driving hi-hat's double-time), with no
+// reliable way to tell from the signal alone which multiple is correct.
+// Tapping along leaves that judgment call to whoever's actually listening.
+const SongTempoPopover: FunctionComponent<SongTempoPopoverProps> = ({ song }) => {
+  const queryClient = useQueryClient()
+  // Seeded from the song's already-saved tempo (if any) so the metronome is
+  // usable immediately rather than requiring a fresh tap sequence every time
+  // this popover opens - this component is keyed by song.id (see below), so
+  // it remounts, and re-reads, per song rather than carrying a stale value
+  // over.
+  const { bpm: tappedBpm, tapCount, tap, reset: resetTap, setBpm: setTappedBpm } = useTapTempo(song.tempo)
+  // Falls back to 120 only to satisfy useMetronome's required number param -
+  // the metronome's own start button stays disabled until a real bpm exists.
+  const metronome = useMetronome(tappedBpm ?? 120)
+
+  const saveTempo = useMutation({
+    mutationFn: async (tempo: number) => {
+      const { error } = await apiClient.PATCH("/api/songs/{id}", {
+        params: { path: { id: song.id } },
+        body: { tempo },
+      })
+      if (error) throw new Error("Failed to update tempo.")
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["song", song.id] })
+      await queryClient.invalidateQueries({ queryKey: ["songs"] })
+      toast.success("Tempo updated.")
+    },
+    onError: () => toast.error("Failed to update tempo.", { position: "top-center" }),
+  })
+
+  return (
+    <Popover onOpenChange={(open) => !open && metronome.stop()}>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Tempo">
+                  <Metronome className="size-4" />
+                </Button>
+              }
+            />
+          }
+        />
+        <TooltipContent>Tempo</TooltipContent>
+      </Tooltip>
+
+      <PopoverContent side="top" align="end" className="w-64">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">Tempo</p>
+          <p className="text-sm font-medium">{song.tempo ? `${song.tempo} BPM` : "Not set"}</p>
+        </div>
+
+        <Separator />
+
+        <div className="flex flex-col items-center gap-3">
+          <Button variant="outline" className="h-16 w-full flex-col gap-1" onClick={tap}>
+            <Hand className="size-5" />
+            <span className="text-xs text-muted-foreground">
+              {tapCount > 0 ? `${tapCount} tap${tapCount === 1 ? "" : "s"}` : "Tap along to the beat"}
+            </span>
+          </Button>
+
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon-sm"
+              aria-label="Decrease tempo"
+              disabled={tappedBpm === null}
+              onClick={() => setTappedBpm(tappedBpm! - 1)}
+            >
+              <Minus />
+            </Button>
+            <span className="min-w-16 text-center text-2xl font-bold tabular-nums">{tappedBpm ?? "—"}</span>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              aria-label="Increase tempo"
+              disabled={tappedBpm === null}
+              onClick={() => setTappedBpm(tappedBpm! + 1)}
+            >
+              <Plus />
+            </Button>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={tapCount === 0}
+            onClick={() => {
+              resetTap()
+              metronome.stop()
+            }}
+          >
+            <RotateCcw />
+            Reset
+          </Button>
+        </div>
+
+        <Separator />
+
+        <Button
+          variant={metronome.isPlaying ? "secondary" : "outline"}
+          size="sm"
+          className="w-full"
+          disabled={tappedBpm === null}
+          aria-pressed={metronome.isPlaying}
+          onClick={() => (metronome.isPlaying ? metronome.stop() : metronome.start())}
+        >
+          {metronome.isPlaying ? <Pause /> : <Play />}
+          {metronome.isPlaying ? "Stop metronome" : "Play metronome"}
+        </Button>
+
+        {/* Its own volume, independent of the song's own playback volume
+          (see MusicPlayerBar's master Volume popover) - the metronome runs
+          on a separate AudioContext entirely, so the two never shared a
+          gain to begin with. */}
+        <div className="flex items-center gap-2">
+          {metronome.volume === 0 ? (
+            <VolumeX className="size-4 shrink-0 text-muted-foreground" />
+          ) : (
+            <Volume2 className="size-4 shrink-0 text-muted-foreground" />
+          )}
+          <Slider
+            aria-label="Metronome volume"
+            value={[metronome.volume]}
+            min={0}
+            max={1}
+            step={0.01}
+            onValueChange={(value) => metronome.setVolume(Array.isArray(value) ? (value[0] ?? 0) : value)}
+            className="flex-1"
+          />
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          disabled={tappedBpm === null || saveTempo.isPending}
+          onClick={() => saveTempo.mutate(tappedBpm!)}
+        >
+          {saveTempo.isPending ? <Spinner /> : <Wand2 />}
+          {tappedBpm !== null ? `Save tempo: ${tappedBpm} BPM` : "Save tempo"}
+        </Button>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+// A loop needs to be at least this long - guards against a mis-tap setting
+// start and end at nearly the same instant, which would otherwise produce a
+// stutter-fast, effectively broken loop rather than an obviously invalid one.
+const MIN_LOOP_SECONDS = 1
+
+// Both points can be set two ways: "Set" captures whatever's currently
+// playing (scrubbing or playing to the right spot and pressing a button is
+// the most direct way to pick a moment in a song), or the time field next
+// to it can be typed into directly for an exact timestamp. Nothing commits
+// to the shared player context (see SongPlayerProvider's `loopSection`,
+// which the audio element's timeupdate handler already enforces - this
+// popover is purely the UI for setting it) until both points exist and
+// make sense together.
+const LoopSectionPopover: FunctionComponent = () => {
+  const { currentTime, duration, loopSection, setLoopSection } = usePlayer()
+  // Seeded from whatever's already looping (if anything) so reopening this
+  // popover - which may have unmounted while closed - reflects the loop
+  // that's actually still running instead of resetting to blank.
+  const [start, setStart] = useState(loopSection?.start ?? null)
+  const [end, setEnd] = useState(loopSection?.end ?? null)
+
+  const canSetPoints = duration > 0
+  const isInvalidRange = start !== null && end !== null && end - start < MIN_LOOP_SECONDS
+
+  const commitLoop = (nextStart: number | null, nextEnd: number | null) => {
+    if (nextStart !== null && nextEnd !== null && nextEnd - nextStart >= MIN_LOOP_SECONDS) {
+      setLoopSection({ start: nextStart, end: nextEnd })
+    } else {
+      setLoopSection(null)
+    }
+  }
+
+  const handleSetStart = () => {
+    setStart(currentTime)
+    commitLoop(currentTime, end)
+  }
+
+  const handleSetEnd = () => {
+    setEnd(currentTime)
+    commitLoop(start, currentTime)
+  }
+
+  // Parses and clamps a typed time into the song's actual length. Returns
+  // null (rather than clamping garbage input to 0) for text that isn't a
+  // recognizable time at all, so the caller can reject it outright instead
+  // of silently accepting a typo as "0:00".
+  const parseManualTime = (value: string): number | null => {
+    const parsed = parseTime(value)
+    return parsed === null ? null : Math.min(Math.max(parsed, 0), duration)
+  }
+
+  // A blank field on blur (e.g. the popover just closed, or the user tabbed
+  // through without typing anything) isn't a rejected edit - it's simply no
+  // edit, so it's left alone rather than flagged as an invalid time.
+  const handleManualStart = (value: string) => {
+    if (value.trim() === "") return
+    const parsed = parseManualTime(value)
+    if (parsed === null) {
+      toast.error("Enter a valid time, like 1:23.", { position: "top-center" })
+      return
+    }
+    setStart(parsed)
+    commitLoop(parsed, end)
+  }
+
+  const handleManualEnd = (value: string) => {
+    if (value.trim() === "") return
+    const parsed = parseManualTime(value)
+    if (parsed === null) {
+      toast.error("Enter a valid time, like 1:23.", { position: "top-center" })
+      return
+    }
+    setEnd(parsed)
+    commitLoop(start, parsed)
+  }
+
+  const handleClear = () => {
+    setStart(null)
+    setEnd(null)
+    setLoopSection(null)
+  }
+
+  return (
+    <Popover>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <Button
+                  variant={loopSection ? "secondary" : "ghost"}
+                  size="icon-lg"
+                  className="rounded-full"
+                  aria-label="Loop section"
+                  aria-pressed={!!loopSection}
+                >
+                  <Repeat2 className="size-4" />
+                </Button>
+              }
+            />
+          }
+        />
+        <TooltipContent>Loop section</TooltipContent>
+      </Tooltip>
+
+      <PopoverContent side="top" align="end" className="w-64">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">Loop section</p>
+          <p className="text-sm font-medium">
+            {loopSection ? `${formatTime(loopSection.start)} – ${formatTime(loopSection.end)}` : "Not set"}
+          </p>
+        </div>
+
+        <Separator />
+
+        <div className="flex items-center justify-between gap-2">
+          <span className="w-10 shrink-0 text-xs text-muted-foreground">Start</span>
+          {/* Remounted (via `key`) whenever `start` changes elsewhere (the
+            Set button, Clear) so its displayed text resyncs to the real
+            value - uncontrolled otherwise, so typing isn't fought mid-edit. */}
+          <Input
+            key={start}
+            defaultValue={start !== null ? formatTime(start) : ""}
+            placeholder="0:00"
+            disabled={!canSetPoints}
+            className="h-8 w-16 text-center text-sm tabular-nums"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur()
+            }}
+            onBlur={(e) => handleManualStart(e.currentTarget.value)}
+          />
+          <Button variant="outline" size="sm" disabled={!canSetPoints} onClick={handleSetStart}>
+            Set
+          </Button>
+        </div>
+
+        <div className="flex items-center justify-between gap-2">
+          <span className="w-10 shrink-0 text-xs text-muted-foreground">End</span>
+          <Input
+            key={end}
+            defaultValue={end !== null ? formatTime(end) : ""}
+            placeholder="0:00"
+            disabled={!canSetPoints}
+            className="h-8 w-16 text-center text-sm tabular-nums"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur()
+            }}
+            onBlur={(e) => handleManualEnd(e.currentTarget.value)}
+          />
+          <Button variant="outline" size="sm" disabled={!canSetPoints} onClick={handleSetEnd}>
+            Set
+          </Button>
+        </div>
+
+        {isInvalidRange && (
+          <p className="text-xs text-destructive">End must be at least {MIN_LOOP_SECONDS}s after start.</p>
+        )}
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full"
+          disabled={start === null && end === null}
+          onClick={handleClear}
+        >
+          <RotateCcw />
+          Clear
+        </Button>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+const STEM_LABELS: Record<StemName, string> = {
+  vocals: "Vocals",
+  drums: "Drums",
+  bass: "Bass",
+  guitar: "Guitar",
+  piano: "Piano",
+  other: "Other",
+}
+
+interface StemsPopoverProps {
+  song: Song
+}
+
+// Splits a song into 6 stems via a self-hosted separation worker (see
+// services/stem-worker) and, once complete, lets SongPlayerProvider's
+// playback switch from the single mixed-down file to an independently
+// mixable 6-track one - mute/solo/volume per stem, layered on top of the
+// existing pitch/tempo controls rather than replacing them.
+const StemsPopover: FunctionComponent<StemsPopoverProps> = ({ song }) => {
+  const queryClient = useQueryClient()
+  const {
+    stemsEnabled,
+    enableStemsMode,
+    disableStemsMode,
+    stemVolumes,
+    setStemVolume,
+    stemMuted,
+    toggleStemMute,
+    soloedStem,
+    setSoloedStem,
+  } = usePlayer()
+
+  const stemStatusQuery = useQuery({
+    queryKey: ["song-stems", song.id],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/api/songs/{id}/stems", {
+        params: { path: { id: song.id } },
+      })
+      if (error) {
+        // A 404 just means separation has never been requested for this
+        // song - a normal, valid state, not a failed request.
+        if (error.status === 404) return null
+        throw new Error("Failed to load stem status.")
+      }
+      return data
+    },
+    // Polls while a job is in flight, stops as soon as it lands on a
+    // terminal state (or hasn't been started at all).
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return status === "pending" || status === "processing" ? 3000 : false
+    },
+    // TanStack Query skips interval refetches while the tab is unfocused by
+    // default - fine for "keep this on-screen data fresh," wrong here, since
+    // separation takes minutes and users routinely tab away while waiting.
+    // Without this, the popover can sit stuck on "Separating..." long after
+    // the job actually finished, only catching up once the tab regains
+    // focus.
+    refetchIntervalInBackground: true,
+  })
+
+  const startSeparation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await apiClient.POST("/api/songs/{id}/stems", {
+        params: { path: { id: song.id } },
+      })
+      if (error) throw new Error("Failed to start stem separation.")
+      return data
+    },
+    // Seeds the query directly (rather than just invalidating) so the
+    // popover flips to the "processing" state immediately instead of
+    // waiting on a refetch round-trip.
+    onSuccess: (data) => queryClient.setQueryData(["song-stems", song.id], data),
+    onError: () => toast.error("Failed to start stem separation.", { position: "top-center" }),
+  })
+
+  const job = stemStatusQuery.data
+  const isProcessing = job?.status === "pending" || job?.status === "processing"
+
+  // A song already being replayed with a fresh (still-processing) job would
+  // otherwise keep audibly playing whatever the *previous* generation
+  // produced - dropping back to single-file playback avoids that confusion
+  // until the new stems are ready and re-enabled.
+  const handleRegenerate = () => {
+    if (stemsEnabled) disableStemsMode()
+    startSeparation.mutate()
+  }
+
+  return (
+    <Popover>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <Button
+                  variant={stemsEnabled ? "secondary" : "ghost"}
+                  size="icon-lg"
+                  className="rounded-full"
+                  aria-label="Stems"
+                  aria-pressed={stemsEnabled}
+                >
+                  <AudioLines className="size-4" />
+                </Button>
+              }
+            />
+          }
+        />
+        <TooltipContent>Stems</TooltipContent>
+      </Tooltip>
+
+      <PopoverContent side="top" align="end" className="w-72">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">Stems</p>
+            <p className="text-sm font-medium">
+              {job?.status === "completed" && job.urls
+                ? "Vocals, drums, bass, guitar, piano & other"
+                : isProcessing
+                  ? "Separating..."
+                  : job?.status === "completed"
+                    ? "Incomplete"
+                    : "Not split yet"}
+            </p>
+          </div>
+          {isProcessing && <Spinner />}
+        </div>
+
+        <Separator />
+
+        {(!job || job.status === "failed" || (job.status === "completed" && !job.urls)) && (
+          <div className="flex flex-col gap-2">
+            {job?.status === "failed" && (
+              <p className="text-xs text-destructive">{job.errorMessage ?? "Separation failed."}</p>
+            )}
+            {/* Status says "completed" but one or more stem files are missing
+              - most likely a job that finished before guitar/piano stems
+              existed. No data to fall back to, so this just prompts a
+              fresh run rather than showing a broken mixer. */}
+            {job?.status === "completed" && !job.urls && (
+              <p className="text-xs text-destructive">
+                Some stems are missing for this song - separate again to fix it.
+              </p>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              disabled={startSeparation.isPending}
+              onClick={() => startSeparation.mutate()}
+            >
+              {startSeparation.isPending ? <Spinner /> : <Wand2 />}
+              {job?.status === "failed" || job?.status === "completed" ? "Retry" : "Separate into stems"}
+            </Button>
+          </div>
+        )}
+
+        {isProcessing && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-muted-foreground">
+              Separating vocals, drums, bass, guitar, piano & other - this can take a few minutes.
+            </p>
+            {/* An escape hatch for a job that's stuck rather than merely
+              slow - e.g. the worker process restarting mid-job (a real risk
+              with FastAPI's BackgroundTasks under `uvicorn --reload`) leaves
+              this stuck at "pending"/"processing" forever with no callback
+              ever coming. Re-submitting reuses the same upsert startSeparation
+              already does for "Retry", so it's safe to click even on a job
+              that's actually still progressing normally. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              disabled={startSeparation.isPending}
+              onClick={() => startSeparation.mutate()}
+            >
+              {startSeparation.isPending ? <Spinner /> : <RotateCcw />}
+              Taking too long? Start over
+            </Button>
+          </div>
+        )}
+
+        {job?.status === "completed" && job.urls && (
+          <div className="flex flex-col gap-3">
+            <Button
+              variant={stemsEnabled ? "secondary" : "outline"}
+              size="sm"
+              className="w-full"
+              aria-pressed={stemsEnabled}
+              onClick={() => (stemsEnabled ? disableStemsMode() : enableStemsMode(job.urls!))}
+            >
+              <AudioLines />
+              {stemsEnabled ? "Playing as stems" : "Play as stems"}
+            </Button>
+
+            {STEM_NAMES.map((stem) => (
+              <div key={stem} className="flex items-center gap-2">
+                <span className="w-12 shrink-0 text-xs text-muted-foreground">{STEM_LABELS[stem]}</span>
+                <Slider
+                  value={[stemVolumes[stem]]}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  disabled={!stemsEnabled}
+                  onValueChange={(value) => setStemVolume(stem, Array.isArray(value) ? (value[0] ?? 0) : value)}
+                  className="flex-1"
+                />
+                <Button
+                  variant={stemMuted[stem] ? "secondary" : "ghost"}
+                  size="icon-sm"
+                  aria-label={`Mute ${STEM_LABELS[stem]}`}
+                  aria-pressed={stemMuted[stem]}
+                  disabled={!stemsEnabled}
+                  onClick={() => toggleStemMute(stem)}
+                >
+                  {stemMuted[stem] ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}
+                </Button>
+                <Button
+                  variant={soloedStem === stem ? "secondary" : "ghost"}
+                  size="icon-sm"
+                  aria-label={`Solo ${STEM_LABELS[stem]}`}
+                  aria-pressed={soloedStem === stem}
+                  disabled={!stemsEnabled}
+                  onClick={() => setSoloedStem(soloedStem === stem ? null : stem)}
+                >
+                  <Headphones className="size-3.5" />
+                </Button>
+              </div>
+            ))}
+
+            <Separator />
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              disabled={startSeparation.isPending}
+              onClick={handleRegenerate}
+            >
+              {startSeparation.isPending ? <Spinner /> : <RotateCcw />}
+              Regenerate stems
+            </Button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 // A persistent, app-bar-style player meant to live in `PageFooter` - unlike
 // NowPlayingCard (which falls back to the most recent upload as a browsing
@@ -106,6 +873,8 @@ export const MusicPlayerBar: FunctionComponent = () => {
     playNext,
     playPrevious,
     seek,
+    skip,
+    loopSection,
   } = usePlayer()
 
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
@@ -236,9 +1005,27 @@ export const MusicPlayerBar: FunctionComponent = () => {
             >
               <SkipBack className="size-4 fill-current" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              className="rounded-full"
+              aria-label={`Rewind ${SKIP_SECONDS} seconds`}
+              disabled
+            >
+              <Rewind className="size-4 fill-current" />
+            </Button>
             <button aria-label="Play" className="text-muted-foreground" disabled>
               <Play className="size-8 fill-current" />
             </button>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              className="rounded-full"
+              aria-label={`Fast forward ${SKIP_SECONDS} seconds`}
+              disabled
+            >
+              <FastForward className="size-4 fill-current" />
+            </Button>
             <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Next song" disabled>
               <SkipForward className="size-4 fill-current" />
             </Button>
@@ -265,6 +1052,24 @@ export const MusicPlayerBar: FunctionComponent = () => {
               disabled
             >
               <FileMusic className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              className="rounded-full"
+              aria-label="Key and pitch"
+              disabled
+            >
+              <Music2 className="size-4" />
+            </Button>
+            <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Tempo" disabled>
+              <Metronome className="size-4" />
+            </Button>
+            <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Loop section" disabled>
+              <Repeat2 className="size-4" />
+            </Button>
+            <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Stems" disabled>
+              <AudioLines className="size-4" />
             </Button>
             <Button
               variant="ghost"
@@ -314,6 +1119,20 @@ export const MusicPlayerBar: FunctionComponent = () => {
         onPointerMove={handleSeekBarPointerMove}
         onPointerLeave={() => setHoverRatio(null)}
       >
+        {/* The active A-B loop region, if any - a highlighted range under
+          the track itself rather than just the two popover labels, so it's
+          visible at a glance while scrubbing or glancing at the bar. */}
+        {loopSection && canControlPlayback && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute top-0 h-1 rounded-full bg-primary/40"
+            style={{
+              left: `${(loopSection.start / duration) * 100}%`,
+              width: `${((loopSection.end - loopSection.start) / duration) * 100}%`,
+            }}
+          />
+        )}
+
         <Slider
           value={[displayTime]}
           min={0}
@@ -358,7 +1177,9 @@ export const MusicPlayerBar: FunctionComponent = () => {
           </div>
           <div className="min-w-0 text-xs">
             <p className="truncate">Uploaded by {song.uploader.name}</p>
-            <p className="truncate text-muted-foreground">{formatFileSize(song.fileSizeBytes)}</p>
+            <p className="truncate text-muted-foreground tabular-nums">
+              {formatTime(displayTime)} / {formatTime(duration)}
+            </p>
           </div>
         </div>
 
@@ -399,6 +1220,24 @@ export const MusicPlayerBar: FunctionComponent = () => {
             <TooltipContent>Previous</TooltipContent>
           </Tooltip>
 
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-lg"
+                  className="rounded-full"
+                  aria-label={`Rewind ${SKIP_SECONDS} seconds`}
+                  disabled={!canControlPlayback}
+                  onClick={() => skip(-SKIP_SECONDS)}
+                >
+                  <Rewind className="size-4 fill-current" />
+                </Button>
+              }
+            />
+            <TooltipContent>Rewind {SKIP_SECONDS}s</TooltipContent>
+          </Tooltip>
+
           <button
             aria-label={isPlaying ? "Pause" : "Play"}
             disabled={isLoading}
@@ -412,6 +1251,24 @@ export const MusicPlayerBar: FunctionComponent = () => {
               <Play className="size-8 fill-current" />
             )}
           </button>
+
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-lg"
+                  className="rounded-full"
+                  aria-label={`Fast forward ${SKIP_SECONDS} seconds`}
+                  disabled={!canControlPlayback}
+                  onClick={() => skip(SKIP_SECONDS)}
+                >
+                  <FastForward className="size-4 fill-current" />
+                </Button>
+              }
+            />
+            <TooltipContent>Forward {SKIP_SECONDS}s</TooltipContent>
+          </Tooltip>
 
           <Tooltip>
             <TooltipTrigger
@@ -496,6 +1353,11 @@ export const MusicPlayerBar: FunctionComponent = () => {
             />
             <TooltipContent>Lyrics & chords</TooltipContent>
           </Tooltip>
+
+          <SongKeyPopover key={`key-${song.id}`} song={song} />
+          <SongTempoPopover key={`tempo-${song.id}`} song={song} />
+          <LoopSectionPopover key={`loop-${song.id}`} />
+          <StemsPopover key={`stems-${song.id}`} song={song} />
 
           <Tooltip>
             <TooltipTrigger

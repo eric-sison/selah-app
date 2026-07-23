@@ -40,6 +40,7 @@ import {
   Trash2,
 } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 import { FunctionComponent, type RefObject, useRef, useState } from "react"
 import Draggable, { type DraggableEventHandler } from "react-draggable"
 import { apiClient } from "@/lib/api-client"
@@ -482,7 +483,12 @@ export const LineupSongList: FunctionComponent<LineupSongListProps> = ({ lineupI
             <Music className="size-4" />
             Song List
           </div>
-          <Button variant="outline" size="icon">
+          <Button
+            variant="outline"
+            size="icon"
+            nativeButton={false}
+            render={<Link href={`/line-ups/${lineupId}/song-list`} aria-label="Open full song list" />}
+          >
             <SquareArrowOutUpRight />
           </Button>
         </CardTitle>
