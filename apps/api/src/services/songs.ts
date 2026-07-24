@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm"
+import { and, desc, eq, sql } from "drizzle-orm"
 import { db } from "../db/index.js"
 import { song } from "../db/app-schema.js"
 import { deleteObject, getDownloadUrl, getStreamUrl, uploadObject } from "../lib/storage.js"
@@ -105,6 +105,8 @@ export interface ListSongsOptions {
   query?: string
   cursor?: number
   limit?: number
+  /** Restricts the listing to songs uploaded by this user id. */
+  uploadedBy?: string
 }
 
 /**
@@ -113,15 +115,23 @@ export interface ListSongsOptions {
  * When `query` is given, filters/orders by a spelling-tolerant match
  * (trigram similarity on title/artist, `OR`ed with a plain `ILIKE` so a
  * correctly-spelled partial match is never excluded by the similarity
- * floor) instead of returning the full library.
+ * floor) instead of returning the full library. When `uploadedBy` is given,
+ * results are further restricted to that user's own uploads (backed by
+ * `song_uploaded_by_idx`) - used for a "my uploads" view.
  *
  * @param options.query - optional search string; omit to list all songs.
  * @param options.cursor - row offset to start from (0 = first page).
  * @param options.limit - max rows to return; capped by callers at {@link MAX_SONGS_LIMIT}.
+ * @param options.uploadedBy - optional uploader user id to filter by.
  * @returns `items` (at most `limit` rows) and `nextCursor` (offset for the
  *   next page, or `null` if this was the last page).
  */
-export async function listSongs({ query, cursor = 0, limit = DEFAULT_SONGS_LIMIT }: ListSongsOptions = {}) {
+export async function listSongs({
+  query,
+  cursor = 0,
+  limit = DEFAULT_SONGS_LIMIT,
+  uploadedBy,
+}: ListSongsOptions = {}) {
   const withUploader = { uploader: { columns: { id: true, name: true } as const } }
 
   // Fetches one extra row so `hasMore`/`nextCursor` can be derived without a
@@ -134,9 +144,10 @@ export async function listSongs({ query, cursor = 0, limit = DEFAULT_SONGS_LIMIT
         // excluded by the similarity floor.
         const bestSimilarity = sql<number>`greatest(similarity(${song.title}, ${query}), similarity(coalesce(${song.artist}, ''), ${query}))`
         const likeQuery = `%${query}%`
+        const searchCondition = sql`${bestSimilarity} > ${SEARCH_SIMILARITY_THRESHOLD} OR ${song.title} ILIKE ${likeQuery} OR ${song.artist} ILIKE ${likeQuery}`
 
         return db.query.song.findMany({
-          where: sql`${bestSimilarity} > ${SEARCH_SIMILARITY_THRESHOLD} OR ${song.title} ILIKE ${likeQuery} OR ${song.artist} ILIKE ${likeQuery}`,
+          where: uploadedBy ? and(searchCondition, eq(song.uploadedBy, uploadedBy)) : searchCondition,
           orderBy: [desc(bestSimilarity), desc(song.createdAt)],
           limit: limit + 1,
           offset: cursor,
@@ -144,6 +155,7 @@ export async function listSongs({ query, cursor = 0, limit = DEFAULT_SONGS_LIMIT
         })
       })()
     : await db.query.song.findMany({
+        where: uploadedBy ? eq(song.uploadedBy, uploadedBy) : undefined,
         orderBy: desc(song.createdAt),
         limit: limit + 1,
         offset: cursor,

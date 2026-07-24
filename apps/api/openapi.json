@@ -199,6 +199,97 @@
             }
           }
         }
+      },
+      "get": {
+        "operationId": "listInvitations",
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "List pending invitations",
+        "description": "Admin-only. Lists every invitation that hasn't been accepted or expired yet, newest first.",
+        "responses": {
+          "200": {
+            "description": "Pending invitations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string"
+                      },
+                      "invitedBy": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string"
+                      },
+                      "expiresAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "email",
+                      "role",
+                      "invitedBy",
+                      "createdAt",
+                      "expiresAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/invitations/{token}": {
@@ -238,6 +329,74 @@
                     "email",
                     "expiresAt"
                   ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/invitations/{id}": {
+      "delete": {
+        "operationId": "revokeInvitation",
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "Revoke a pending invitation",
+        "description": "Admin-only. Deletes an invitation so its link stops working.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Invitation revoked."
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. Insufficient permissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 403,
+                  "message": "Forbidden. Insufficient permissions."
                 }
               }
             }
@@ -4834,6 +4993,259 @@
         }
       }
     },
+    "/api/musicians/me": {
+      "get": {
+        "operationId": "getMyMusician",
+        "tags": [
+          "Musicians"
+        ],
+        "summary": "Get the caller's own musician profile",
+        "description": "Any authenticated user can fetch their own musician profile.",
+        "responses": {
+          "200": {
+            "description": "Musician.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email",
+                        "image"
+                      ]
+                    },
+                    "instruments": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "bass",
+                          "drums",
+                          "singer",
+                          "electric_guitar",
+                          "acoustic_guitar",
+                          "keyboard"
+                        ]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "user",
+                    "instruments",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateMyMusician",
+        "tags": [
+          "Musicians"
+        ],
+        "summary": "Update the caller's own instruments",
+        "description": "Any authenticated user can replace their own musician profile's full set of instruments.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "instruments": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "bass",
+                        "drums",
+                        "singer",
+                        "electric_guitar",
+                        "acoustic_guitar",
+                        "keyboard"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "instruments"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Musician updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "image": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email",
+                        "image"
+                      ]
+                    },
+                    "instruments": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "bass",
+                          "drums",
+                          "singer",
+                          "electric_guitar",
+                          "acoustic_guitar",
+                          "keyboard"
+                        ]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "user",
+                    "instruments",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found. Resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 404,
+                  "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable. Request body failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 422,
+                  "message": "Unprocessable. Request body failed validation."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/schedules": {
       "get": {
         "operationId": "listSchedules",
@@ -5484,7 +5896,7 @@
           "Songs"
         ],
         "summary": "List uploaded songs",
-        "description": "Any authenticated user can list uploaded songs, paginated via `cursor`/`limit` and optionally filtered with a spelling-tolerant search over title and artist via the `q` query param.",
+        "description": "Any authenticated user can list uploaded songs, paginated via `cursor`/`limit`, optionally filtered with a spelling-tolerant search over title and artist via the `q` query param, and optionally restricted to a single uploader via `uploadedBy`.",
         "parameters": [
           {
             "schema": {
@@ -5522,6 +5934,17 @@
             "required": false,
             "description": "Max songs to return per page.",
             "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Restricts the listing to songs uploaded by this user id."
+            },
+            "required": false,
+            "description": "Restricts the listing to songs uploaded by this user id.",
+            "name": "uploadedBy",
             "in": "query"
           }
         ],
@@ -7287,6 +7710,62 @@
                 "example": {
                   "status": 404,
                   "message": "Not found. Resource does not exist."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usage/me": {
+      "get": {
+        "operationId": "getMyUsage",
+        "tags": [
+          "Usage"
+        ],
+        "summary": "Get the caller's own library usage stats",
+        "description": "Any authenticated user can fetch their own aggregate usage: songs uploaded, total storage used, completed stem separations, and YouTube imports. Always scoped to the caller - there is no way to read another user's usage through this endpoint.",
+        "responses": {
+          "200": {
+            "description": "Usage stats.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "songCount": {
+                      "type": "number"
+                    },
+                    "totalStorageBytes": {
+                      "type": "number"
+                    },
+                    "completedStemsCount": {
+                      "type": "number"
+                    },
+                    "youtubeImportsCount": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "songCount",
+                    "totalStorageBytes",
+                    "completedStemsCount",
+                    "youtubeImportsCount"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Missing or invalid authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "status": 401,
+                  "message": "Unauthorized. Missing or invalid authentication."
                 }
               }
             }

@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/Card"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@workspace/ui/components/Field"
+import { Field, FieldContent, FieldError, FieldGroup, FieldLabel } from "@workspace/ui/components/Field"
 import { Input } from "@workspace/ui/components/Input"
 import { toast } from "@workspace/ui/components/Sonner"
 import { FunctionComponent } from "react"
@@ -63,10 +63,10 @@ export const PasswordForm: FunctionComponent = () => {
   })
 
   return (
-    <Card className="w-sm">
+    <Card>
       <CardHeader>
         <CardTitle>Password</CardTitle>
-        <CardDescription>Change your account password.</CardDescription>
+        <CardDescription>Updating your password signs out every other active session.</CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -82,19 +82,23 @@ export const PasswordForm: FunctionComponent = () => {
               {(field) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Current password</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      type="password"
-                      aria-invalid={isInvalid}
-                      autoComplete="current-password"
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  <Field orientation="responsive" data-invalid={isInvalid}>
+                    <FieldContent className="@md/field-group:w-56 @md/field-group:shrink-0">
+                      <FieldLabel htmlFor={field.name}>Current password</FieldLabel>
+                    </FieldContent>
+                    <div className="flex w-full flex-col gap-1.5 @md/field-group:max-w-sm">
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        type="password"
+                        aria-invalid={isInvalid}
+                        autoComplete="current-password"
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </div>
                   </Field>
                 )
               }}
@@ -104,20 +108,24 @@ export const PasswordForm: FunctionComponent = () => {
               {(field) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>New password</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      type="password"
-                      aria-invalid={isInvalid}
-                      placeholder="Must be at least 8 characters long"
-                      autoComplete="new-password"
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  <Field orientation="responsive" data-invalid={isInvalid}>
+                    <FieldContent className="@md/field-group:w-56 @md/field-group:shrink-0">
+                      <FieldLabel htmlFor={field.name}>New password</FieldLabel>
+                    </FieldContent>
+                    <div className="flex w-full flex-col gap-1.5 @md/field-group:max-w-sm">
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        type="password"
+                        aria-invalid={isInvalid}
+                        placeholder="Must be at least 8 characters long"
+                        autoComplete="new-password"
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </div>
                   </Field>
                 )
               }}
@@ -127,20 +135,24 @@ export const PasswordForm: FunctionComponent = () => {
               {(field) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Confirm new password</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      type="password"
-                      aria-invalid={isInvalid}
-                      placeholder="Re-enter your new password"
-                      autoComplete="new-password"
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  <Field orientation="responsive" data-invalid={isInvalid}>
+                    <FieldContent className="@md/field-group:w-56 @md/field-group:shrink-0">
+                      <FieldLabel htmlFor={field.name}>Confirm new password</FieldLabel>
+                    </FieldContent>
+                    <div className="flex w-full flex-col gap-1.5 @md/field-group:max-w-sm">
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        type="password"
+                        aria-invalid={isInvalid}
+                        placeholder="Re-enter your new password"
+                        autoComplete="new-password"
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </div>
                   </Field>
                 )
               }}
@@ -148,12 +160,10 @@ export const PasswordForm: FunctionComponent = () => {
           </FieldGroup>
         </form>
       </CardContent>
-      <CardFooter>
-        <Field>
-          <Button type="submit" form="password-form" disabled={changePassword.isPending}>
-            {changePassword.isPending ? "Updating..." : "Update password"}
-          </Button>
-        </Field>
+      <CardFooter className="justify-end">
+        <Button type="submit" form="password-form" disabled={changePassword.isPending}>
+          {changePassword.isPending ? "Updating..." : "Update password"}
+        </Button>
       </CardFooter>
     </Card>
   )

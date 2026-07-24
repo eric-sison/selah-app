@@ -12,7 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/Card"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@workspace/ui/components/Field"
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@workspace/ui/components/Field"
 import { Input } from "@workspace/ui/components/Input"
 import { toast } from "@workspace/ui/components/Sonner"
 import { FunctionComponent } from "react"
@@ -66,10 +73,10 @@ export const ProfileForm: FunctionComponent = () => {
   })
 
   return (
-    <Card className="w-sm">
+    <Card>
       <CardHeader>
         <CardTitle>Profile</CardTitle>
-        <CardDescription>Update your name and avatar.</CardDescription>
+        <CardDescription>Your name and photo, visible to the rest of the team.</CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -81,27 +88,27 @@ export const ProfileForm: FunctionComponent = () => {
           }}
         >
           <FieldGroup>
-            <Avatar size="lg">
-              <AvatarImage src={image || undefined} />
-              <AvatarFallback className="uppercase">{name.charAt(0)}</AvatarFallback>
-            </Avatar>
-
             <ProfileForm.Field name="name">
               {(field) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Name</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={isInvalid}
-                      placeholder="John Doe"
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  <Field orientation="responsive" data-invalid={isInvalid}>
+                    <FieldContent className="@md/field-group:w-56 @md/field-group:shrink-0">
+                      <FieldLabel htmlFor={field.name}>Full name</FieldLabel>
+                      <FieldDescription>Your display name.</FieldDescription>
+                    </FieldContent>
+                    <div className="flex w-full flex-col gap-1.5 @md/field-group:max-w-sm">
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        placeholder="John Doe"
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    </div>
                   </Field>
                 )
               }}
@@ -111,18 +118,29 @@ export const ProfileForm: FunctionComponent = () => {
               {(field) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Avatar URL</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={isInvalid}
-                      placeholder="https://example.com/avatar.jpg"
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  <Field orientation="responsive" data-invalid={isInvalid}>
+                    <FieldContent className="@md/field-group:w-56 @md/field-group:shrink-0">
+                      <FieldLabel htmlFor={field.name}>Profile photo</FieldLabel>
+                      <FieldDescription>This photo will be visible to others.</FieldDescription>
+                    </FieldContent>
+                    <div className="flex w-full items-center gap-3 @md/field-group:max-w-sm">
+                      <Avatar size="lg">
+                        <AvatarImage src={field.state.value || undefined} />
+                        <AvatarFallback className="uppercase">{name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-1 flex-col gap-1.5">
+                        <Input
+                          id={field.name}
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          aria-invalid={isInvalid}
+                          placeholder="https://example.com/avatar.jpg"
+                        />
+                        {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      </div>
+                    </div>
                   </Field>
                 )
               }}
@@ -130,12 +148,10 @@ export const ProfileForm: FunctionComponent = () => {
           </FieldGroup>
         </form>
       </CardContent>
-      <CardFooter>
-        <Field>
-          <Button type="submit" form="profile-form" disabled={updateProfile.isPending}>
-            {updateProfile.isPending ? "Saving..." : "Save changes"}
-          </Button>
-        </Field>
+      <CardFooter className="justify-end">
+        <Button type="submit" form="profile-form" disabled={updateProfile.isPending}>
+          {updateProfile.isPending ? "Saving..." : "Save changes"}
+        </Button>
       </CardFooter>
     </Card>
   )

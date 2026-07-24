@@ -1,7 +1,7 @@
 "use client"
 
 import { useForm } from "@tanstack/react-form"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@workspace/ui/components/Button"
 import {
   Card,
@@ -22,6 +22,8 @@ const InviteFormSchema = z.object({
 })
 
 export const InviteForm: FunctionComponent = () => {
+  const queryClient = useQueryClient()
+
   const invite = useMutation({
     mutationFn: async (values: z.infer<typeof InviteFormSchema>) => {
       const res = await fetch("/api/invitations", {
@@ -40,6 +42,7 @@ export const InviteForm: FunctionComponent = () => {
     onSuccess: (data) => {
       toast.success(`Invitation sent to ${data.email}.`, { position: "top-center" })
       InviteForm.reset()
+      queryClient.invalidateQueries({ queryKey: ["invitations"] })
     },
     onError: (error) => {
       toast.error(error.message, { position: "top-center" })

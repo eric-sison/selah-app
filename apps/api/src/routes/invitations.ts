@@ -6,6 +6,8 @@ import {
   createInvitation,
   getValidInvitationByToken,
   InvitationError,
+  listPendingInvitations,
+  revokeInvitation,
 } from "../services/invitations.js"
 
 const CreateInvitationRequestSchema = z.object({
@@ -14,6 +16,15 @@ const CreateInvitationRequestSchema = z.object({
 
 const InvitationResponseSchema = z.object({
   email: z.string(),
+  expiresAt: z.string(),
+})
+
+const PendingInvitationResponseSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  role: z.string(),
+  invitedBy: z.object({ id: z.string(), name: z.string() }),
+  createdAt: z.string(),
   expiresAt: z.string(),
 })
 
@@ -35,6 +46,40 @@ const createInvitationRoute = createRoute({
     403: commonErrors[403],
     409: commonErrors[409],
     422: commonErrors[422],
+  },
+})
+
+const listInvitationsRoute = createRoute({
+  method: "get",
+  path: "/invitations",
+  operationId: "listInvitations",
+  tags: ["Invitations"],
+  summary: "List pending invitations",
+  description: "Admin-only. Lists every invitation that hasn't been accepted or expired yet, newest first.",
+  middleware: [requireAdmin] as const,
+  responses: {
+    200: jsonResponse(z.array(PendingInvitationResponseSchema), "Pending invitations."),
+    401: commonErrors[401],
+    403: commonErrors[403],
+  },
+})
+
+const revokeInvitationRoute = createRoute({
+  method: "delete",
+  path: "/invitations/{id}",
+  operationId: "revokeInvitation",
+  tags: ["Invitations"],
+  summary: "Revoke a pending invitation",
+  description: "Admin-only. Deletes an invitation so its link stops working.",
+  middleware: [requireAdmin] as const,
+  request: {
+    params: z.object({ id: z.uuid() }),
+  },
+  responses: {
+    204: { description: "Invitation revoked." },
+    401: commonErrors[401],
+    403: commonErrors[403],
+    404: commonErrors[404],
   },
 })
 
@@ -80,4 +125,28 @@ export const invitationsHandler = new OpenAPIHono<RequestContext>({ defaultHook 
     }
 
     return c.json({ email: found.email, expiresAt: found.expiresAt.toISOString() }, 200)
+  })
+  .openapi(listInvitationsRoute, async (c) => {
+    const invitations = await listPendingInvitations()
+    return c.json(
+      invitations.map((i) => ({
+        id: i.id,
+        email: i.email,
+        role: i.role,
+        invitedBy: { id: i.invitedByUser.id, name: i.invitedByUser.name },
+        createdAt: i.createdAt.toISOString(),
+        expiresAt: i.expiresAt.toISOString(),
+      })),
+      200
+    )
+  })
+  .openapi(revokeInvitationRoute, async (c) => {
+    const { id } = c.req.valid("param")
+    const revoked = await revokeInvitation(id)
+
+    if (!revoked) {
+      return c.json({ status: 404, message: "Invitation not found." }, 404)
+    }
+
+    return c.body(null, 204)
   })

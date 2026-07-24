@@ -2,7 +2,14 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { Button } from "@workspace/ui/components/Button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/Card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/Card"
+import { Field, FieldContent, FieldDescription, FieldGroup, FieldTitle } from "@workspace/ui/components/Field"
 import { toast } from "@workspace/ui/components/Sonner"
 import { FunctionComponent } from "react"
 import { authClient } from "@/lib/auth-client"
@@ -37,21 +44,36 @@ export const LinkedAccounts: FunctionComponent = () => {
   const isFacebookLinked = accounts.data?.some((account) => account.providerId === "facebook")
 
   return (
-    <Card className="w-sm">
+    <Card>
       <CardHeader>
         <CardTitle>Connected accounts</CardTitle>
-        <CardDescription>Link your Facebook account so you can sign in with it next time.</CardDescription>
+        <CardDescription>Link social accounts to sign in without a password.</CardDescription>
       </CardHeader>
       <CardContent>
-        {accounts.isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        ) : isFacebookLinked ? (
-          <p className="text-sm text-muted-foreground">Your Facebook account is linked.</p>
-        ) : (
-          <Button type="button" onClick={() => linkFacebook.mutate()} disabled={linkFacebook.isPending}>
-            {linkFacebook.isPending ? "Redirecting..." : "Link Facebook account"}
-          </Button>
-        )}
+        <FieldGroup>
+          <Field orientation="responsive">
+            <FieldContent className="@md/field-group:w-56 @md/field-group:shrink-0">
+              <FieldTitle>Facebook</FieldTitle>
+              <FieldDescription>Link your Facebook account so you can sign in with it next time.</FieldDescription>
+            </FieldContent>
+            <div className="flex w-full items-center @md/field-group:max-w-sm">
+              {accounts.isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              ) : isFacebookLinked ? (
+                <p className="text-sm text-muted-foreground">Your Facebook account is linked.</p>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => linkFacebook.mutate()}
+                  disabled={linkFacebook.isPending}
+                >
+                  {linkFacebook.isPending ? "Redirecting..." : "Link Facebook account"}
+                </Button>
+              )}
+            </div>
+          </Field>
+        </FieldGroup>
       </CardContent>
     </Card>
   )

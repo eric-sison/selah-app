@@ -8,6 +8,7 @@ import {
   createMusician,
   deleteMusician,
   getMusician,
+  getMusicianByUserId,
   listMusicians,
   MusicianError,
   updateMusicianInstruments,
@@ -86,6 +87,44 @@ const listMusiciansRoute = createRoute({
   },
 })
 
+const getMyMusicianRoute = createRoute({
+  method: "get",
+  path: "/musicians/me",
+  operationId: "getMyMusician",
+  tags: ["Musicians"],
+  summary: "Get the caller's own musician profile",
+  description: "Any authenticated user can fetch their own musician profile.",
+  middleware: [requireAuth] as const,
+  responses: {
+    200: jsonResponse(MusicianResponseSchema, "Musician."),
+    401: commonErrors[401],
+    404: commonErrors[404],
+  },
+})
+
+const UpdateMusicianRequestSchema = z.object({
+  instruments: z.array(InstrumentSchema),
+})
+
+const updateMyMusicianRoute = createRoute({
+  method: "patch",
+  path: "/musicians/me",
+  operationId: "updateMyMusician",
+  tags: ["Musicians"],
+  summary: "Update the caller's own instruments",
+  description: "Any authenticated user can replace their own musician profile's full set of instruments.",
+  middleware: [requireAuth] as const,
+  request: {
+    ...jsonBody(UpdateMusicianRequestSchema),
+  },
+  responses: {
+    200: jsonResponse(MusicianResponseSchema, "Musician updated."),
+    401: commonErrors[401],
+    404: commonErrors[404],
+    422: commonErrors[422],
+  },
+})
+
 const getMusicianRoute = createRoute({
   method: "get",
   path: "/musicians/{id}",
@@ -102,10 +141,6 @@ const getMusicianRoute = createRoute({
     401: commonErrors[401],
     404: commonErrors[404],
   },
-})
-
-const UpdateMusicianRequestSchema = z.object({
-  instruments: z.array(InstrumentSchema),
 })
 
 const updateMusicianRoute = createRoute({
@@ -174,6 +209,17 @@ export const musiciansHandler = new OpenAPIHono<RequestContext>({ defaultHook })
       200
     )
   })
+  .openapi(getMyMusicianRoute, async (c) => {
+    // requireAuth guarantees this is non-null.
+    const user = c.get("user")!
+    const found = await getMusicianByUserId(user.id)
+
+    if (!found) {
+      return c.json({ status: 404, message: "Musician not found." }, 404)
+    }
+
+    return c.json(mapMusician(found), 200)
+  })
   .openapi(getMusicianRoute, async (c) => {
     const { id } = c.req.valid("param")
     const found = await getMusician(id)
@@ -183,6 +229,23 @@ export const musiciansHandler = new OpenAPIHono<RequestContext>({ defaultHook })
     }
 
     return c.json(mapMusician(found), 200)
+  })
+  .openapi(updateMyMusicianRoute, async (c) => {
+    // requireAuth guarantees this is non-null.
+    const user = c.get("user")!
+    const { instruments } = c.req.valid("json")
+
+    const existing = await getMusicianByUserId(user.id)
+    if (!existing) {
+      return c.json({ status: 404, message: "Musician not found." }, 404)
+    }
+
+    await updateMusicianInstruments(existing.id, instruments)
+
+    const updated = await getMusicianByUserId(user.id)
+    // existing just confirmed this musician exists, so it can't have
+    // vanished by the time this second query runs a moment later.
+    return c.json(mapMusician(updated!), 200)
   })
   .openapi(updateMusicianRoute, async (c) => {
     const { id } = c.req.valid("param")

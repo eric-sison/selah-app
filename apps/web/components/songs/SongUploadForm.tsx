@@ -281,6 +281,7 @@ export const SongUploadForm: FunctionComponent<SongUploadFormProps> = ({ onSucce
     <>
       <form
         id="song-upload-form"
+        className="min-h-0 flex-1 overflow-y-auto"
         onSubmit={(e) => {
           e.preventDefault()
           e.stopPropagation()

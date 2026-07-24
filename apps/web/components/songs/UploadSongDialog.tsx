@@ -26,7 +26,7 @@ export const UploadSongDialog: FunctionComponent = () => {
           </Button>
         }
       />
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="flex max-h-[calc(100%-2rem)] flex-col sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Upload a song</DialogTitle>
           <DialogDescription>Add an audio file, or import one straight from a YouTube URL.</DialogDescription>

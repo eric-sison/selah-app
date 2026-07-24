@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto"
-import { eq } from "drizzle-orm"
+import { and, desc, eq, gt, isNull } from "drizzle-orm"
 import { db } from "../db/index.js"
 import { invitation } from "../db/app-schema.js"
 import { users } from "../db/auth-schema.js"
@@ -96,4 +96,33 @@ export async function getValidInvitationByToken(token: string) {
  */
 export async function markInvitationAccepted(id: string) {
   await db.update(invitation).set({ acceptedAt: new Date() }).where(eq(invitation.id, id))
+}
+
+/**
+ * Lists every still-usable invitation (not yet accepted, not yet expired),
+ * newest first, joined with the admin who sent it - backs the pending
+ * invitations list on the settings page.
+ */
+export async function listPendingInvitations() {
+  return db.query.invitation.findMany({
+    where: and(isNull(invitation.acceptedAt), gt(invitation.expiresAt, new Date())),
+    orderBy: desc(invitation.createdAt),
+    with: {
+      invitedByUser: { columns: { id: true, name: true } },
+    },
+  })
+}
+
+/**
+ * Revokes a pending invitation by deleting its row, so its token
+ * immediately stops working.
+ *
+ * @returns `true` if an invitation with this id was found and deleted, `false` otherwise.
+ */
+export async function revokeInvitation(id: string): Promise<boolean> {
+  const found = await db.query.invitation.findFirst({ where: eq(invitation.id, id) })
+  if (!found) return false
+
+  await db.delete(invitation).where(eq(invitation.id, id))
+  return true
 }

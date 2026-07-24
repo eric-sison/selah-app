@@ -95,6 +95,9 @@ const ListSongsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(MAX_SONGS_LIMIT).default(DEFAULT_SONGS_LIMIT).openapi({
     description: "Max songs to return per page.",
   }),
+  uploadedBy: z.string().trim().min(1).optional().openapi({
+    description: "Restricts the listing to songs uploaded by this user id.",
+  }),
 })
 
 const ListSongsResponseSchema = z.object({
@@ -109,7 +112,7 @@ const listSongsRoute = createRoute({
   tags: ["Songs"],
   summary: "List uploaded songs",
   description:
-    "Any authenticated user can list uploaded songs, paginated via `cursor`/`limit` and optionally filtered with a spelling-tolerant search over title and artist via the `q` query param.",
+    "Any authenticated user can list uploaded songs, paginated via `cursor`/`limit`, optionally filtered with a spelling-tolerant search over title and artist via the `q` query param, and optionally restricted to a single uploader via `uploadedBy`.",
   middleware: [requireAuth] as const,
   request: {
     query: ListSongsQuerySchema,
@@ -294,8 +297,8 @@ export const songsHandler = new OpenAPIHono<RequestContext>({ defaultHook })
     )
   })
   .openapi(listSongsRoute, async (c) => {
-    const { q, cursor, limit } = c.req.valid("query")
-    const { items, nextCursor } = await listSongs({ query: q, cursor, limit })
+    const { q, cursor, limit, uploadedBy } = c.req.valid("query")
+    const { items, nextCursor } = await listSongs({ query: q, cursor, limit, uploadedBy })
 
     return c.json(
       {

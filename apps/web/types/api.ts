@@ -31,7 +31,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List pending invitations
+         * @description Admin-only. Lists every invitation that hasn't been accepted or expired yet, newest first.
+         */
+        get: operations["listInvitations"];
         put?: never;
         /**
          * Invite a new user
@@ -59,6 +63,26 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invitations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a pending invitation
+         * @description Admin-only. Deletes an invitation so its link stops working.
+         */
+        delete: operations["revokeInvitation"];
         options?: never;
         head?: never;
         patch?: never;
@@ -340,6 +364,30 @@ export interface paths {
         patch: operations["updateMusician"];
         trace?: never;
     };
+    "/api/musicians/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's own musician profile
+         * @description Any authenticated user can fetch their own musician profile.
+         */
+        get: operations["getMyMusician"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update the caller's own instruments
+         * @description Any authenticated user can replace their own musician profile's full set of instruments.
+         */
+        patch: operations["updateMyMusician"];
+        trace?: never;
+    };
     "/api/schedules": {
         parameters: {
             query?: never;
@@ -413,7 +461,7 @@ export interface paths {
         };
         /**
          * List uploaded songs
-         * @description Any authenticated user can list uploaded songs, paginated via `cursor`/`limit` and optionally filtered with a spelling-tolerant search over title and artist via the `q` query param.
+         * @description Any authenticated user can list uploaded songs, paginated via `cursor`/`limit`, optionally filtered with a spelling-tolerant search over title and artist via the `q` query param, and optionally restricted to a single uploader via `uploadedBy`.
          */
         get: operations["listSongs"];
         put?: never;
@@ -608,6 +656,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/usage/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's own library usage stats
+         * @description Any authenticated user can fetch their own aggregate usage: songs uploaded, total storage used, completed stem separations, and YouTube imports. Always scoped to the caller - there is no way to read another user's usage through this endpoint.
+         */
+        get: operations["getMyUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users": {
         parameters: {
             query?: never;
@@ -764,6 +832,66 @@ export interface operations {
             };
         };
     };
+    listInvitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending invitations. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        email: string;
+                        role: string;
+                        invitedBy: {
+                            id: string;
+                            name: string;
+                        };
+                        createdAt: string;
+                        expiresAt: string;
+                    }[];
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     createInvitation: {
         parameters: {
             query?: never;
@@ -875,6 +1003,71 @@ export interface operations {
                         email: string;
                         expiresAt: string;
                     };
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    revokeInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invitation revoked. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden. Insufficient permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "message": "Forbidden. Insufficient permissions."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Not found. Resource does not exist. */
@@ -2993,6 +3186,149 @@ export interface operations {
             };
         };
     };
+    getMyMusician: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Musician. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        user: {
+                            id: string;
+                            name: string;
+                            email: string;
+                            image: string | null;
+                        };
+                        instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateMyMusician: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                };
+            };
+        };
+        responses: {
+            /** @description Musician updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        user: {
+                            id: string;
+                            name: string;
+                            email: string;
+                            image: string | null;
+                        };
+                        instruments: ("bass" | "drums" | "singer" | "electric_guitar" | "acoustic_guitar" | "keyboard")[];
+                        createdAt: string;
+                        updatedAt: string;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. Resource does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 404,
+                     *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable. Request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 422,
+                     *       "message": "Unprocessable. Request body failed validation."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listSchedules: {
         parameters: {
             query?: never;
@@ -3247,6 +3583,8 @@ export interface operations {
                 cursor?: number | null;
                 /** @description Max songs to return per page. */
                 limit?: number;
+                /** @description Restricts the listing to songs uploaded by this user id. */
+                uploadedBy?: string;
             };
             header?: never;
             path?: never;
@@ -4368,6 +4706,46 @@ export interface operations {
                      * @example {
                      *       "status": 404,
                      *       "message": "Not found. Resource does not exist."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMyUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Usage stats. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        songCount: number;
+                        totalStorageBytes: number;
+                        completedStemsCount: number;
+                        youtubeImportsCount: number;
+                    };
+                };
+            };
+            /** @description Unauthorized. Missing or invalid authentication. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "message": "Unauthorized. Missing or invalid authentication."
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];

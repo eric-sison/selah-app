@@ -16,6 +16,7 @@ import { schedulesHandler } from "./routes/schedules.js"
 import { songStemsHandler } from "./routes/song-stems.js"
 import { songsHandler } from "./routes/songs.js"
 import { teamsHandler } from "./routes/teams.js"
+import { usageHandler } from "./routes/usage.js"
 import { usersHandler } from "./routes/users.js"
 import { youtubeImportsHandler } from "./routes/youtube-imports.js"
 import { errorHandler } from "./middleware/error-handler.js"
@@ -53,9 +54,11 @@ const routes = [
   songStemsHandler,
   songsHandler,
   teamsHandler,
+  usageHandler,
   usersHandler,
   youtubeImportsHandler,
 ] as const
+
 routes.forEach((route) => app.route("/", route))
 
 app.doc("/docs/spec", openApiConfig)

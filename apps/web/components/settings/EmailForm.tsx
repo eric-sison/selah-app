@@ -11,7 +11,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/Card"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@workspace/ui/components/Field"
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@workspace/ui/components/Field"
 import { Input } from "@workspace/ui/components/Input"
 import { toast } from "@workspace/ui/components/Sonner"
 import { FunctionComponent } from "react"
@@ -60,10 +67,10 @@ export const EmailForm: FunctionComponent = () => {
   })
 
   return (
-    <Card className="w-sm">
+    <Card>
       <CardHeader>
         <CardTitle>Email address</CardTitle>
-        <CardDescription>You&apos;re currently signed in as {currentEmail}.</CardDescription>
+        <CardDescription>Changing your email sends a confirmation link to the new address.</CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -79,21 +86,26 @@ export const EmailForm: FunctionComponent = () => {
               {(field) => {
                 const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
                 return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>New email address</FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      aria-invalid={isInvalid}
-                      placeholder="newaddress@example.com"
-                    />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                    <FieldDescription>
-                      We&apos;ll email a verification link to confirm the change.
-                    </FieldDescription>
+                  <Field orientation="responsive" data-invalid={isInvalid}>
+                    <FieldContent className="@md/field-group:w-56 @md/field-group:shrink-0">
+                      <FieldLabel htmlFor={field.name}>Current email</FieldLabel>
+                      <FieldDescription>You&apos;re currently signed in as {currentEmail}.</FieldDescription>
+                    </FieldContent>
+                    <div className="flex w-full flex-col gap-1.5 @md/field-group:max-w-sm">
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        placeholder="newaddress@example.com"
+                      />
+                      {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                      <FieldDescription>
+                        We&apos;ll email a verification link to confirm the change.
+                      </FieldDescription>
+                    </div>
                   </Field>
                 )
               }}
@@ -101,12 +113,10 @@ export const EmailForm: FunctionComponent = () => {
           </FieldGroup>
         </form>
       </CardContent>
-      <CardFooter>
-        <Field>
-          <Button type="submit" form="email-form" disabled={changeEmail.isPending}>
-            {changeEmail.isPending ? "Sending..." : "Send verification link"}
-          </Button>
-        </Field>
+      <CardFooter className="justify-end">
+        <Button type="submit" form="email-form" disabled={changeEmail.isPending}>
+          {changeEmail.isPending ? "Sending..." : "Send verification link"}
+        </Button>
       </CardFooter>
     </Card>
   )
